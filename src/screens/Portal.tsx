@@ -6,6 +6,10 @@ import { useAuth, type Profile } from '../lib/auth'
 import { Icon } from '../ui/icons'
 import { Empty, NavBar, TabBar, initials, type Tab } from '../ui/parts'
 import { haptic } from '../ui/haptic'
+import { must, useQuery } from '../lib/data'
+import { supabase } from '../lib/supabase'
+import { displayName } from '../lib/types'
+import { AdminSettings } from './admin/AdminSettings'
 
 type View = 'student' | 'tutor' | 'lecturer' | 'admin'
 
@@ -75,7 +79,7 @@ export function Portal() {
     <>
       <NavBar title={titles[tab]} right={switcher} />
       <div className="body">
-        {tab === 'profile' ? <ProfileTab profile={profile} view={view} /> : <Soon />}
+        {tab === 'profile' ? (view === 'admin' ? <AdminSettings /> : <ProfileTab profile={profile} view={view} />) : <Soon />}
       </div>
       <TabBar tabs={tabs} current={tab} onChange={setTab} />
     </>
@@ -83,7 +87,7 @@ export function Portal() {
 }
 
 function Soon() {
-  return <Empty icon="clock" title="Coming in Phase 1" line="This screen is part of the next build step. The app's frame, sign-in and data rules are in place." />
+  return <Empty icon="clock" title="Coming soon" line="This screen is being built in the next steps of Phase 1." />
 }
 
 const ROLE_LINE: Record<View, string> = {
@@ -102,7 +106,7 @@ function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
       <div className="card card--pad" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <span className={'avatar avatar--lg' + (view === 'lecturer' ? ' avatar--gold' : '')}>{initials(profile.full_name || profile.email)}</span>
         <span style={{ minWidth: 0 }}>
-          <span className="rname" style={{ fontSize: 16 }}>{profile.full_name || 'No name yet'}</span>
+          <span className="rname" style={{ fontSize: 16 }}>{displayName(profile) || 'No name yet'}</span>
           <span className="rmeta">{ROLE_LINE[view]} · Rosebank International</span>
         </span>
       </div>
@@ -117,9 +121,29 @@ function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
         ))}
       </div>
 
+      {view === 'lecturer' ? <MyModules id={profile.id} /> : null}
+
       <button className="btn btn--outline" style={{ marginTop: 26 }} onClick={() => { haptic(10); signOut() }}>
         <Icon name="out" size={18} /> Sign out
       </button>
     </div>
+  )
+}
+
+/* Lecturers see what they teach; only admin can change it. */
+function MyModules({ id }: { id: string }) {
+  const mods = useQuery(`lecturer-modules:${id}`, () =>
+    must(supabase.from('lecturer_modules').select('module_code, modules(name)').eq('lecturer_id', id)
+      .returns<{ module_code: string; modules: { name: string } | null }[]>()))
+  return (
+    <>
+      <div className="sect" style={{ marginTop: 26 }}>Modules you teach</div>
+      <div className="chips">
+        {(mods.data ?? []).map(m => (
+          <span key={m.module_code} className="chip chip--static"><span className="code">{m.module_code}</span>{m.modules?.name}</span>
+        ))}
+      </div>
+      <p className="small muted" style={{ marginTop: 10 }}>Teaching something different this semester? Ask admin to update your modules.</p>
+    </>
   )
 }

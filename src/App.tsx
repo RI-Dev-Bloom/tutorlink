@@ -6,6 +6,7 @@ import { Empty, Loading } from './ui/parts'
 import { Welcome } from './screens/Welcome'
 import { Onboarding } from './screens/Onboarding'
 import { Portal } from './screens/Portal'
+import { ChangePassword } from './screens/ChangePassword'
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ function Router() {
     : !session ? 'welcome'
     : profileError ? 'error'
     : !profile ? 'loading'
+    : profile.must_change_password ? 'change-password'
     : profile.role === 'student' && !profile.student_number ? 'onboarding'
     : `portal:${profile.id}`
 
@@ -38,6 +40,7 @@ function Router() {
     if (route === 'loading') reset(<Loading />)
     else if (route === 'welcome') reset(<Welcome />)
     else if (route === 'onboarding') reset(<Onboarding />)
+    else if (route === 'change-password') reset(<ChangePassword />)
     else if (route === 'error') reset(<AccountError />)
     else reset(<Portal />)
   }, [route, reset])

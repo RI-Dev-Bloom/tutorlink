@@ -82,6 +82,11 @@ await denied('student number must be unique', () => as(ids.stu2, `update public.
 await ok('student cannot see other students', async () => eq((await as(ids.stu, `select id from public.profiles`)).length, 1, 'visible profiles'))
 await ok('admin sees everyone', async () => eq((await as(ids.admin, `select id from public.profiles`)).length, 5, 'visible profiles'))
 
+console.log('\nlecturer accounts')
+await ok('admin flags lecturer to change password', () => as(ids.admin, `update public.profiles set must_change_password = true, title = 'Dr' where id = $1 returning title`, [ids.lect]))
+await denied('student cannot set the flag on themselves', () => as(ids.stu2, `update public.profiles set must_change_password = true where id = $1`, [ids.stu2]), 'Only admin')
+await ok('lecturer clears own flag after new password', async () => eq((await as(ids.lect, `update public.profiles set must_change_password = false where id = $1 returning must_change_password`, [ids.lect]))[0].must_change_password, false, 'flag'))
+
 console.log('\nmodules')
 await ok('student adds a module (normalised)', () => as(ids.stu, `select public.add_module(' webd1111 ', 'Web Development') as code`))
 await ok('adding an existing code reuses it', () => as(ids.stu, `select public.add_module('PROG1111', 'Typo name') as code`))

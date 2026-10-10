@@ -18,6 +18,12 @@ export function friendlyError(e: unknown): string {
   if (msg.includes('profiles_student_number_key')) return 'That student number is already registered'
   if (msg.includes('profiles_student_number_check')) return 'Student numbers look like ST12345678'
   if (msg.includes('Invalid login credentials')) return 'That email and password don’t match'
+  if (msg.includes('semesters_no_overlap')) return 'Those dates overlap another semester'
+  if (msg.includes('semesters_check')) return 'The end date must be after the start date'
+  if (msg.includes('modules_pkey')) return 'A module with that code already exists'
+  if (msg.includes('modules_code_check')) return 'Module codes are 4 letters and 4 digits, e.g. PROG6221'
+  if (msg.includes('modules_name_check')) return 'Give the module a name'
+  if (msg.includes('should be different from the old password')) return 'Pick a password you haven’t used here before'
   if (msg.includes('Failed to fetch')) return 'No connection — check your signal and try again'
   return msg
 }

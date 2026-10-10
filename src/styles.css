@@ -528,6 +528,8 @@ button.row:active { background: var(--bg); }
   transition: opacity .3s var(--ease), transform .38s var(--spring);
 }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
+/* while a sheet is open, toasts drop from the top so they never cover its buttons */
+#sheet.on ~ #toast { bottom: auto; top: calc(var(--sat) + 64px); }
 
 /* ---------- empty ---------------------------------------- */
 

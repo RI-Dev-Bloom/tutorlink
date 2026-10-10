@@ -13,6 +13,8 @@ export type Profile = {
   full_name: string
   email: string
   student_number: string | null
+  title: string
+  must_change_password: boolean
 }
 
 type AuthState = {
@@ -47,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!s) { setProfile(null); setProfileError(null); return }
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, role, is_tutor, full_name, email, student_number')
+      .select('id, role, is_tutor, full_name, email, student_number, title, must_change_password')
       .eq('id', s.user.id)
       .single()
     setProfile(error ? null : (data as Profile))
