@@ -1,7 +1,7 @@
-/* Admin → Lecturers: list, add (with a generated password to send by WhatsApp/email),
-   edit modules, reset password. */
+/* Admin → Lecturers: list and search, add (with a generated password to send by
+   WhatsApp/email), edit modules, reset password, remove. */
 
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
 import { adminUsers, appLink, invalidate, must, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
 import { displayName, type Lecturer, type Module } from '../../lib/types'
@@ -22,6 +22,16 @@ const loadLecturers = () =>
 export function Lecturers() {
   const { push } = useStack()
   const lecturers = useQuery('lecturers', loadLecturers)
+  const [q, setQ] = useState('')
+
+  // Every word typed must appear somewhere: "dr smith", "smith prog", "PROG6221"...
+  const shown = useMemo(() => {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean)
+    return (lecturers.data ?? []).filter(l => {
+      const hay = [displayName(l), l.email, ...l.lecturer_modules.map(m => m.module_code)].join(' ').toLowerCase()
+      return words.every(w => hay.includes(w))
+    })
+  }, [lecturers.data, q])
 
   return (
     <>
@@ -33,8 +43,14 @@ export function Lecturers() {
           <Empty icon="board" title="No lecturers yet" line="Add a lecturer, then send them the sign-in details the app gives you." />
         ) : null}
         {lecturers.data?.length ? (
+          <div className="field" style={{ marginBottom: 14 }}>
+            <input type="search" placeholder="Search by title, name, email or module" value={q} onChange={e => setQ(e.target.value)} aria-label="Search lecturers" />
+          </div>
+        ) : null}
+        {lecturers.data?.length && !shown.length ? <Empty icon="board" title="No match" line="Nothing matches that search." /> : null}
+        {shown.length ? (
           <div className="card stagger">
-            {lecturers.data.map(l => (
+            {shown.map(l => (
               <button className="row" key={l.id} onClick={() => push(<LecturerDetail id={l.id} />)}>
                 <span className="avatar avatar--gold">{initials(l.full_name)}</span>
                 <span className="rmain">
@@ -158,6 +174,7 @@ function AddLecturer() {
 
 function LecturerDetail({ id }: { id: string }) {
   const { openSheet, toast } = useOverlay()
+  const { back } = useStack()
   const lecturer = useQuery(`lecturer:${id}`, () =>
     must(supabase.from('profiles').select('id, title, full_name, email, must_change_password, lecturer_modules(module_code)').eq('id', id).single<Lecturer>()))
   const modules = useQuery('modules', loadModules)
@@ -222,6 +239,9 @@ function LecturerDetail({ id }: { id: string }) {
         <button className="btn btn--outline" onClick={() => openSheet(<ResetSheet lecturer={l} />)}>
           <Icon name="shield" size={17} /> Reset password
         </button>
+
+        <div className="sect" style={{ marginTop: 26 }}>Leaving Rosebank?</div>
+        <button className="btn btn--danger" onClick={() => openSheet(<RemoveSheet lecturer={l} onRemoved={back} />)}>Remove lecturer</button>
       </div></div>
     </>
   )
@@ -250,6 +270,31 @@ function ResetSheet({ lecturer: l }: { lecturer: Lecturer }) {
       <p className="sheet-lead">{displayName(l)}'s current password stops working straight away. You'll get a new one to send them, and they'll choose their own when they sign in.</p>
       {error ? <p className="err">{error}</p> : null}
       <button className="btn btn--danger" style={{ marginTop: 18 }} onClick={reset} disabled={busy}>{busy ? 'Resetting…' : 'Yes, reset it'}</button>
+    </div>
+  )
+}
+
+// Sheets sit outside the screen stack, so the detail screen passes its own `back`.
+function RemoveSheet({ lecturer: l, onRemoved }: { lecturer: Lecturer; onRemoved: () => void }) {
+  const { closeSheet, toast } = useOverlay()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const remove = async () => {
+    setBusy(true); setError('')
+    try {
+      await adminUsers({ action: 'remove_lecturer', user_id: l.id })
+      haptic(16); invalidate('lecturers'); closeSheet(); onRemoved(); toast(`${displayName(l)} removed`)
+    } catch (err) { haptic(24); setError(friendlyError(err)); setBusy(false) }
+  }
+
+  return (
+    <div>
+      <p className="sheet-sub">Lecturer</p>
+      <h3 className="sheet-title">Remove {displayName(l)}?</h3>
+      <p className="sheet-lead">They're signed out and can't sign in again. Their messages with tutors are deleted too. Tutors and sessions aren't affected. This can't be undone, but you can add them again later with the same email.</p>
+      {error ? <p className="err">{error}</p> : null}
+      <button className="btn btn--danger" style={{ marginTop: 18 }} onClick={remove} disabled={busy}>{busy ? 'Removing…' : 'Yes, remove them'}</button>
     </div>
   )
 }

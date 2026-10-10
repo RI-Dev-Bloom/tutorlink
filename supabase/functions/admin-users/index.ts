@@ -1,5 +1,5 @@
 // TutorLink — admin-users
-// Creates staff logins and resets their passwords. Needs the secret key (which
+// Creates, resets and removes staff logins. Needs the secret key (which
 // bypasses every database rule), so it lives here on the server, never in the app.
 // Every request is checked: the caller must be signed in AND be an admin.
 
@@ -86,6 +86,17 @@ Deno.serve(async req => {
     if (error) return json({ error: error.message }, 400)
     await admin.from('profiles').update({ must_change_password: true }).eq('id', id)
     return json({ id, email: target.email, password })
+  }
+
+  if (body.action === 'remove_lecturer') {
+    const id = String(body.user_id ?? '')
+    const { data: target } = await admin.from('profiles').select('role').eq('id', id).single()
+    if (target?.role !== 'lecturer') return json({ error: 'Only lecturer accounts can be removed here' }, 400)
+    // Removing the login cascades to their profile, modules and message threads.
+    // Lecturers own no pay or session records, so nothing else is lost.
+    const { error } = await admin.auth.admin.deleteUser(id)
+    if (error) return json({ error: error.message }, 400)
+    return json({ id })
   }
 
   return json({ error: 'Unknown action' }, 400)
