@@ -192,6 +192,30 @@ await ok('admin merges WEBD1111 into PROG1111', async () => {
 })
 await denied('student cannot merge', () => as(ids.stu, `select public.merge_modules('NETW1111','PROG1111')`), 'Admin only')
 
+console.log('\napply in one step')
+await db.query(`update public.profiles set student_number = 'ST20000002' where id = $1`, [ids.stu2])
+const path2 = ids.stu2 + '/results.pdf'
+await denied('results must be in your own folder', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":90,"applying":true}]')`, [ids.stu + '/x.pdf']), 'Upload your statement')
+await denied('needs marks', () => as(ids.stu2, `select public.submit_application($1, '[]')`, [path2]), 'Add the marks')
+await denied('needs a module to tutor', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":90}]')`, [path2]), 'at least one module')
+await denied('below the minimum mark cannot be tutored', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":74,"applying":true}]')`, [path2]), 'You need at least 75% in PROG1111')
+await ok('nothing half-saved after a refusal', async () => eq((await db.query(`select count(*)::int n from public.applications where student_id=$1`, [ids.stu2])).rows[0].n, 0, 'apps'))
+await denied('direct mark insert also checks the minimum', async () => {
+  const [{ id }] = await as(ids.stu2, `insert into public.applications (student_id, results_path) values ($1, $2) returning id`, [ids.stu2, path2])
+  try { await as(ids.stu2, `insert into public.application_marks values ($1,'PROG1111',60,true)`, [id]) }
+  finally { await db.query(`delete from public.applications where id=$1`, [id]) }
+}, 'You need at least')
+await ok('student submits marks in one step', async () => {
+  const [{ id }] = await as(ids.stu2, `select public.submit_application($1, '[{"module_code":" prog1111 ","mark":91,"applying":true},{"module_code":"NETW1111","mark":60}]') id`, [path2])
+  return eq((await db.query(`select module_code, mark, applying from public.application_marks where application_id=$1 order by module_code`, [id])).rows,
+    [{ module_code: 'NETW1111', mark: 60, applying: false }, { module_code: 'PROG1111', mark: 91, applying: true }], 'marks')
+})
+await denied('only one open application', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":91,"applying":true}]')`, [path2]), 'applications_one_open')
+await denied('signed-out users cannot submit', async () => {
+  await db.exec('begin'); await db.exec('set local role anon')
+  try { await db.query(`select public.submit_application('x', '[]')`) } finally { await db.exec('rollback') }
+}, 'permission denied')
+
 console.log('\nstorage')
 await ok('student uploads to own results folder', () => as(ids.stu2, `insert into storage.objects (bucket_id, name) values ('results', $1)`, [ids.stu2 + '/statement.pdf']))
 await denied("student cannot upload into someone else's folder", () => as(ids.stu2, `insert into storage.objects (bucket_id, name) values ('results', $1)`, [ids.stu + '/evil.pdf']))

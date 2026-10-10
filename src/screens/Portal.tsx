@@ -1,5 +1,5 @@
-/* The four portals. Phase 0: real tab bars and profile; the other tabs are placeholders
-   that Phase 1 fills in (see Docs-TLink/Tech/Build plan.md). */
+/* The four portals. Tabs not built yet show a placeholder; Phase 1 fills them in
+   slice by slice (see Docs-TLink/Tech/Build plan.md). */
 
 import { useState, type ReactNode } from 'react'
 import { useAuth, type Profile } from '../lib/auth'
@@ -10,6 +10,9 @@ import { must, useQuery } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import { displayName } from '../lib/types'
 import { AdminSettings } from './admin/AdminSettings'
+import { ApplyTab } from './student/Apply'
+import { StudentHome } from './student/Home'
+import { MyModulesTab } from './student/Modules'
 
 type View = 'student' | 'tutor' | 'lecturer' | 'admin'
 
@@ -79,7 +82,11 @@ export function Portal() {
     <>
       <NavBar title={titles[tab]} right={switcher} />
       <div className="body">
-        {tab === 'profile' ? (view === 'admin' ? <AdminSettings /> : <ProfileTab profile={profile} view={view} />) : <Soon />}
+        {tab === 'profile' ? (view === 'admin' ? <AdminSettings /> : <ProfileTab profile={profile} view={view} />)
+          : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />
+          : view === 'student' && tab === 'modules' ? <MyModulesTab />
+          : view === 'student' && tab === 'apply' ? <ApplyTab />
+          : <Soon />}
       </div>
       <TabBar tabs={tabs} current={tab} onChange={setTab} />
     </>

@@ -16,6 +16,6 @@ What Rosebank gets, so it runs without the developer.
 - **This vault**, which explains every feature in plain English.
 
 ## Before handing over — checklist
-- Delete the test accounts used during development (`tutorlink.ri+qa-…@gmail.com`) and the test data (`QA Semester 2099`, module `QATS9999`).
+- Delete the test accounts used during development (`tutorlink.ri+qa-…@gmail.com`) and the test data (`QA Semester 2099`, modules `QATS9999` and `QATS9997`, and the QA student's application and uploaded results file).
 - Suggest Rosebank change the **database password** (Supabase → Database → Settings) and update the `SUPABASE_DB_URL` secret on GitHub, so the backup keeps working.
 - Check the latest backup in `tutorlink-backups` opened fine.

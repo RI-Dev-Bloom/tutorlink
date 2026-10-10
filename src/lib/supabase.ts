@@ -24,6 +24,10 @@ export function friendlyError(e: unknown): string {
   if (msg.includes('modules_code_check')) return 'Module codes are 4 letters and 4 digits, e.g. PROG6221'
   if (msg.includes('modules_name_check')) return 'Give the module a name'
   if (msg.includes('should be different from the old password')) return 'Pick a password you haven’t used here before'
+  if (msg.includes('applications_one_open')) return 'You already have an application waiting for a decision'
+  if (msg.includes('application_marks_pkey')) return 'Each module can only be listed once'
+  if (msg.includes('mime type')) return 'Use a PDF or a photo (JPG or PNG)'
+  if (msg.includes('maximum allowed size')) return 'That file is over the 10 MB limit'
   if (msg.includes('Failed to fetch')) return 'No connection — check your signal and try again'
   return msg
 }
