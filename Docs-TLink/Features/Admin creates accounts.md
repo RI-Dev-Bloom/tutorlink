@@ -7,7 +7,10 @@ status: v1
 **In short:** nobody signs up as staff. Admin makes lecturer accounts, and the first admin is set up in the database.
 
 ## What it does
-- Admin fills in a lecturer's name, email and the modules they teach. Only admin can change those modules later. The lecturer gets an email to set their password.
+- Admin taps **Add lecturer** and fills in title, name, surname, email and the modules they teach. Only admin can change those modules later.
+- The app makes up a random password and shows a summary card with a **Copy** button. Admin pastes it into WhatsApp or an email, so no email system is needed.
+- The lecturer opens the app, taps **Lecturer**, signs in, and picks their own password on first sign-in, so the shared one stops working.
+- If a lecturer forgets their password, admin makes a new one the same way.
 - The first admin account is created when the database is set up. That admin can add more admins.
 - Tutors aren't created here. They come from approved applications ([[Approve and decline]]).
 
