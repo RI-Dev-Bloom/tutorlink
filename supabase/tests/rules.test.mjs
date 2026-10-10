@@ -23,6 +23,7 @@ await db.exec(`
   grant usage on schema public, auth, storage to authenticated, anon;
   grant execute on function auth.uid() to authenticated, anon;
   grant all on all tables in schema storage to authenticated;
+  alter default privileges in schema public grant execute on functions to anon, authenticated;
   alter default privileges in schema public grant all on tables to anon, authenticated;
 `)
 

@@ -13,3 +13,10 @@ grant execute on function
   public.tutor_mark_session(uuid, int), public.tutor_log_session(date, text, int, time, time, text),
   public.admin_create_slot(uuid, text, smallint, time, time, text, date, date, boolean)
 to authenticated;
+
+-- Trigger functions run on their own; nobody should call them through the API.
+revoke execute on function
+  public.handle_new_user(), public.guard_profile_update(), public.normalise_module(),
+  public.touch_conversation(), public.guard_application_insert(), public.session_semester(),
+  public.enforce_quota(), public.session_status_flow()
+from authenticated, public, anon;
