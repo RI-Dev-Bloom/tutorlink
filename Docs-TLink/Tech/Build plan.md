@@ -5,7 +5,7 @@ status: v1
 # Build plan
 
 ## Phase 0: Foundations
-> **Status (10 Oct 2026):** code done and tested (70 database checks pass). Still to do: connect to Supabase and apply the database, create the GitHub repo, and set up Google sign-in.
+> **Status: done (10 Oct 2026).** Live at https://ri-dev-bloom.github.io/tutorlink/. Database, security rules, Google sign-in, admin account, deploys and keep-alive are all working. Weekly backups still need their two secrets (see [[Running costs and upkeep]]).
 
 - Repo on the TutorLink GitHub, with automatic deploys to GitHub Pages.
 - Supabase project: tables, security rules, storage buckets, the first admin.
