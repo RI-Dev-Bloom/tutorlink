@@ -2,15 +2,10 @@ import { useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { friendlyError } from '../lib/supabase'
 import { useStack } from '../nav/Stack'
-import { GoogleMark, Icon, type IconName } from '../ui/icons'
+import { GoogleMark, Icon } from '../ui/icons'
 import { useOverlay } from '../ui/Overlay'
 import { haptic } from '../ui/haptic'
 import { StaffSignIn } from './StaffSignIn'
-
-const STAFF: { id: 'lecturer' | 'admin'; icon: IconName; title: string; desc: string; gold?: boolean }[] = [
-  { id: 'lecturer', icon: 'board',  title: 'Lecturer', desc: 'Your modules and their tutors', gold: true },
-  { id: 'admin',    icon: 'shield', title: 'Admin',    desc: 'Applications, tutors, oversight' },
-]
 
 export function Welcome() {
   const { signInWithGoogle } = useAuth()
@@ -34,27 +29,25 @@ export function Welcome() {
         <h1 className="display">TutorLink</h1>
         <p className="sub">The peer tutoring programme, on your phone.</p>
 
-        <div className="sect" style={{ marginTop: 28 }}>Students and tutors</div>
+        <div className="sect" style={{ marginTop: 28 }}>Everyone</div>
         <button className="gbtn" onClick={google} disabled={busy}>
           <GoogleMark /> {busy ? 'Opening Google…' : 'Sign in with Google'}
         </button>
         <p className="small muted" style={{ marginTop: 10 }}>
-          Use your normal Gmail. First time in, you'll add your student number.
+          Students: use your normal Gmail — first time in, you'll add your student number.
+          Staff: use the email admin set your account up with.
         </p>
 
-        <div className="sect" style={{ marginTop: 30 }}>Staff</div>
+        <div className="sect" style={{ marginTop: 30 }}>Staff without a Google email</div>
         <div className="roles stagger" style={{ marginTop: 0 }}>
-          {STAFF.map((r, i) => (
-            <button key={r.id} className={'role' + (r.gold ? ' role--gold' : '')} style={{ animationDelay: `${0.05 + i * 0.07}s` }}
-              onClick={() => { haptic(8); push(<StaffSignIn role={r.id} />) }}>
-              <span className="glyph"><Icon name={r.icon} size={22} /></span>
-              <span className="rmain">
-                <span className="rname">{r.title}</span>
-                <span className="rdesc">{r.desc}</span>
-              </span>
-              <span className="chev"><Icon name="chev" size={18} stroke={2.1} /></span>
-            </button>
-          ))}
+          <button className="role" onClick={() => { haptic(8); push(<StaffSignIn />) }}>
+            <span className="glyph"><Icon name="mail" size={22} /></span>
+            <span className="rmain">
+              <span className="rname">Email and password</span>
+              <span className="rdesc">Lecturers and admin, with the password admin sent you</span>
+            </span>
+            <span className="chev"><Icon name="chev" size={18} stroke={2.1} /></span>
+          </button>
         </div>
       </div></div>
     </>

@@ -307,11 +307,12 @@ function Credentials({ heading, name, email, password, modules }: { heading: str
     `Hi ${name}, here are your TutorLink sign-in details.`,
     '',
     `1. Open ${appLink()}`,
-    '2. Tap "Lecturer"',
-    `3. Email: ${email}`,
-    `4. Password: ${password}`,
+    `2. Tap "Sign in with Google" and pick ${email}`,
     '',
-    "You'll choose your own password when you sign in.",
+    'If that email isn’t a Google account, tap "Email and password" instead:',
+    `Email: ${email}`,
+    `Password: ${password}`,
+    "(you'll choose your own password straight after)",
     ...(modules?.length ? ['', `Your modules: ${modules.join(', ')}`] : []),
   ].join('\n')
 

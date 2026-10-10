@@ -5,7 +5,7 @@ import { Icon } from '../ui/icons'
 import { BackButton, NavBar } from '../ui/parts'
 import { haptic } from '../ui/haptic'
 
-export function StaffSignIn({ role }: { role: 'lecturer' | 'admin' }) {
+export function StaffSignIn() {
   const { signInWithPassword } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -25,7 +25,7 @@ export function StaffSignIn({ role }: { role: 'lecturer' | 'admin' }) {
 
   return (
     <>
-      <NavBar title={role === 'admin' ? 'Admin' : 'Lecturer'} left={<BackButton />} />
+      <NavBar title="Staff sign-in" left={<BackButton />} />
       <div className="body"><form className="pad" onSubmit={submit}>
         <h2 className="display display--sm">Welcome<br />back</h2>
         <p className="sub">Sign in with the account the programme office set up for you.</p>
@@ -50,9 +50,7 @@ export function StaffSignIn({ role }: { role: 'lecturer' | 'admin' }) {
 
         <div className="note note--plain" style={{ marginTop: 16 }}>
           <Icon name="alert" size={15} />
-          <span>{role === 'admin'
-            ? 'Admin accounts are issued by the programme office.'
-            : 'Lecturer accounts are created by admin, who also sets your modules. Forgot your password? Ask admin.'}</span>
+          <span>Staff accounts are created by admin. Forgot your password? Ask admin for a new one.</span>
         </div>
       </form></div>
     </>

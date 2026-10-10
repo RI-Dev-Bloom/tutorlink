@@ -1,14 +1,33 @@
 /* First sign-in with a password admin generated: pick your own, so the one
-   that was sent over WhatsApp stops working. */
+   that was sent over WhatsApp stops working. Staff who signed in with Google
+   skip this — the server just scrambles the temporary password. */
 
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { friendlyError, supabase } from '../lib/supabase'
-import { NavBar } from '../ui/parts'
+import { adminUsers } from '../lib/data'
+import { Loading, NavBar } from '../ui/parts'
 import { haptic } from '../ui/haptic'
 
+// The access token records how this session signed in ('password' or 'oauth').
+const signedInWithGoogle = (token: string) => {
+  try {
+    const claims = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')))
+    return (claims.amr ?? []).some((m: { method: string }) => m.method === 'oauth')
+  } catch { return false }
+}
+
 export function ChangePassword() {
-  const { profile, reloadProfile, signOut } = useAuth()
+  const { session, profile, reloadProfile, signOut } = useAuth()
+  const [viaGoogle, setViaGoogle] = useState(() => !!session && signedInWithGoogle(session.access_token))
+
+  useEffect(() => {
+    if (!viaGoogle) return
+    adminUsers<{ done: boolean }>({ action: 'retire_temp_password' })
+      .then(r => r.done ? reloadProfile() : setViaGoogle(false))
+      .catch(() => setViaGoogle(false))   // fall back to choosing a password
+  }, [viaGoogle, reloadProfile])
+
   const [pass, setPass] = useState('')
   const [pass2, setPass2] = useState('')
   const [busy, setBusy] = useState(false)
@@ -34,6 +53,8 @@ export function ChangePassword() {
       haptic(24); setError(friendlyError(err)); setBusy(false)
     }
   }
+
+  if (viaGoogle) return <Loading />
 
   return (
     <>

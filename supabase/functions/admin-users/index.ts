@@ -1,7 +1,8 @@
 // TutorLink — admin-users
 // Creates, resets and removes staff logins. Needs the secret key (which
 // bypasses every database rule), so it lives here on the server, never in the app.
-// Every request is checked: the caller must be signed in AND be an admin.
+// Every request is checked: the caller must be signed in, and (apart from
+// retire_temp_password, which only touches the caller's own login) be an admin.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -36,11 +37,23 @@ Deno.serve(async req => {
   const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')
   const { data: who } = await admin.auth.getUser(token)
   if (!who?.user) return json({ error: 'Please sign in again' }, 401)
-  const { data: me } = await admin.from('profiles').select('role').eq('id', who.user.id).single()
-  if (me?.role !== 'admin') return json({ error: 'Admin only' }, 403)
 
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return json({ error: 'Bad request' }, 400) }
+
+  // A staff member who signed in with Google never needs the temporary password
+  // admin sent them, so replace it with one nobody knows and skip the change screen.
+  if (body.action === 'retire_temp_password') {
+    const amr = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).amr ?? []
+    if (!amr.some((m: { method: string }) => m.method === 'oauth')) return json({ done: false })
+    const { error } = await admin.auth.admin.updateUserById(who.user.id, { password: makePassword(32) })
+    if (error) return json({ error: error.message }, 400)
+    await admin.from('profiles').update({ must_change_password: false }).eq('id', who.user.id)
+    return json({ done: true })
+  }
+
+  const { data: me } = await admin.from('profiles').select('role').eq('id', who.user.id).single()
+  if (me?.role !== 'admin') return json({ error: 'Admin only' }, 403)
 
   if (body.action === 'create_lecturer') {
     const title = String(body.title ?? '').trim()

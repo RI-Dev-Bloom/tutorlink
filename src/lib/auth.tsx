@@ -75,12 +75,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { alive = false; sub.subscription.unsubscribe() }
   }, [loadProfile])
 
+  const reloadProfile = useCallback(() => loadProfile(session), [loadProfile, session])
+
   const value: AuthState = {
     ready,
     session,
     profile,
     profileError,
-    reloadProfile: () => loadProfile(session),
+    reloadProfile,
     signInWithGoogle: async () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
