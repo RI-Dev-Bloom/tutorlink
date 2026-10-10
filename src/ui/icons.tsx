@@ -1,0 +1,51 @@
+/* Hand-drawn 24px icons from the demo — one stroke weight, one grid, no emojis. */
+
+const P = {
+  back:   '<path d="M15 18l-6-6 6-6"/>',
+  chev:   '<path d="M9 18l6-6-6-6"/>',
+  mail:   '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.6 7.5l7.3 5.2a2 2 0 0 0 2.2 0l7.3-5.2"/>',
+  inbox:  '<path d="M3 13.5V7a2.5 2.5 0 0 1 2.5-2.5h13A2.5 2.5 0 0 1 21 7v6.5"/><path d="M3 13.5h4.6l1.4 2.6h6l1.4-2.6H21v3.9a2.6 2.6 0 0 1-2.6 2.6H5.6A2.6 2.6 0 0 1 3 17.4z"/>',
+  cap:    '<path d="M2.5 8.5L12 4l9.5 4.5L12 13z"/><path d="M6.5 10.8V16c0 1.4 2.5 2.6 5.5 2.6s5.5-1.2 5.5-2.6v-5.2"/><path d="M21 9v5"/>',
+  board:  '<rect x="3" y="4" width="18" height="13" rx="2"/><path d="M12 17v3M8.5 20h7M8 9.5l2.2 2.2L16 8"/>',
+  shield: '<path d="M12 3l7.5 3v5.4c0 4.3-3 8.1-7.5 9.6-4.5-1.5-7.5-5.3-7.5-9.6V6z"/><path d="M9.3 12l1.9 1.9 3.6-3.8"/>',
+  people: '<circle cx="9" cy="8.5" r="3.3"/><path d="M2.8 19.2c.5-3.1 3.1-5 6.2-5s5.7 1.9 6.2 5"/><path d="M16.2 6.2a3.2 3.2 0 0 1 0 6.1"/><path d="M17.6 14.6c2 .6 3.4 2.2 3.7 4.6"/>',
+  user:   '<circle cx="12" cy="8.4" r="3.7"/><path d="M4.6 20c.6-3.7 3.7-6 7.4-6s6.8 2.3 7.4 6"/>',
+  cal:    '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  calChk: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M9 15l2 2 4-4"/>',
+  clip:   '<path d="M16 4h1.5A2.5 2.5 0 0 1 20 6.5v12A2.5 2.5 0 0 1 17.5 21h-11A2.5 2.5 0 0 1 4 18.5v-12A2.5 2.5 0 0 1 6.5 4H8"/><rect x="8" y="2.5" width="8" height="3.6" rx="1.2"/><path d="M8.5 13l1.8 1.8 3.5-3.6"/>',
+  wallet: '<path d="M3 8.5A2.5 2.5 0 0 1 5.5 6H18a2 2 0 0 1 2 2v1"/><rect x="3" y="8.5" width="18" height="11" rx="2.5"/><path d="M16.5 14h1.2"/>',
+  doc:    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+  upload: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 18v-6M9.5 14.5L12 12l2.5 2.5"/>',
+  plus:   '<path d="M12 5v14M5 12h14"/>',
+  check:  '<path d="M4 12.5l5 5L20 6.5"/>',
+  x:      '<path d="M18 6L6 18M6 6l12 12"/>',
+  alert:  '<path d="M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/>',
+  clock:  '<circle cx="12" cy="12" r="9"/><path d="M12 7v5.2l3.2 1.9"/>',
+  sliders:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1.5 14h5M9.5 8h5M17.5 16h5"/>',
+  down:   '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7.5 10.5L12 15l4.5-4.5M12 15V3"/>',
+  pin:    '<path d="M12 21s7-5.6 7-11a7 7 0 1 0-14 0c0 5.4 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+  out:    '<path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5v11a2.5 2.5 0 0 1-2.5 2.5H15"/><path d="M10 16l-4-4 4-4M6 12h10"/>',
+  home:   '<path d="M4 10.5L12 4l8 6.5V19a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19z"/><path d="M9.5 20.5V14h5v6.5"/>',
+  book:   '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5z"/>',
+} as const
+
+export type IconName = keyof typeof P
+
+export function Icon({ name, size = 22, stroke = 1.7 }: { name: IconName; size?: number; stroke?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={stroke} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"
+      dangerouslySetInnerHTML={{ __html: P[name] }} />
+  )
+}
+
+export function GoogleMark({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+      <path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/>
+    </svg>
+  )
+}

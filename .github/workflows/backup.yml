@@ -1,0 +1,50 @@
+# Weekly copy of the whole database into a separate PRIVATE repo.
+# Never point this at the public app repo — the dump contains student records.
+#
+# Needs two repository secrets:
+#   SUPABASE_DB_URL    — Supabase → Connect → Direct → "Session pooler" connection string
+#                        (GitHub runners can't reach the IPv6-only direct address)
+#   BACKUP_REPO_TOKEN  — fine-grained token with Contents: read & write on the backup repo only
+# and one repository variable:
+#   BACKUP_REPO        — e.g. tutorlink-ri/tutorlink-backups
+name: Backup
+
+on:
+  schedule:
+    - cron: '41 1 * * 0'   # Sundays, 03:41 South African time
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install pg_dump 17 (matches Supabase)
+        run: |
+          sudo apt-get install -y postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y postgresql-client-17
+      - name: Check out the backup repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.BACKUP_REPO }}
+          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          path: backups
+      - name: Dump the database
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" \
+            --schema=public --schema=auth --schema=storage \
+            --no-owner --no-privileges --format=custom \
+            --file=backups/tutorlink.dump
+      - name: Save it
+        working-directory: backups
+        run: |
+          git config user.name  "tutorlink-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tutorlink.dump
+          git commit -m "Backup $(date -u +%Y-%m-%d)" || exit 0
+          git push
