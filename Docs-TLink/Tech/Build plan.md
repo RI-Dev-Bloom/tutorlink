@@ -5,6 +5,8 @@ status: v1
 # Build plan
 
 ## Phase 0: Foundations
+> **Status (10 Oct 2026):** code done and tested (70 database checks pass). Still to do: connect to Supabase and apply the database, create the GitHub repo, and set up Google sign-in.
+
 - Repo on the TutorLink GitHub, with automatic deploys to GitHub Pages.
 - Supabase project: tables, security rules, storage buckets, the first admin.
 - Google sign-in set up (a free Google Cloud project on tutorlink.ri@gmail.com).
