@@ -15,6 +15,19 @@ status: v1
 - Keep-alive and backup jobs.
 
 ## Phase 1: What we ship
+Built in slices, each one tested on a phone before the next.
+
+| Slice | What | Status |
+|---|---|---|
+| 1 | Admin setup: semesters and quota, modules, lecturer accounts | Done 10 Oct 2026 |
+| 2 | Students: module picker, apply to tutor | Next |
+| 3 | Admin: applications queue, approve or decline | |
+| 4 | Admin: tutor management, weekly slots, confirm and pay | |
+| 5 | Tutors: schedule, mark and log sessions, registers, pay | |
+| 6 | Messaging and the lecturer dashboard | |
+| 7 | Push notifications and the install guide | |
+| 8 | Real-phone test pass, docs, handover checklist | |
+
 - **Students:** Google sign-in, student number, [[Module picker]], [[Apply to tutor]].
 - **Admin:** [[Admin overview]], [[Applications]], [[Approve and decline]], [[Tutor management]], [[Settings]] (including semesters and quota), [[Manage modules]], [[Admin creates accounts]].
 - **Tutors:** [[Tutor view switch]], [[Schedule]], [[Log a session]], [[Session quota]], [[Upload a register]], [[Pay]].
