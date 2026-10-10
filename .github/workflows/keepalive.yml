@@ -21,7 +21,7 @@ jobs:
             "${{ vars.SUPABASE_URL }}/rest/v1/rpc/keepalive" \
             -H "apikey: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}" \
             -H "Content-Type: application/json" -d '{}'
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Record the ping
         run: |
           date -u +%Y-%m-%dT%H:%M:%SZ > .github/last-ping
