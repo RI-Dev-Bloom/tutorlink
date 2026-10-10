@@ -4,9 +4,9 @@
 # Needs two repository secrets:
 #   SUPABASE_DB_URL    — Supabase → Connect → Direct → "Session pooler" connection string
 #                        (GitHub runners can't reach the IPv6-only direct address)
-#   BACKUP_REPO_TOKEN  — fine-grained token with Contents: read & write on the backup repo only
+#   BACKUP_DEPLOY_KEY  — private half of an SSH deploy key that has write access to the backup repo only
 # and one repository variable:
-#   BACKUP_REPO        — e.g. tutorlink-ri/tutorlink-backups
+#   BACKUP_REPO        — RI-Dev-Bloom/tutorlink-backups
 name: Backup
 
 on:
@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: ${{ vars.BACKUP_REPO }}
-          token: ${{ secrets.BACKUP_REPO_TOKEN }}
+          ssh-key: ${{ secrets.BACKUP_DEPLOY_KEY }}
           path: backups
       - name: Dump the database
         env:

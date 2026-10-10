@@ -35,7 +35,7 @@ npm run build
 | Variable | `SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` (public by design) |
 | Variable | `BACKUP_REPO` | the **private** backup repo, e.g. `owner/tutorlink-backups` |
 | Secret | `SUPABASE_DB_URL` | Session pooler connection string |
-| Secret | `BACKUP_REPO_TOKEN` | Fine-grained token, Contents read/write on the backup repo only |
+| Secret | `BACKUP_DEPLOY_KEY` | Private SSH key; its public half is a write deploy key on the backup repo only |
 
 Pages: Settings → Pages → Source: **GitHub Actions**.
 
