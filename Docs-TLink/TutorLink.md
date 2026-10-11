@@ -1,5 +1,7 @@
 # TutorLink
 
+> **Picking up where we left off?** Start with [[Continue here]].
+
 TutorLink runs the Rosebank International (Bloemfontein) peer tutoring programme. Strong students apply to tutor modules they've passed, admin approves them, they run sessions, and they get paid per confirmed session. Lecturers and admin talk to tutors inside the app instead of over email.
 
 It's a web app you install on your phone (a PWA). It runs on free services only: GitHub Pages and Supabase. See [[Running costs and upkeep]].
