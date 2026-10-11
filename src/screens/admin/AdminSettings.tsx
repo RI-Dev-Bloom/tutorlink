@@ -1,5 +1,5 @@
 /* Admin → Settings: the numbers that drive the programme, semesters and their quota,
-   and the way into Modules and Lecturers. */
+   and the way into Lecturers, Modules and Response templates. */
 
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../../lib/auth'
@@ -13,6 +13,7 @@ import { Badge, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { Modules } from './Modules'
 import { Lecturers } from './Lecturers'
+import { Templates } from './Templates'
 
 export function AdminSettings() {
   const { profile, signOut } = useAuth()
@@ -84,6 +85,11 @@ export function AdminSettings() {
         <button className="row" onClick={() => push(<Modules />)}>
           <span className="avatar avatar--code"><Icon name="book" size={18} /></span>
           <span className="rmain"><span className="rname">Modules</span><span className="rmeta">Add, rename, hide or merge modules</span></span>
+          <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
+        </button>
+        <button className="row" onClick={() => push(<Templates />)}>
+          <span className="avatar"><Icon name="doc" size={18} /></span>
+          <span className="rmain"><span className="rname">Response templates</span><span className="rmeta">Ready-made replies for approving or declining</span></span>
           <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
         </button>
       </div>

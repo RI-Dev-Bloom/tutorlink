@@ -216,6 +216,21 @@ await denied('signed-out users cannot submit', async () => {
   try { await db.query(`select public.submit_application('x', '[]')`) } finally { await db.exec('rollback') }
 }, 'permission denied')
 
+console.log('\nreviewing applications')
+const [{ id: app2 }] = (await db.query(`select id from public.applications where student_id=$1 and status='pending'`, [ids.stu2])).rows
+await denied('student cannot move their own application along', () => as(ids.stu2, `update public.applications set status='under_review' where id=$1 returning id`, [app2]).then(r => { if (!r.length) throw new Error('no rows (blocked by RLS)') }))
+await ok('admin moves it to under review', () => as(ids.admin, `update public.applications set status='under_review', background_checked=true where id=$1 returning status`, [app2]))
+await denied('admin cannot approve with a plain edit', () => as(ids.admin, `update public.applications set status='approved' where id=$1`, [app2]), 'Use Approve or Decline')
+await ok('templates have a kind', async () => eq((await as(ids.admin, `select kind from public.response_templates order by sort_order`)).map(r => r.kind), ['decline', 'decline', 'decline', 'approve'], 'kinds'))
+await denied('students cannot read templates', async () => { const r = await as(ids.stu2, `select id from public.response_templates`); if (!r.length) throw new Error('none visible') }, 'none visible')
+await ok('admin declines; student reads the reply', async () => {
+  await as(ids.admin, `select public.decide_application($1, false, 'Not this time')`, [app2])
+  eq((await as(ids.stu2, `select status::text, response_message from public.applications where id=$1`, [app2]))[0], { status: 'rejected', response_message: 'Not this time' }, 'reply')
+  return eq((await db.query(`select is_tutor from public.profiles where id=$1`, [ids.stu2])).rows[0].is_tutor, false, 'is_tutor')
+})
+await denied('decided application cannot be reopened', () => as(ids.admin, `update public.applications set status='pending' where id=$1`, [app2]), 'already been decided')
+await ok('student can apply again after a decline', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":91,"applying":true}]') is not null ok`, [path2]))
+
 console.log('\nstorage')
 await ok('student uploads to own results folder', () => as(ids.stu2, `insert into storage.objects (bucket_id, name) values ('results', $1)`, [ids.stu2 + '/statement.pdf']))
 await denied("student cannot upload into someone else's folder", () => as(ids.stu2, `insert into storage.objects (bucket_id, name) values ('results', $1)`, [ids.stu + '/evil.pdf']))

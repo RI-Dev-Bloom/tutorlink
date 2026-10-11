@@ -9,6 +9,7 @@ import { haptic } from '../ui/haptic'
 import { must, useQuery } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import { displayName } from '../lib/types'
+import { AdminApplications, loadOpenCount } from './admin/Applications'
 import { AdminSettings } from './admin/AdminSettings'
 import { ApplyTab } from './student/Apply'
 import { StudentHome } from './student/Home'
@@ -64,10 +65,13 @@ export function Portal() {
   // Tutors keep their student account and flip between the two views.
   const [tutorView, setTutorView] = useState<'tutor' | 'student'>(() => savedView() === 'student' ? 'student' : 'tutor')
   const [tab, setTab] = useState('home')
+  // The Applications tab shows how many are waiting. Shares the 'applications' key, so a decision updates it.
+  const openApps = useQuery('applications', () => profile?.role === 'admin' ? loadOpenCount() : Promise.resolve(0))
   if (!profile) return null
 
   const view: View = profile.role !== 'student' ? profile.role : profile.is_tutor ? tutorView : 'student'
-  const { tabs, titles } = PORTALS[view]
+  const { titles } = PORTALS[view]
+  const tabs = PORTALS[view].tabs.map(t => t.id === 'apps' ? { ...t, count: openApps.data } : t)
 
   const flip = () => {
     const next = tutorView === 'tutor' ? 'student' : 'tutor'
@@ -86,6 +90,7 @@ export function Portal() {
           : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />
           : view === 'student' && tab === 'modules' ? <MyModulesTab />
           : view === 'student' && tab === 'apply' ? <ApplyTab />
+          : view === 'admin' && tab === 'apps' ? <AdminApplications />
           : <Soon />}
       </div>
       <TabBar tabs={tabs} current={tab} onChange={setTab} />
