@@ -12,6 +12,7 @@ import { useOverlay } from '../../ui/Overlay'
 import { Badge, Empty, Loading } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { refreshMine, useMine } from './mine'
+import { SetupCard } from '../../ui/Setup'
 
 export function TutorSchedule({ go, unread }: { go: (tab: string) => void; unread: number }) {
   const { profile } = useAuth()
@@ -36,6 +37,7 @@ export function TutorSchedule({ go, unread }: { go: (tab: string) => void; unrea
         {m.d.tutor.tutor_modules.map(t => <span key={t.module_code} className="chip chip--static chip--sm"><span className="code">{t.module_code}</span>{t.modules?.name}</span>)}
       </div>
 
+      <SetupCard />
       {unread ? (
         <button className="note note--gold" style={{ width: '100%', textAlign: 'left', marginTop: 16 }} onClick={() => { haptic(8); go('inbox') }}>
           <Icon name="mail" size={16} /><span><b>{unread} unread message{unread === 1 ? '' : 's'}</b> from your lecturer or admin</span>

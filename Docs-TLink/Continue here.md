@@ -3,11 +3,12 @@
 *Last updated: 13 Oct 2026*
 
 ## Where we are
-We're in **Phase 1**, building the real app in 8 small slices. **Slices 1–6 are done and live.** Next up is **slice 7**: push notifications, plus a guide for installing the app.
+We're in **Phase 1**, building the real app in 8 small slices. **Slices 1–7 are done and live.** Next up is **slice 8**: testing on real phones, then the handover.
 
 App: https://ri-dev-bloom.github.io/tutorlink/
 
 ## What we've done lately
+- [x] **Slice 7:** push notifications and the install guide (13 Oct)
 - [x] **Slice 6:** messages and the lecturer's "My tutors" screen (13 Oct)
 - [x] **Slice 5:** the tutor's own screens (13 Oct)
 - [x] **Slice 4:** admin tutor management (13 Oct)
@@ -30,10 +31,11 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [x] Tutors: schedule, mark sessions, log extra ones, upload registers, pay with a CSV statement
 - [x] Live messages between tutors, lecturers and admin, with unread counts and "seen"
 - [x] Lecturer home: tutors on their modules, their next session, latest message
+- [x] Push notifications: messages, applications, decisions, confirmed and paid sessions, 7am session reminders
+- [x] "Get set up" card: add to home screen, then turn on notifications
 - [x] Daily keep-alive and weekly backups run by themselves
 
 ## What's left
-- [ ] **Slice 7:** push notifications, plus a guide for installing the app
 - [ ] **Slice 8:** final test on real phones, then handover
 - [ ] Before handover: delete the QA test accounts and data, and suggest a stronger database password
 
@@ -43,6 +45,6 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [ ] Attendance system
 
 ## To pick up again
-Tell Claude "let's start slice 7". Each slice goes live, you test it on your phone, then we move on.
+Tell Claude "let's start slice 8". Each slice goes live, you test it on your phone, then we move on.
 
 Related: [[TutorLink]], [[Build plan]], [[Handover]]

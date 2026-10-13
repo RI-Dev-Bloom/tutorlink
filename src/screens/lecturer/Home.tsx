@@ -11,6 +11,7 @@ import { useStack } from '../../nav/Stack'
 import { Icon } from '../../ui/icons'
 import { Empty, Loading, initials } from '../../ui/parts'
 import { Thread } from '../messages/Thread'
+import { SetupCard } from '../../ui/Setup'
 
 type Row = { module_code: string; tutor: { id: string; full_name: string } | null }
 
@@ -55,6 +56,7 @@ export function LecturerHome() {
         {mods.map(m => <span key={m.module_code} className="chip chip--static chip--sm"><span className="code">{m.module_code}</span>{m.modules?.name}</span>)}
       </div>
 
+      <SetupCard />
       <div className="metrics" style={{ marginTop: 16 }}>
         <div className="metric metric--navy"><div className="n">{tutors.length}</div><div className="l">Tutors</div></div>
         <div className="metric metric--green"><div className="n">{run}</div><div className="l">Sessions run{sem ? ' this semester' : ''}</div></div>

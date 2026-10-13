@@ -374,6 +374,10 @@ button.row:active { background: var(--bg); }
 .step[data-tone=red] i { background: var(--red); }
 .step[data-tone=red] span { color: var(--red); font-weight: 600; }
 
+/* "Get set up" card on home screens */
+.setup { position: relative; margin-top: 16px; padding-right: 40px; }
+.setup__x { position: absolute; top: 4px; right: 4px; margin: 0; width: 40px; height: 40px; color: var(--muted); }
+
 /* quota usage bar */
 .quota { display: block; height: 6px; margin: 10px 0 8px; border-radius: 3px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; }
 .quota span { display: block; height: 100%; background: var(--gold); transition: width .5s var(--ease); }

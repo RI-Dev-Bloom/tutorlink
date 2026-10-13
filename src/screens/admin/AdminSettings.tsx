@@ -14,6 +14,7 @@ import { haptic } from '../../ui/haptic'
 import { Modules } from './Modules'
 import { Lecturers } from './Lecturers'
 import { Templates } from './Templates'
+import { SetupRows } from '../../ui/Setup'
 
 export function AdminSettings() {
   const { profile, signOut } = useAuth()
@@ -93,6 +94,8 @@ export function AdminSettings() {
           <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
         </button>
       </div>
+
+      <SetupRows />
 
       {settings.error || semesters.error ? <p className="err">{settings.error || semesters.error}</p> : null}
 

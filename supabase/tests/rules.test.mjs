@@ -20,6 +20,12 @@ await db.exec(`
   create function storage.foldername(name text) returns text[] language sql immutable as
     $$ select (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1] $$;
   create publication supabase_realtime;
+  -- Vault and pg_net: notifications are recorded here instead of being sent.
+  create schema vault; create table vault.decrypted_secrets (name text, decrypted_secret text);
+  insert into vault.decrypted_secrets values ('push_url', 'https://example.test/send-push'), ('push_secret', 's3cret');
+  create schema net; create table net.sent (id serial, url text, body jsonb, headers jsonb);
+  create function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds int default 5000)
+    returns bigint language sql as $$ insert into net.sent (url, body, headers) values (url, body, headers) returning id::bigint $$;
   grant usage on schema public, auth, storage to authenticated, anon;
   grant execute on function auth.uid() to authenticated, anon;
   grant all on all tables in schema storage to authenticated;
@@ -268,6 +274,60 @@ await ok('admin declines; student reads the reply', async () => {
 })
 await denied('decided application cannot be reopened', () => as(ids.admin, `update public.applications set status='pending' where id=$1`, [app2]), 'already been decided')
 await ok('student can apply again after a decline', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":91,"applying":true}]') is not null ok`, [path2]))
+
+console.log('\npush notifications')
+const pushes = async () => (await db.query(`select body from net.sent order by id`)).rows.map(r => r.body)
+const lastPush = async () => (await pushes()).at(-1)
+await ok('a message buzzes the other person, with the secret', async () => {
+  await db.query(`truncate net.sent`)
+  await as(ids.lect, `select public.send_message($1, 'Venue change', 'Lab 4 today')`, [ids.stu])
+  const r = (await db.query(`select body, headers from net.sent`)).rows[0]
+  eq(r.headers['x-push-secret'], 's3cret', 'secret')
+  return eq({ to: r.body.user_ids, title: r.body.title, body: r.body.body, url: r.body.url }, { to: [ids.stu], title: 'Dr Lecturer One', body: 'Venue change', url: '?view=tutor&tab=inbox' }, 'push')
+})
+await ok('a decision buzzes the student', async () => {
+  await db.query(`truncate net.sent`)
+  const [{ id }] = await as(ids.stu2, `select id from public.applications where status in ('pending','under_review')`)
+  await as(ids.admin, `update public.applications set background_checked = true where id=$1`, [id])
+  await as(ids.admin, `select public.decide_application($1, false, 'Not this time either')`, [id])
+  const p = await lastPush()
+  return eq([p.user_ids, p.title, p.url], [[ids.stu2], 'Your tutoring application', '?view=student&tab=apply'], 'push')
+})
+await ok('a new application buzzes every admin', async () => {
+  await db.query(`truncate net.sent`)
+  await as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":91,"applying":true}]')`, [path2])
+  const p = (await pushes()).find(x => x.title === 'New tutor application')
+  return eq([p?.user_ids, p?.body], [[ids.admin], 'Other Student wants to tutor.'], 'admins')
+})
+await ok('confirming several sessions at once sends one notification', async () => {
+  await db.query(`truncate net.sent`)
+  await db.query(`update public.tutor_quota_overrides set session_quota = 20`)
+  for (const d of ['2026-10-14', '2026-10-15', '2026-10-16']) await as(ids.admin, `insert into public.sessions (tutor_id, module_code, session_date, status) values ($1,'PROG1111',$2,'logged')`, [ids.stu, d])
+  await as(ids.admin, `update public.sessions set status='confirmed' where tutor_id=$1 and status='logged'`, [ids.stu])
+  const all = await pushes()
+  eq(all.length, 1, 'notifications')
+  return eq([all[0].user_ids, all[0].title, all[0].body], [[ids.stu], 'Sessions confirmed', "Admin confirmed 4 sessions. It's on your Pay tab."], 'push')
+})
+await ok('marking them paid says how much', async () => {
+  await db.query(`truncate net.sent`)
+  await as(ids.admin, `update public.sessions set status='paid' where tutor_id=$1 and status='confirmed'`, [ids.stu])
+  return eq((await lastPush()).body, 'R800 for 4 sessions was marked as paid.', 'body')
+})
+await ok("morning reminder lists today's sessions", async () => {
+  await db.query(`truncate net.sent`)
+  const today = (await db.query(`select (now() at time zone 'Africa/Johannesburg')::date::text d`)).rows[0].d
+  await db.query(`insert into public.semesters (name, starts_on, ends_on) select 'Now', $1::date - 1, $1::date + 1 where not exists (select 1 from public.semesters where $1::date between starts_on and ends_on)`, [today])
+  await as(ids.admin, `insert into public.sessions (tutor_id, module_code, session_date, starts_at, venue) values ($1,'PROG1111',$2,'14:00','Lab 2')`, [ids.stu, today])
+  eq((await db.query(`select public.send_session_reminders() n`)).rows[0].n, 1, 'tutors reminded')
+  return eq((await lastPush()).body, '14:00 · PROG1111 · Lab 2', 'body')
+})
+await denied('signed-in users cannot send notifications themselves', () => as(ids.stu, `select public.notify(array[$1]::uuid[], 'x', 'y', 'z')`, [ids.admin]), 'permission denied')
+await ok('without the Vault secrets nothing is sent and nothing breaks', async () => {
+  await db.query(`truncate net.sent`); await db.query(`update vault.decrypted_secrets set name = 'x_' || name`)
+  await as(ids.lect, `select public.send_message($1, 'Quiet', 'No push')`, [ids.stu])
+  await db.query(`update vault.decrypted_secrets set name = substr(name, 3)`)
+  return eq((await pushes()).length, 0, 'sent')
+})
 
 console.log('\nstorage')
 await ok('student uploads to own results folder', () => as(ids.stu2, `insert into storage.objects (bucket_id, name) values ('results', $1)`, [ids.stu2 + '/statement.pdf']))

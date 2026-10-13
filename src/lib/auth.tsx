@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { forgetThisDevice } from './push'
 import { supabase } from './supabase'
 
 export type Role = 'student' | 'lecturer' | 'admin'
@@ -95,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) throw error
     },
     signOut: async () => {
+      await forgetThisDevice()   // while still signed in, so the database lets us
       await supabase.auth.signOut()
     },
   }

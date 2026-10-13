@@ -1,7 +1,7 @@
 /* The four portals. Tabs not built yet show a placeholder; Phase 1 fills them in
    slice by slice (see Docs-TLink/Tech/Build plan.md). */
 
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth, type Profile } from '../lib/auth'
 import { Icon } from '../ui/icons'
 import { Empty, NavBar, TabBar, initials, type Tab } from '../ui/parts'
@@ -12,6 +12,8 @@ import { displayName } from '../lib/types'
 import { AdminApplications, loadOpenCount } from './admin/Applications'
 import { AdminOverview } from './admin/Overview'
 import { AdminSettings } from './admin/AdminSettings'
+import { SetupRows } from '../ui/Setup'
+import { resyncPush } from '../lib/push'
 import { AdminTutors } from './admin/Tutors'
 import { ApplyTab } from './student/Apply'
 import { LecturerHome } from './lecturer/Home'
@@ -72,18 +74,28 @@ const savedView = (): View | null => { try { return localStorage.getItem(VIEW_KE
 export function Portal() {
   const { profile } = useAuth()
   // Tutors keep their student account and flip between the two views.
-  const [tutorView, setTutorView] = useState<'tutor' | 'student'>(() => savedView() === 'student' ? 'student' : 'tutor')
-  const [tab, setTab] = useState('home')
+  // A tapped notification opens the app at ?view=…&tab=… (e.g. a new message → Messages).
+  const [link] = useState(() => {
+    const q = new URLSearchParams(window.location.search)
+    if (q.has('tab') || q.has('view')) history.replaceState(history.state, '', window.location.pathname)
+    return { view: q.get('view'), tab: q.get('tab') }
+  })
+  const [tutorView, setTutorView] = useState<'tutor' | 'student'>(() =>
+    link.view === 'student' || link.view === 'tutor' ? link.view : savedView() === 'student' ? 'student' : 'tutor')
+  const [tab, setTab] = useState(link.tab ?? 'home')
   // The Applications tab shows how many are waiting. Shares the 'applications' key, so a decision updates it.
   const openApps = useQuery('applications', () => profile?.role === 'admin' ? loadOpenCount() : Promise.resolve(0))
   // Plain students have no messages; everyone else gets live updates and an unread count.
   const messaging = !!profile && (profile.role !== 'student' || profile.is_tutor)
   const inbox = useQuery('inbox', () => messaging ? loadInbox() : Promise.resolve([]))
   useLiveMessages(messaging)
+  const uid = profile?.id
+  useEffect(() => { if (uid) resyncPush(uid) }, [uid])
   if (!profile) return null
 
   const view: View = profile.role !== 'student' ? profile.role : profile.is_tutor ? tutorView : 'student'
   const { titles } = PORTALS[view]
+  if (!titles[tab]) setTab('home')   // a link to a tab this person doesn't have
   const unread = unreadTotal(inbox.data)
   const tabs = PORTALS[view].tabs.map(t => t.id === 'apps' ? { ...t, count: openApps.data } : t.id === 'inbox' ? { ...t, count: unread } : t)
 
@@ -156,6 +168,8 @@ function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
 
       {view === 'lecturer' ? <MyModules id={profile.id} /> : null}
       {view === 'tutor' ? <TutorModules id={profile.id} /> : null}
+
+      <SetupRows />
 
       <button className="btn btn--outline" style={{ marginTop: 26 }} onClick={() => { haptic(10); signOut() }}>
         <Icon name="out" size={18} /> Sign out

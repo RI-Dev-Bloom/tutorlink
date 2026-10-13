@@ -8,6 +8,7 @@ import { Icon } from '../../ui/icons'
 import { Badge } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { appKey } from './Apply'
+import { SetupCard } from '../../ui/Setup'
 
 export function StudentHome({ go }: { go: (tab: string) => void }) {
   const { profile } = useAuth()
@@ -23,6 +24,7 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
       <p className="eyebrow">Rosebank International</p>
       <h2 className="display display--sm">Hi {first}</h2>
       <p className="sub">Your tutoring programme, in one place.</p>
+      <SetupCard />
 
       <div className="sect" style={{ marginTop: 24 }}>This semester</div>
       <div className="card">

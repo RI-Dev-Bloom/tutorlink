@@ -11,6 +11,7 @@ import { Badge, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { loadOpenCount } from './Applications'
 import { TutorDetail } from './TutorDetail'
+import { SetupCard } from '../../ui/Setup'
 
 export function AdminOverview({ go }: { go: (tab: string) => void }) {
   const { profile } = useAuth()
@@ -45,6 +46,7 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
       <h2 className="display display--sm">{first ? `Hi ${first}` : 'Overview'}</h2>
       <p className="sub">{sem ? `${sem.name} · until ${fDate(sem.ends_on)}` : 'No semester set up yet'}</p>
 
+      <SetupCard />
       <div className="metrics" style={{ marginTop: 18 }}>
         <button className="metric metric--amber" style={{ textAlign: 'left' }} onClick={() => open('apps')}>
           <div className="n">{apps.data ?? '–'}</div><div className="l">Applications waiting</div>

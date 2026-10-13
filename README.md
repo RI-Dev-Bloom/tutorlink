@@ -36,6 +36,11 @@ npm run build
 | Variable | `BACKUP_REPO` | the **private** backup repo, e.g. `owner/tutorlink-backups` |
 | Secret | `SUPABASE_DB_URL` | Session pooler connection string |
 | Secret | `BACKUP_DEPLOY_KEY` | Private SSH key; its public half is a write deploy key on the backup repo only |
+| Variable | `VAPID_PUBLIC_KEY` | Web push public key (public by design) |
+
+**Push notifications** are configured in Supabase Vault (Dashboard → Project Settings → Vault), not in GitHub:
+`push_url` (the send-push function URL), `push_secret` (shared by the database and send-push),
+`vapid_public_key`, `vapid_private_key`, `vapid_subject`. The `session-reminders` cron job sends tutors a 07:00 reminder.
 
 Pages: Settings → Pages → Source: **GitHub Actions**.
 
@@ -43,3 +48,4 @@ Pages: Settings → Pages → Source: **GitHub Actions**.
 
 - The Supabase **secret key** never goes in `src/`, `.env` or any `VITE_` variable. It lives only in Edge Functions.
 - Database backups never go in this (public) repo.
+- The web push **private** key lives only in Vault.
