@@ -516,6 +516,7 @@ button.row:active { background: var(--bg); }
   transition: transform .24s var(--spring);
 }
 .fab:active { transform: scale(.94); }
+.fab[disabled] { opacity: .55; box-shadow: none; }
 .fab--low { bottom: calc(20px + var(--sab)); }
 
 /* ---------- sheet ---------------------------------------- */

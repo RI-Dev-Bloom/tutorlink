@@ -7,9 +7,9 @@ status: v1
 **In short:** the tutor records a session they ran. It stays Pending until admin confirms it.
 
 ## What it does
-- **Mark** on a live session logs it in one tap.
-- **Log session** records one that wasn't on the timetable: date, module, number of students.
-- The session shows an amber **Pending** badge until admin confirms it.
+- On the **Schedule** tab, sessions that have happened (today included) show a **Mark** button. The tutor taps it and types how many students came.
+- On the **Sessions** tab, **Log a session** records one that wasn't on the timetable: date, module, times, venue and number of students. The button says "No sessions left" once the limit is reached.
+- The session shows an amber **Waiting** badge until admin confirms it. A session nobody marked shows **Not marked**, and admin can still confirm it or tap Didn't happen.
 
 ## Why it's here
 Logging while you're still in the room is quicker and more accurate than doing it at night. And because only admin can confirm, logging a session never pays you by itself.

@@ -7,10 +7,11 @@ status: v1
 **In short:** the tutor's home screen shows their upcoming sessions.
 
 ## What it does
-- Lists upcoming sessions: day, time, venue, module, expected students.
-- A session happening now gets a **Mark** button. See [[Log a session]].
-- Shows this month's totals and the [[Session quota]] at the top.
-- If there are unread messages, a banner links to them.
+- "**9 of 24 sessions used**" with a bar at the top. See [[Session quota]].
+- **To mark:** sessions that have happened, each with a **Mark** button. See [[Log a session]].
+- **Coming up:** the next sessions with day, time, venue and module. Weeks admin cancelled show crossed out.
+- **Waiting for admin:** a reminder of marked sessions not yet confirmed, with a nudge to upload the register.
+- (Coming in slice 6: a banner for unread messages.)
 
 ## Why it's here
 The old system only recorded sessions after they happened, so nobody knew in advance where tutors were supposed to be.

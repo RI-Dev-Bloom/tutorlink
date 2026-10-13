@@ -226,6 +226,19 @@ await denied('signed-out users cannot submit', async () => {
   try { await db.query(`select public.submit_application('x', '[]')`) } finally { await db.exec('rollback') }
 }, 'permission denied')
 
+console.log('\nregisters')
+const s1012 = (await db.query(`select id from public.sessions where tutor_id=$1 and session_date='2026-10-12'`, [ids.stu])).rows[0].id
+await ok('tutor files a register against their own session', () => as(ids.stu, `insert into public.registers (tutor_id, module_code, session_id, storage_path, file_name) values ($1,'PROG1111',$2,$3,'r.jpg') returning id`, [ids.stu, s1012, ids.stu + '/r.jpg']))
+await denied('not for a module they do not tutor', () => as(ids.stu, `insert into public.registers (tutor_id, module_code, storage_path, file_name) values ($1,'NETW1111',$2,'r.jpg')`, [ids.stu, ids.stu + '/r.jpg']))
+await denied('not against someone else\'s session', async () => {
+  await db.query(`insert into public.tutor_modules values ($1,'PROG1111') on conflict do nothing`, [ids.stu2])
+  await db.query(`update public.profiles set is_tutor = true where id=$1`, [ids.stu2])
+  await as(ids.stu2, `insert into public.registers (tutor_id, module_code, session_id, storage_path, file_name) values ($1,'PROG1111',$2,$3,'r.jpg')`, [ids.stu2, s1012, ids.stu2 + '/r.jpg'])
+})
+await ok('other tutors cannot see it', async () => eq((await as(ids.stu2, `select id from public.registers`)).length, 0, 'visible'))
+await db.query(`update public.profiles set is_tutor = false where id=$1`, [ids.stu2])
+await db.query(`delete from public.tutor_modules where tutor_id=$1`, [ids.stu2])
+
 console.log('\nreviewing applications')
 const [{ id: app2 }] = (await db.query(`select id from public.applications where student_id=$1 and status='pending'`, [ids.stu2])).rows
 await denied('student cannot move their own application along', () => as(ids.stu2, `update public.applications set status='under_review' where id=$1 returning id`, [app2]).then(r => { if (!r.length) throw new Error('no rows (blocked by RLS)') }))

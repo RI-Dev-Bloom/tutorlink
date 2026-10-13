@@ -2,11 +2,11 @@
    one-off sessions and registers. Everything admin does for a tutor, on one page. */
 
 import { useMemo, useState, type FormEvent } from 'react'
-import { invalidate, must, useQuery } from '../../lib/data'
+import { invalidate, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
 import {
-  SESSION_COLS, WEEKDAYS, counts, currentSemester, fDay, hhmm, loadSemesters, needsConfirming, owed,
-  type Session, type Slot, type TutorRow,
+  WEEKDAYS, counts, currentSemester, hhmm, loadSemesters, loadTutor, needsConfirming, owed, when,
+  type Register, type Session, type Slot, type TutorRow,
 } from '../../lib/tutors'
 import { fDate, rand, todayISO, type Semester } from '../../lib/types'
 import { useStack } from '../../nav/Stack'
@@ -16,32 +16,9 @@ import { BackButton, Badge, Loading, NavBar, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { SlotForm } from './SlotForm'
 
-type Register = { id: string; module_code: string; storage_path: string; file_name: string; uploaded_at: string }
-
-type TutorData = {
-  tutor: TutorRow
-  sessions: Session[]
-  slots: Slot[]
-  override: number | null
-  registers: Register[]
-}
-
-async function loadTutor(id: string, semId: string | null): Promise<TutorData> {
-  const [tutor, sessions, slots, override, registers] = await Promise.all([
-    must(supabase.from('profiles').select('id, full_name, student_number, email, tutor_modules(module_code, approved_at, modules(name))').eq('id', id).single<TutorRow>()),
-    must(supabase.from('sessions').select(SESSION_COLS).eq('tutor_id', id).order('session_date').returns<Session[]>()),
-    must(supabase.from('schedule_slots').select('id, module_code, weekday, starts_at, ends_at, venue, starts_on, until').eq('tutor_id', id).order('weekday').returns<Slot[]>()),
-    semId ? must(supabase.from('tutor_quota_overrides').select('session_quota').eq('tutor_id', id).eq('semester_id', semId).maybeSingle<{ session_quota: number }>()) : null,
-    must(supabase.from('registers').select('id, module_code, storage_path, file_name, uploaded_at').eq('tutor_id', id).order('uploaded_at', { ascending: false }).limit(20).returns<Register[]>()),
-  ])
-  if (!tutor) throw new Error('Tutor not found')
-  return { tutor, sessions: sessions ?? [], slots: slots ?? [], override: override?.session_quota ?? null, registers: registers ?? [] }
-}
-
 // Anything that changes a tutor's sessions refreshes every screen that shows them.
 const refresh = () => invalidate('tutor', 'tutors', 'sessions', 'overrides')
 
-const when = (s: Session) => [fDay(s.session_date), s.starts_at ? `${hhmm(s.starts_at)}–${hhmm(s.ends_at)}` : ''].filter(Boolean).join(' · ')
 
 export function TutorDetail({ id }: { id: string }) {
   const { push } = useStack()
@@ -133,7 +110,8 @@ export function TutorDetail({ id }: { id: string }) {
                   <span className="rmain">
                     <span className="rname">{when(s)}</span>
                     <span className="rmeta"><span className="mono">{s.module_code}</span>
-                      {s.status === 'logged' ? ` · ${s.students_attended ?? 0} students` : ' · tutor didn’t mark it'}</span>
+                      {s.status === 'logged' ? ` · ${s.students_attended ?? 0} students` : ' · tutor didn’t mark it'}
+                      {d.registers.some(r => r.session_id === s.id) ? ' · register ✓' : ''}</span>
                   </span>
                   <span className="rside" style={{ gap: 6 }}>
                     {s.status === 'scheduled' ? (

@@ -14,6 +14,10 @@ import { AdminOverview } from './admin/Overview'
 import { AdminSettings } from './admin/AdminSettings'
 import { AdminTutors } from './admin/Tutors'
 import { ApplyTab } from './student/Apply'
+import { TutorPay } from './tutor/Pay'
+import { TutorSchedule } from './tutor/Schedule'
+import { TutorSessions } from './tutor/Sessions'
+import { loadMyTutorModules } from '../lib/student'
 import { StudentHome } from './student/Home'
 import { MyModulesTab } from './student/Modules'
 
@@ -92,6 +96,9 @@ export function Portal() {
           : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />
           : view === 'student' && tab === 'modules' ? <MyModulesTab />
           : view === 'student' && tab === 'apply' ? <ApplyTab />
+          : view === 'tutor' && tab === 'home' ? <TutorSchedule go={setTab} />
+          : view === 'tutor' && tab === 'sessions' ? <TutorSessions />
+          : view === 'tutor' && tab === 'pay' ? <TutorPay />
           : view === 'admin' && tab === 'apps' ? <AdminApplications />
           : view === 'admin' && tab === 'tutors' ? <AdminTutors />
           : view === 'admin' && tab === 'home' ? <AdminOverview go={setTab} />
@@ -138,11 +145,28 @@ function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
       </div>
 
       {view === 'lecturer' ? <MyModules id={profile.id} /> : null}
+      {view === 'tutor' ? <TutorModules id={profile.id} /> : null}
 
       <button className="btn btn--outline" style={{ marginTop: 26 }} onClick={() => { haptic(10); signOut() }}>
         <Icon name="out" size={18} /> Sign out
       </button>
     </div>
+  )
+}
+
+/* Tutors see the modules they were approved for. More can be added by applying again. */
+function TutorModules({ id }: { id: string }) {
+  const mods = useQuery(`my-tutor-modules:${id}`, () => loadMyTutorModules(id))
+  return (
+    <>
+      <div className="sect" style={{ marginTop: 26 }}>Modules you tutor</div>
+      <div className="chips">
+        {(mods.data ?? []).map(m => (
+          <span key={m.module_code} className="chip chip--static"><span className="code">{m.module_code}</span>{m.modules?.name}</span>
+        ))}
+      </div>
+      <p className="small muted" style={{ marginTop: 10 }}>Want to tutor another module? Switch to Student and apply again.</p>
+    </>
   )
 }
 

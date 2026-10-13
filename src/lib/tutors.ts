@@ -41,6 +41,29 @@ export type TutorRow = {
   tutor_modules: { module_code: string; approved_at: string; modules: { name: string } | null }[]
 }
 
+/* One tutor's page — used by admin's tutor page and by the tutor's own screens. */
+export type Register = { id: string; module_code: string; session_id: string | null; storage_path: string; file_name: string; uploaded_at: string }
+
+export type TutorData = {
+  tutor: TutorRow
+  sessions: Session[]
+  slots: Slot[]
+  override: number | null
+  registers: Register[]
+}
+
+export async function loadTutor(id: string, semId: string | null): Promise<TutorData> {
+  const [tutor, sessions, slots, override, registers] = await Promise.all([
+    must(supabase.from('profiles').select('id, full_name, student_number, email, tutor_modules(module_code, approved_at, modules(name))').eq('id', id).single<TutorRow>()),
+    must(supabase.from('sessions').select(SESSION_COLS).eq('tutor_id', id).order('session_date').returns<Session[]>()),
+    must(supabase.from('schedule_slots').select('id, module_code, weekday, starts_at, ends_at, venue, starts_on, until').eq('tutor_id', id).order('weekday').returns<Slot[]>()),
+    semId ? must(supabase.from('tutor_quota_overrides').select('session_quota').eq('tutor_id', id).eq('semester_id', semId).maybeSingle<{ session_quota: number }>()) : null,
+    must(supabase.from('registers').select('id, module_code, session_id, storage_path, file_name, uploaded_at').eq('tutor_id', id).order('uploaded_at', { ascending: false }).limit(20).returns<Register[]>()),
+  ])
+  if (!tutor) throw new Error('Tutor not found')
+  return { tutor, sessions: sessions ?? [], slots: slots ?? [], override: override?.session_quota ?? null, registers: registers ?? [] }
+}
+
 export const SESSION_COLS = 'id, tutor_id, module_code, semester_id, slot_id, session_date, starts_at, ends_at, venue, students_attended, status, rate, paid_at'
 
 export const loadSemesters = async () =>
@@ -85,3 +108,5 @@ export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
 
 export const fDay = (iso: string) =>
   new Date(iso + 'T00:00:00').toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' })
+
+export const when = (s: Session) => [fDay(s.session_date), s.starts_at ? `${hhmm(s.starts_at)}–${hhmm(s.ends_at)}` : ''].filter(Boolean).join(' · ')
