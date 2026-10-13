@@ -184,6 +184,16 @@ await denied('paid session is locked', () => as(ids.admin, `update public.sessio
 await ok('lecturer sees PROG1111 sessions', async () => (await as(ids.lect, `select count(*)::int n from public.sessions`))[0])
 await ok('lecturer2 sees none', async () => eq((await as(ids.lect2, `select count(*)::int n from public.sessions`))[0].n, 0, 'sessions'))
 
+console.log('\nending a weekly slot')
+const slotId = (await db.query(`select id from public.schedule_slots limit 1`)).rows[0].id
+await denied('tutor cannot end a slot', () => as(ids.stu, `select public.admin_end_slot($1,'2026-10-13')`, [slotId]), 'Admin only')
+await ok('admin ends it from 13 Oct: only the 19 Oct session is cancelled', async () => {
+  eq((await as(ids.admin, `select public.admin_end_slot($1,'2026-10-13') n`, [slotId]))[0].n, 1, 'cancelled')
+  eq((await db.query(`select session_date::text d, status::text s from public.sessions where slot_id=$1 order by session_date`, [slotId])).rows,
+    [{ d: '2026-10-05', s: 'paid' }, { d: '2026-10-12', s: 'scheduled' }, { d: '2026-10-19', s: 'cancelled' }], 'sessions')
+  return eq((await db.query(`select until::text from public.schedule_slots where id=$1`, [slotId])).rows[0].until, '2026-10-12', 'until')
+})
+
 console.log('\nmodule merge')
 await ok('admin merges WEBD1111 into PROG1111', async () => {
   await as(ids.stu2, `insert into public.student_modules values ($1,'WEBD1111')`, [ids.stu2])

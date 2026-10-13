@@ -1,0 +1,87 @@
+/* Tutors, their sessions and the quota — shared by admin's Overview, Tutors and tutor pages. */
+
+import { must } from './data'
+import { supabase } from './supabase'
+import { todayISO, type Semester } from './types'
+
+export type SessionStatus = 'scheduled' | 'logged' | 'confirmed' | 'paid' | 'cancelled'
+
+export type Session = {
+  id: string
+  tutor_id: string
+  module_code: string
+  semester_id: string
+  slot_id: string | null
+  session_date: string
+  starts_at: string | null
+  ends_at: string | null
+  venue: string
+  students_attended: number | null
+  status: SessionStatus
+  rate: number | null
+  paid_at: string | null
+}
+
+export type Slot = {
+  id: string
+  module_code: string
+  weekday: number
+  starts_at: string
+  ends_at: string
+  venue: string
+  starts_on: string
+  until: string
+}
+
+export type TutorRow = {
+  id: string
+  full_name: string
+  student_number: string | null
+  email: string
+  tutor_modules: { module_code: string; approved_at: string; modules: { name: string } | null }[]
+}
+
+export const SESSION_COLS = 'id, tutor_id, module_code, semester_id, slot_id, session_date, starts_at, ends_at, venue, students_attended, status, rate, paid_at'
+
+export const loadSemesters = async () =>
+  (await must(supabase.from('semesters').select('*').order('starts_on', { ascending: false }).returns<Semester[]>())) ?? []
+
+/* The semester we're in; between semesters, the next one; otherwise the latest. */
+export function currentSemester(list: Semester[]): Semester | null {
+  const today = todayISO()
+  return list.find(s => s.starts_on <= today && today <= s.ends_on)
+    ?? [...list].reverse().find(s => s.starts_on > today)
+    ?? list[0] ?? null
+}
+
+export const loadTutors = async () =>
+  (await must(supabase.from('profiles')
+    .select('id, full_name, student_number, email, tutor_modules(module_code, approved_at, modules(name))')
+    .eq('is_tutor', true).order('full_name').returns<TutorRow[]>())) ?? []
+
+/* Every session that isn't settled yet, plus this semester's — enough for counts and money. */
+export const loadOpenSessions = async (semesterId: string | null) => {
+  let q = supabase.from('sessions').select(SESSION_COLS)
+  q = semesterId ? q.or(`status.in.(scheduled,logged,confirmed),semester_id.eq.${semesterId}`) : q.in('status', ['scheduled', 'logged', 'confirmed'])
+  return (await must(q.order('session_date').returns<Session[]>())) ?? []
+}
+
+export const loadOverrides = async (semesterId: string) =>
+  (await must(supabase.from('tutor_quota_overrides').select('tutor_id, session_quota').eq('semester_id', semesterId)
+    .returns<{ tutor_id: string; session_quota: number }[]>())) ?? []
+
+export const isPast = (s: Pick<Session, 'session_date'>) => s.session_date <= todayISO()
+
+/* Waiting for admin: the tutor marked it, or it has happened and nobody marked it. */
+export const needsConfirming = (s: Session) => s.status === 'logged' || (s.status === 'scheduled' && s.session_date < todayISO())
+
+export const counts = (s: Session, semesterId: string | null) => s.semester_id === semesterId && s.status !== 'cancelled'
+
+export const owed = (list: Session[]) => list.filter(s => s.status === 'confirmed').reduce((n, s) => n + Number(s.rate ?? 0), 0)
+
+export const hhmm = (t: string | null) => (t ? t.slice(0, 5) : '')
+
+export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+export const fDay = (iso: string) =>
+  new Date(iso + 'T00:00:00').toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' })

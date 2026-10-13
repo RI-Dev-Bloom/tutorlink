@@ -6,8 +6,11 @@ import { friendlyError, supabase } from './supabase'
 
 const listeners = new Map<string, Set<() => void>>()
 
+// 'sessions' also reloads 'sessions:open:…', 'tutor' reloads every 'tutor:<id>', and so on.
 export function invalidate(...keys: string[]) {
-  keys.forEach(k => listeners.get(k)?.forEach(fn => fn()))
+  listeners.forEach((fns, key) => {
+    if (keys.some(k => key === k || key.startsWith(k + ':'))) fns.forEach(fn => fn())
+  })
 }
 
 export function useQuery<T>(key: string, load: () => Promise<T>) {

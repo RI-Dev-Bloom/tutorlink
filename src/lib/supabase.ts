@@ -28,6 +28,8 @@ export function friendlyError(e: unknown): string {
   if (msg.includes('application_marks_pkey')) return 'Each module can only be listed once'
   if (msg.includes('mime type')) return 'Use a PDF or a photo (JPG or PNG)'
   if (msg.includes('maximum allowed size')) return 'That file is over the 10 MB limit'
+  if (msg.includes('Session quota reached')) return msg.replace('Session quota reached', 'No sessions left this semester') + ' used'
+  if (msg.includes('tutor_quota_overrides_session_quota_check')) return 'The limit can’t be negative'
   if (msg.includes('Failed to fetch')) return 'No connection — check your signal and try again'
   return msg
 }

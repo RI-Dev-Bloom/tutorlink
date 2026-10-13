@@ -1,13 +1,14 @@
 # Continue here
 
-*Last updated: 11 Oct 2026*
+*Last updated: 13 Oct 2026*
 
 ## Where we are
-We're in **Phase 1**, building the real app in 8 small slices. **Slices 1–3 are done and live.** Next up is **slice 4**.
+We're in **Phase 1**, building the real app in 8 small slices. **Slices 1–4 are done and live.** Next up is **slice 5**: the tutor's own screens.
 
 App: https://ri-dev-bloom.github.io/tutorlink/
 
-## What we did this session
+## What we've done lately
+- [x] **Slice 4:** admin tutor management (13 Oct)
 - [x] Lecturers can sign in with Google. The password is only a backup for emails that aren't Google ones.
 - [x] Admin can search lecturers and remove one who leaves
 - [x] **Slice 2:** students pick their modules and apply to tutor
@@ -22,10 +23,11 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [x] Apply to tutor: upload results, enter marks, track the status
 - [x] Admin: applications queue, background check, approve or decline with templates
 - [x] Approved students get a **Tutor** button to switch views
+- [x] Admin Overview: what needs doing at a glance
+- [x] Admin tutor pages: session limit, weekly slots, cancel a week, confirm, pay
 - [x] Daily keep-alive and weekly backups run by themselves
 
 ## What's left
-- [ ] **Slice 4:** admin tutor management: weekly session times, per-tutor session limit, confirm and pay
 - [ ] **Slice 5:** tutor screens: schedule, mark sessions, upload registers, pay
 - [ ] **Slice 6:** messages, and the lecturer's "my tutors" screen
 - [ ] **Slice 7:** push notifications, plus a guide for installing the app
@@ -38,6 +40,6 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [ ] Attendance system
 
 ## To pick up again
-Tell Claude "let's start slice 4". Each slice goes live, you test it on your phone, then we move on.
+Tell Claude "let's start slice 5". Each slice goes live, you test it on your phone, then we move on.
 
 Related: [[TutorLink]], [[Build plan]], [[Handover]]

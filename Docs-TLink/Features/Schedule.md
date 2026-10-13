@@ -18,6 +18,8 @@ The old system only recorded sessions after they happened, so nobody knew in adv
 ## Who sets the timetable
 **Admin does.** For each tutor, admin adds a weekly slot: the **day**, the **start and end time**, the **venue**, the module, and **until when** it runs (an end date). The app fills in a session for every week up to that date.
 
+While admin fills in the slot, the app does a trial run (nothing is saved) and shows how many sessions it will add, how many won't fit the limit, and how many fall outside the semester.
+
 ## Rules
 - If the slot would create more sessions than the tutor has left in their [[Session quota]], admin gets a warning, and only the sessions that fit are created.
 - Admin can cancel a single week (e.g. a public holiday) without deleting the whole slot. Cancelled sessions don't count towards the quota.

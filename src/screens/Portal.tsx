@@ -10,7 +10,9 @@ import { must, useQuery } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import { displayName } from '../lib/types'
 import { AdminApplications, loadOpenCount } from './admin/Applications'
+import { AdminOverview } from './admin/Overview'
 import { AdminSettings } from './admin/AdminSettings'
+import { AdminTutors } from './admin/Tutors'
 import { ApplyTab } from './student/Apply'
 import { StudentHome } from './student/Home'
 import { MyModulesTab } from './student/Modules'
@@ -91,6 +93,8 @@ export function Portal() {
           : view === 'student' && tab === 'modules' ? <MyModulesTab />
           : view === 'student' && tab === 'apply' ? <ApplyTab />
           : view === 'admin' && tab === 'apps' ? <AdminApplications />
+          : view === 'admin' && tab === 'tutors' ? <AdminTutors />
+          : view === 'admin' && tab === 'home' ? <AdminOverview go={setTab} />
           : <Soon />}
       </div>
       <TabBar tabs={tabs} current={tab} onChange={setTab} />
