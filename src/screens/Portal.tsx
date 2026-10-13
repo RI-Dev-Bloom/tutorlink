@@ -14,6 +14,9 @@ import { AdminOverview } from './admin/Overview'
 import { AdminSettings } from './admin/AdminSettings'
 import { AdminTutors } from './admin/Tutors'
 import { ApplyTab } from './student/Apply'
+import { LecturerHome } from './lecturer/Home'
+import { Inbox } from './messages/Inbox'
+import { loadInbox, unreadTotal, useLiveMessages } from '../lib/messages'
 import { TutorPay } from './tutor/Pay'
 import { TutorSchedule } from './tutor/Schedule'
 import { TutorSessions } from './tutor/Sessions'
@@ -73,11 +76,16 @@ export function Portal() {
   const [tab, setTab] = useState('home')
   // The Applications tab shows how many are waiting. Shares the 'applications' key, so a decision updates it.
   const openApps = useQuery('applications', () => profile?.role === 'admin' ? loadOpenCount() : Promise.resolve(0))
+  // Plain students have no messages; everyone else gets live updates and an unread count.
+  const messaging = !!profile && (profile.role !== 'student' || profile.is_tutor)
+  const inbox = useQuery('inbox', () => messaging ? loadInbox() : Promise.resolve([]))
+  useLiveMessages(messaging)
   if (!profile) return null
 
   const view: View = profile.role !== 'student' ? profile.role : profile.is_tutor ? tutorView : 'student'
   const { titles } = PORTALS[view]
-  const tabs = PORTALS[view].tabs.map(t => t.id === 'apps' ? { ...t, count: openApps.data } : t)
+  const unread = unreadTotal(inbox.data)
+  const tabs = PORTALS[view].tabs.map(t => t.id === 'apps' ? { ...t, count: openApps.data } : t.id === 'inbox' ? { ...t, count: unread } : t)
 
   const flip = () => {
     const next = tutorView === 'tutor' ? 'student' : 'tutor'
@@ -96,7 +104,9 @@ export function Portal() {
           : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />
           : view === 'student' && tab === 'modules' ? <MyModulesTab />
           : view === 'student' && tab === 'apply' ? <ApplyTab />
-          : view === 'tutor' && tab === 'home' ? <TutorSchedule go={setTab} />
+          : tab === 'inbox' ? <Inbox />
+          : view === 'lecturer' && tab === 'home' ? <LecturerHome />
+          : view === 'tutor' && tab === 'home' ? <TutorSchedule go={setTab} unread={unread} />
           : view === 'tutor' && tab === 'sessions' ? <TutorSessions />
           : view === 'tutor' && tab === 'pay' ? <TutorPay />
           : view === 'admin' && tab === 'apps' ? <AdminApplications />

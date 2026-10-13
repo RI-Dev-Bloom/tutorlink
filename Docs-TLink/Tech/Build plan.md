@@ -24,8 +24,8 @@ Built in slices, each one tested on a phone before the next.
 | 3 | Admin: applications queue, approve or decline | Done 11 Oct 2026 |
 | 4 | Admin: tutor management, weekly slots, confirm and pay | Done 13 Oct 2026 |
 | 5 | Tutors: schedule, mark and log sessions, registers, pay | Done 13 Oct 2026 |
-| 6 | Messaging and the lecturer dashboard | Next |
-| 7 | Push notifications and the install guide | |
+| 6 | Messaging and the lecturer dashboard | Done 13 Oct 2026 |
+| 7 | Push notifications and the install guide | Next |
 | 8 | Real-phone test pass, docs, handover checklist | |
 
 - **Students:** Google sign-in, student number, [[Module picker]], [[Apply to tutor]].

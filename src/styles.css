@@ -269,6 +269,12 @@ button.row:active { background: var(--bg); }
 .tag--lect  { background: var(--goldBg); color: var(--goldD); }
 .tag--admin { background: var(--blueBg); color: var(--blue); }
 .tag--you   { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.tag--tutor { background: var(--greenBg); color: var(--green); }
+.unread-count {
+  min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
+  display: inline-grid; place-items: center;
+  background: var(--gold); color: var(--navy); font-size: 11px; font-weight: 700;
+}
 
 /* ---------- chips ---------------------------------------- */
 
@@ -332,6 +338,7 @@ button.row:active { background: var(--bg); }
 .tl.mine::before   { border-color: var(--navy); background: var(--navy); }
 .tl.unread::before { border-color: var(--gold); background: var(--gold); transform: scale(1.22); }
 .tl.open::before   { transform: scale(1.3); }
+.tl-head { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; text-align: left; }
 .tl-top { display: flex; align-items: baseline; gap: 10px; }
 .tl-topic { flex: 1; font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; transition: color .2s ease; }
 .tl.open .tl-topic { color: var(--navy); }

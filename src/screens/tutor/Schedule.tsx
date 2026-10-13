@@ -13,7 +13,7 @@ import { Badge, Empty, Loading } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { refreshMine, useMine } from './mine'
 
-export function TutorSchedule({ go }: { go: (tab: string) => void }) {
+export function TutorSchedule({ go, unread }: { go: (tab: string) => void; unread: number }) {
   const { profile } = useAuth()
   const { openSheet } = useOverlay()
   const m = useMine()
@@ -35,6 +35,12 @@ export function TutorSchedule({ go }: { go: (tab: string) => void }) {
       <div className="chips" style={{ marginTop: 10 }}>
         {m.d.tutor.tutor_modules.map(t => <span key={t.module_code} className="chip chip--static chip--sm"><span className="code">{t.module_code}</span>{t.modules?.name}</span>)}
       </div>
+
+      {unread ? (
+        <button className="note note--gold" style={{ width: '100%', textAlign: 'left', marginTop: 16 }} onClick={() => { haptic(8); go('inbox') }}>
+          <Icon name="mail" size={16} /><span><b>{unread} unread message{unread === 1 ? '' : 's'}</b> from your lecturer or admin</span>
+        </button>
+      ) : null}
 
       {m.sem ? (
         <div className="card card--pad" style={{ marginTop: 16 }}>

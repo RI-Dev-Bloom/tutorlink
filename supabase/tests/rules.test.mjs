@@ -143,6 +143,21 @@ await ok('removing the shared module hides the thread', async () => {
   eq((await as(ids.lect, `select id from public.messages`)).length, 0, 'messages visible')
   await db.query(`insert into public.lecturer_modules values ($1, 'PROG1111')`, [ids.lect])
 })
+await ok('inbox: one row per thread, latest message, unread count', async () => {
+  await as(ids.lect, `select public.send_message($1, 'Week 9', 'Recursion next')`, [ids.stu])
+  const [r] = await as(ids.stu, `select other_id, other_name, other_role::text, last_topic, last_from_me, unread from public.my_inbox()`)
+  return eq(r, { other_id: ids.lect, other_name: 'Lecturer One', other_role: 'lecturer', last_topic: 'Week 9', last_from_me: false, unread: 1 }, 'row')
+})
+await ok("the lecturer's inbox shows it as sent; the tutor's earlier reply is still unread", async () => {
+  const [r] = await as(ids.lect, `select last_from_me, unread from public.my_inbox()`)
+  return eq(r, { last_from_me: true, unread: 1 }, 'row')
+})
+await ok('inbox hides threads you lost access to', async () => {
+  await db.query(`delete from public.lecturer_modules where lecturer_id=$1`, [ids.lect])
+  eq((await as(ids.lect, `select * from public.my_inbox()`)).length, 0, 'rows')
+  await db.query(`insert into public.lecturer_modules values ($1, 'PROG1111')`, [ids.lect])
+})
+await ok('other people see none of it', async () => eq((await as(ids.lect2, `select * from public.my_inbox()`)).length, 0, 'rows'))
 
 console.log('\nsessions and quota')
 await denied('session outside any semester', () => as(ids.admin, `insert into public.sessions (tutor_id, module_code, session_date) values ($1,'PROG1111','2026-03-02')`, [ids.stu]), 'No semester')

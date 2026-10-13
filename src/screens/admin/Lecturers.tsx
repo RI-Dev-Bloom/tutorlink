@@ -11,6 +11,7 @@ import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Empty, Loading, NavBar, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { loadModules } from './Modules'
+import { Thread } from '../messages/Thread'
 
 const TITLES = ['Dr', 'Prof', 'Mr', 'Mrs', 'Ms', '']
 
@@ -174,7 +175,7 @@ function AddLecturer() {
 
 function LecturerDetail({ id }: { id: string }) {
   const { openSheet, toast } = useOverlay()
-  const { back } = useStack()
+  const { back, push } = useStack()
   const lecturer = useQuery(`lecturer:${id}`, () =>
     must(supabase.from('profiles').select('id, title, full_name, email, must_change_password, lecturer_modules(module_code)').eq('id', id).single<Lecturer>()))
   const modules = useQuery('modules', loadModules)
@@ -204,7 +205,8 @@ function LecturerDetail({ id }: { id: string }) {
 
   return (
     <>
-      <NavBar title={displayName(l)} left={<BackButton />} />
+      <NavBar title={displayName(l)} left={<BackButton />}
+        right={<button className="iconbtn" style={{ marginRight: -10 }} aria-label="Message" onClick={() => push(<Thread otherId={l.id} />)}><Icon name="mail" size={21} /></button>} />
       <div className="body"><div className="pad">
         <div className="card card--pad" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <span className="avatar avatar--lg avatar--gold">{initials(l.full_name)}</span>

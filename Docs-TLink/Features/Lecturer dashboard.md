@@ -7,8 +7,8 @@ status: v1
 **In short:** the lecturer sees the tutors on their modules and can message them.
 
 ## What it does
-- Their module chips along the top, and counts of tutors and sessions run.
-- A list of tutors with their latest message, and a dot if it's unread.
+- Their module chips along the top, and counts of tutors, sessions run this semester and unread messages.
+- A list of the tutors on their modules, with each tutor's **next session** (day, time, venue), their latest message, and a gold count if it's unread.
 - Tap a tutor to open the thread.
 - Profile shows their modules (read-only).
 

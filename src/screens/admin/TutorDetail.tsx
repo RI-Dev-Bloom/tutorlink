@@ -15,6 +15,7 @@ import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Loading, NavBar, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { SlotForm } from './SlotForm'
+import { Thread } from '../messages/Thread'
 
 // Anything that changes a tutor's sessions refreshes every screen that shows them.
 const refresh = () => invalidate('tutor', 'tutors', 'sessions', 'overrides')
@@ -62,7 +63,8 @@ export function TutorDetail({ id }: { id: string }) {
 
   return (
     <>
-      <NavBar title={t.full_name} left={<BackButton />} />
+      <NavBar title={t.full_name} left={<BackButton />}
+        right={<button className="iconbtn" style={{ marginRight: -10 }} aria-label={`Message ${first}`} onClick={() => push(<Thread otherId={id} />)}><Icon name="mail" size={21} /></button>} />
       <div className="body"><div className="pad stagger">
         <div className="card card--pad">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
