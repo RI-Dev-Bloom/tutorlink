@@ -12,10 +12,10 @@ status: v1
 - The session shows an amber **Waiting** badge until admin confirms it. A session nobody marked shows **Not marked**, and admin can still confirm it or tap Didn't happen.
 
 ## Why it's here
-Logging while you're still in the room is quicker and more accurate than doing it at night. And because only admin can confirm, logging a session never pays you by itself.
+Logging while you're still in the room is quicker and more accurate than doing it at night. And because only admin can confirm, logging a session doesn't count towards your pay by itself.
 
 ## Session life cycle
-Scheduled → Logged (Pending) → Confirmed → Paid. Admin can also add a session that's confirmed straight away.
+Scheduled → Logged (Pending) → Confirmed. Confirmed sessions are paid out together after the semester ends. Admin can also add a session that's confirmed straight away.
 
 ## Rules
 - You can't log a session if it would go over the [[Session quota]].

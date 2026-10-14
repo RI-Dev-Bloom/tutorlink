@@ -128,7 +128,7 @@ function MarkSheet({ session: s }: { session: Session }) {
     <form onSubmit={save}>
       <p className="sheet-sub">{s.module_code} · {fDay(s.session_date)}</p>
       <h3 className="sheet-title">How many students came?</h3>
-      <p className="sheet-lead">Count everyone who signed the register. Admin confirms it, and then it's paid.</p>
+      <p className="sheet-lead">Count everyone who signed the register. Admin confirms it, and it counts towards your pay for the semester.</p>
       <div className="sheet-form">
         <div className="field">
           <label htmlFor="f-n">Students</label>

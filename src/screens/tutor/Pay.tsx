@@ -1,10 +1,12 @@
-/* Tutor → Pay: what admin has approved, what's still waiting, what's been paid,
-   and a CSV statement. The app tracks pay; Rosebank pays as usual. */
+/* Tutor → Pay. Pay works per semester: each session admin confirms counts towards the total,
+   and Rosebank pays it all once the semester has ended. Plus a statement and earlier semesters. */
 
 import { useAuth } from '../../lib/auth'
-import { fDay, owed, type Session } from '../../lib/tutors'
-import { rand, todayISO } from '../../lib/types'
+import { useQuery } from '../../lib/data'
+import { earned, fDay, isEarned, loadSemesters } from '../../lib/tutors'
+import { fDate, rand, todayISO } from '../../lib/types'
 import { Icon } from '../../ui/icons'
+import { Ledger } from '../../ui/Ledger'
 import { useOverlay } from '../../ui/Overlay'
 import { Badge, Loading } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
@@ -14,27 +16,34 @@ export function TutorPay() {
   const { profile } = useAuth()
   const { toast } = useOverlay()
   const m = useMine()
+  const semesters = useQuery('semesters', loadSemesters)
 
   if (m.loading) return <Loading />
   if (m.error || !m.d) return <p className="err pad">{m.error}</p>
 
-  const all = m.d.sessions
-  const confirmed = all.filter(s => s.status === 'confirmed')
-  const waiting = all.filter(s => s.status === 'logged')
-  const paid = all.filter(s => s.status === 'paid')
-  const sum = (list: Session[]) => list.reduce((n, s) => n + Number(s.rate ?? 0), 0)
-  const paidThisSem = sum(paid.filter(s => s.semester_id === m.sem?.id))
-  const statement = [...confirmed, ...paid].sort((a, b) => b.session_date.localeCompare(a.session_date))
+  const today = todayISO()
+  const semId = m.sem?.id ?? null
+  const mine = m.d.sessions.filter(s => s.semester_id === semId)
+  const confirmed = mine.filter(isEarned)
+  const waiting = mine.filter(s => s.status === 'logged' || (s.status === 'scheduled' && s.session_date < today))
+  const ahead = mine.filter(s => s.status === 'scheduled' && s.session_date >= today)
+  const statement = [...confirmed].sort((a, b) => b.session_date.localeCompare(a.session_date))
+  const ended = !!m.sem && m.sem.ends_on < today
+
+  // Earlier semesters: one line each with what was earned.
+  const earlier = (semesters.data ?? [])
+    .filter(s => s.id !== semId && s.ends_on < today)
+    .map(s => ({ s, total: earned(m.d!.sessions, s.id), n: m.d!.sessions.filter(x => x.semester_id === s.id && isEarned(x)).length }))
+    .filter(x => x.n)
 
   const exportCsv = () => {
-    const rows = [['Date', 'Module', 'Students', 'Status', 'Rate (R)', 'Paid on']]
-    for (const s of [...statement].reverse()) {
-      rows.push([s.session_date, s.module_code, String(s.students_attended ?? ''), s.status === 'paid' ? 'Paid' : 'Approved', String(Number(s.rate ?? 0)), s.paid_at?.slice(0, 10) ?? ''])
-    }
+    const rows = [['Date', 'Module', 'Students', 'Rate (R)']]
+    for (const s of [...statement].reverse()) rows.push([s.session_date, s.module_code, String(s.students_attended ?? ''), String(Number(s.rate ?? 0))])
+    rows.push([], ['Total', '', '', String(earned(mine, semId))])
     const csv = rows.map(r => r.map(c => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\r\n')
     const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }))   // BOM so Excel reads it right
     const a = Object.assign(document.createElement('a'), {
-      href: url, download: `TutorLink statement - ${profile!.full_name} - ${todayISO()}.csv`,
+      href: url, download: `TutorLink statement - ${profile!.full_name} - ${m.sem?.name ?? today}.csv`,
     })
     document.body.append(a); a.click(); a.remove()
     setTimeout(() => URL.revokeObjectURL(url), 10_000)
@@ -43,19 +52,21 @@ export function TutorPay() {
 
   return (
     <div className="pad stagger">
-      <div className="card card--pad card--gold">
-        <p className="eyebrow" style={{ marginBottom: 6 }}>Approved, not paid yet</p>
-        <div className="money">{rand(owed(all))}</div>
-        <p className="small muted" style={{ marginTop: 8 }}>{confirmed.length} confirmed session{confirmed.length === 1 ? '' : 's'}</p>
-        <div style={{ marginTop: 14, borderTop: '1px solid var(--lineS)', paddingTop: 6 }}>
-          <div className="payrow"><span className="muted">Rate per session</span><span style={{ fontWeight: 600 }}>{rand(m.rate)}</span></div>
-          <div className="payrow"><span className="muted">Waiting for admin ({waiting.length})</span><span style={{ fontWeight: 600, color: 'var(--amber)' }}>about {rand(waiting.length * m.rate)}</span></div>
-          <div className="payrow"><span className="muted">Paid this semester</span><span style={{ fontWeight: 600, color: 'var(--green)' }}>{rand(paidThisSem)}</span></div>
-          <div className="payrow"><span className="muted">Paid in total</span><span style={{ fontWeight: 600 }}>{rand(sum(paid))}</span></div>
-        </div>
-      </div>
+      <Ledger
+        label={m.sem ? `Your pay · ${m.sem.name}` : 'Your pay this semester'}
+        confirmed={{ n: confirmed.length, amount: earned(mine, semId) }}
+        waiting={{ n: waiting.length, amount: waiting.length * m.rate }}
+        ahead={{ n: ahead.length, amount: ahead.length * m.rate }}
+        foot={<p className="ledger__foot"><Icon name="cal" size={14} />
+          {!m.sem ? 'Paid out once the semester ends.'
+            : ended ? `The semester ended on ${fDate(m.sem.ends_on)}. Rosebank pays out the confirmed total.`
+            : `Paid out in one go after the semester ends on ${fDate(m.sem.ends_on)}.`}</p>} />
 
-      <div className="sect">Statement</div>
+      <p className="small muted" style={{ marginTop: 10 }}>
+        {rand(m.rate)} per session. A session counts once admin confirms it against the signed register.
+      </p>
+
+      <div className="sect">Confirmed this semester</div>
       {statement.length ? (
         <div className="card">
           {statement.map(s => (
@@ -66,8 +77,8 @@ export function TutorPay() {
                 <span className="rmeta"><span className="mono">{s.module_code}</span>{s.students_attended !== null ? ` · ${s.students_attended} students` : ''}</span>
               </span>
               <span className="rside">
-                <span className="small" style={{ fontWeight: 700 }}>{rand(Number(s.rate ?? 0))}</span>
-                <Badge tone={s.status === 'paid' ? 'green' : 'gold'}>{s.status === 'paid' ? 'Paid' : 'Approved'}</Badge>
+                <span className="small" style={{ fontWeight: 700, color: 'var(--text)' }}>{rand(Number(s.rate ?? 0))}</span>
+                <Badge tone="gold">Confirmed</Badge>
               </span>
             </div>
           ))}
@@ -77,7 +88,20 @@ export function TutorPay() {
       <button className="btn btn--outline" style={{ marginTop: 16 }} disabled={!statement.length} onClick={exportCsv}>
         <Icon name="down" size={16} /> Download statement (CSV)
       </button>
-      <p className="small muted" style={{ marginTop: 10 }}>The app keeps track of what you're owed. Rosebank pays you as usual.</p>
+
+      {earlier.length ? (
+        <>
+          <div className="sect">Earlier semesters</div>
+          <div className="card">
+            {earlier.map(({ s, total, n }) => (
+              <div className="row" key={s.id}>
+                <span className="rmain"><span className="rname">{s.name}</span><span className="rmeta">{n} confirmed session{n === 1 ? '' : 's'}</span></span>
+                <span className="rside"><span className="small" style={{ fontWeight: 700, color: 'var(--text)' }}>{rand(total)}</span></span>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
     </div>
   )
 }

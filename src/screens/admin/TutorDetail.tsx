@@ -1,11 +1,11 @@
-/* Admin → one tutor: quota, sessions to confirm, pay, weekly slots, upcoming weeks,
+/* Admin → one tutor: quota, sessions to confirm, earnings this semester, weekly slots, upcoming weeks,
    one-off sessions and registers. Everything admin does for a tutor, on one page. */
 
 import { useMemo, useState, type FormEvent } from 'react'
 import { invalidate, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
 import {
-  WEEKDAYS, counts, currentSemester, hhmm, loadSemesters, loadTutor, needsConfirming, owed, when,
+  WEEKDAYS, counts, currentSemester, hhmm, loadSemesters, loadTutor, needsConfirming, earned, isEarned, when,
   type Register, type Session, type Slot, type TutorRow,
 } from '../../lib/tutors'
 import { fDate, rand, todayISO, type Semester } from '../../lib/types'
@@ -38,10 +38,10 @@ export function TutorDetail({ id }: { id: string }) {
     return {
       used: all.filter(s => counts(s, semId)).length,
       toConfirm: all.filter(needsConfirming),
-      confirmed: all.filter(s => s.status === 'confirmed'),
+      confirmed: all.filter(s => isEarned(s) && s.semester_id === semId),
+      waiting: all.filter(s => s.status === 'logged' && s.semester_id === semId),
       upcoming: all.filter(s => s.session_date >= today && (s.status === 'scheduled' || s.status === 'cancelled')),
-      history: all.filter(s => s.status === 'confirmed' || s.status === 'paid').reverse(),
-      paidThisSem: all.filter(s => s.status === 'paid' && s.semester_id === semId).reduce((n, s) => n + Number(s.rate ?? 0), 0),
+      history: all.filter(isEarned).reverse(),
     }
   }, [d, semId, today])
 
@@ -98,8 +98,8 @@ export function TutorDetail({ id }: { id: string }) {
 
         <div className="metrics" style={{ marginTop: 12 }}>
           <div className="metric metric--amber"><div className="n">{view.toConfirm.length}</div><div className="l">To confirm</div></div>
-          <div className="metric metric--gold"><div className="n n--sm">{rand(owed(d.sessions))}</div><div className="l">Owed</div></div>
-          <div className="metric metric--green"><div className="n n--sm">{rand(view.paidThisSem)}</div><div className="l">Paid this semester</div></div>
+          <div className="metric metric--green"><div className="n">{view.confirmed.length}</div><div className="l">Confirmed</div></div>
+          <div className="metric metric--gold"><div className="n n--sm">{rand(earned(d.sessions, semId))}</div><div className="l">Earned this semester</div></div>
         </div>
 
         {/* ---- confirm ---- */}
@@ -129,14 +129,12 @@ export function TutorDetail({ id }: { id: string }) {
         ) : null}
 
         {/* ---- pay ---- */}
-        <div className="sect">Pay</div>
+        <div className="sect">Pay this semester</div>
         <div className="card card--pad">
-          <div className="payrow"><span className="muted">Confirmed, not paid</span><span>{view.confirmed.length} session{view.confirmed.length === 1 ? '' : 's'}</span></div>
-          <div className="payrow"><span className="muted">Owed</span><b style={{ color: 'var(--goldD)' }}>{rand(owed(d.sessions))}</b></div>
-          <button className="btn" style={{ marginTop: 12 }} disabled={!view.confirmed.length}
-            onClick={() => openSheet(<PaySheet first={first} sessions={view.confirmed} />)}>
-            {view.confirmed.length ? `Mark ${view.confirmed.length} as paid` : 'Nothing to pay'}
-          </button>
+          <div className="payrow"><span className="muted">Confirmed sessions</span><span>{view.confirmed.length}</span></div>
+          <div className="payrow"><span className="muted">Waiting for you to confirm</span><span>{view.waiting.length}</span></div>
+          <div className="payrow"><span className="muted">Earned so far</span><b style={{ color: 'var(--goldD)' }}>{rand(earned(d.sessions, semId))}</b></div>
+          <p className="small muted" style={{ marginTop: 10 }}>{sem ? `Paid out with everyone else's after the semester ends on ${fDate(sem.ends_on)}.` : 'Paid out after the semester ends.'}</p>
         </div>
 
         {/* ---- weekly slots ---- */}
@@ -202,7 +200,7 @@ export function TutorDetail({ id }: { id: string }) {
         {view.history.length ? (
           <>
             <button className="btn btn--ghost" style={{ marginTop: 18 }} onClick={() => setShowHistory(v => !v)}>
-              {showHistory ? 'Hide' : 'Show'} confirmed and paid sessions ({view.history.length})
+              {showHistory ? 'Hide' : 'Show'} confirmed sessions ({view.history.length})
             </button>
             {showHistory ? (
               <div className="card">
@@ -211,7 +209,7 @@ export function TutorDetail({ id }: { id: string }) {
                     <span className="rmain"><span className="rname">{when(s)}</span><span className="rmeta mono">{s.module_code}</span></span>
                     <span className="rside">
                       <span className="small">{rand(Number(s.rate ?? 0))}</span>
-                      <Badge tone={s.status === 'paid' ? 'green' : 'gold'}>{s.status === 'paid' ? 'Paid' : 'Owed'}</Badge>
+                      <Badge tone="green">Confirmed</Badge>
                     </span>
                   </div>
                 ))}
@@ -288,33 +286,6 @@ function QuotaSheet({ tutorId, first, sem, override, used }: { tutorId: string; 
         ) : null}
       </div>
     </form>
-  )
-}
-
-function PaySheet({ first, sessions }: { first: string; sessions: Session[] }) {
-  const { closeSheet, toast } = useOverlay()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const total = owed(sessions)
-
-  const pay = async () => {
-    setBusy(true); setError('')
-    const { error: err } = await supabase.from('sessions').update({ status: 'paid' }).in('id', sessions.map(s => s.id)).eq('status', 'confirmed')
-    if (err) { haptic(24); setError(friendlyError(err)); setBusy(false); return }
-    haptic(18); refresh(); closeSheet(); toast(`${rand(total)} marked as paid`)
-  }
-
-  return (
-    <div>
-      <p className="sheet-sub">Pay</p>
-      <h3 className="sheet-title">Mark {rand(total)} as paid?</h3>
-      <p className="sheet-lead">
-        {sessions.length} confirmed session{sessions.length === 1 ? '' : 's'} for {first}. Do this once the money has actually gone out.
-        Paid sessions are locked and can't be changed.
-      </p>
-      {error ? <p className="err">{error}</p> : null}
-      <button className="btn" style={{ marginTop: 18 }} disabled={busy} onClick={pay}>{busy ? 'Saving…' : `Yes, ${rand(total)} is paid`}</button>
-    </div>
   )
 }
 

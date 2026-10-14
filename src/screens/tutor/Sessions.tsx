@@ -17,7 +17,7 @@ const STATUS: Record<Session['status'], { label: string; tone: 'amber' | 'green'
   scheduled: { label: 'Not marked', tone: 'red' },
   logged: { label: 'Waiting', tone: 'amber' },
   confirmed: { label: 'Confirmed', tone: 'gold' },
-  paid: { label: 'Paid', tone: 'green' },
+  paid: { label: 'Confirmed', tone: 'gold' },
   cancelled: { label: 'Cancelled', tone: 'plain' },
 }
 
@@ -70,7 +70,7 @@ export function TutorSessions() {
         ) : <p className="small muted">No sessions yet. They show up here once they've happened.</p>}
 
         <div className="note note--plain" style={{ marginTop: 14 }}><Icon name="alert" size={15} />
-          <span>A session is only paid once admin confirms it against the signed register.</span></div>
+          <span>A session only counts towards your pay once admin confirms it against the signed register.</span></div>
       </div>
       <button className="fab" disabled={m.left === 0 || !m.sem} onClick={() => openSheet(<LogSheet d={d} left={m.left} />)}>
         <Icon name="plus" size={18} stroke={2.2} /> {m.left === 0 && m.sem ? 'No sessions left' : 'Log a session'}

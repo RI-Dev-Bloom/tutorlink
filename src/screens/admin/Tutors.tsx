@@ -1,9 +1,9 @@
 /* Admin → Tutors: everyone approved to tutor, how much of their quota they've used,
-   and what's waiting to be confirmed or paid. */
+   and what's waiting to be confirmed. */
 
 import { useMemo, useState } from 'react'
 import { useQuery } from '../../lib/data'
-import { counts, currentSemester, loadOpenSessions, loadOverrides, loadSemesters, loadTutors, needsConfirming, owed } from '../../lib/tutors'
+import { counts, currentSemester, loadOpenSessions, loadOverrides, loadSemesters, loadTutors, needsConfirming, earned } from '../../lib/tutors'
 import { rand } from '../../lib/types'
 import { useStack } from '../../nav/Stack'
 import { Icon } from '../../ui/icons'
@@ -33,7 +33,7 @@ export function AdminTutors() {
         used: mine.filter(s => counts(s, semId)).length,
         limit,
         toConfirm: mine.filter(needsConfirming).length,
-        owed: owed(mine),
+        earned: earned(mine, sem?.id ?? null),
       }
     })
   }, [tutors.data, sessions.data, overrides.data, sem, semId, q])
@@ -58,13 +58,13 @@ export function AdminTutors() {
       {tutors.data?.length && !rows.length ? <Empty icon="people" title="No match" line="Nothing matches that search." /> : null}
       {rows.length ? (
         <div className="card">
-          {rows.map(({ t, used, limit, toConfirm, owed: money }) => (
+          {rows.map(({ t, used, limit, toConfirm, earned: money }) => (
             <button className="row" key={t.id} onClick={() => push(<TutorDetail id={t.id} />)}>
               <span className="avatar">{initials(t.full_name)}</span>
               <span className="rmain">
                 <span className="rname">{t.full_name}</span>
                 <span className="rmeta mono">{t.tutor_modules.map(m => m.module_code).join(' · ')}</span>
-                {sem ? <span className="rmeta">{used} of {limit} sessions{money ? ` · ${rand(money)} owed` : ''}</span> : null}
+                {sem ? <span className="rmeta">{used} of {limit} sessions{money ? ` · ${rand(money)} earned` : ''}</span> : null}
               </span>
               <span className="rside">
                 {toConfirm ? <Badge tone="amber">{toConfirm} to confirm</Badge> : null}

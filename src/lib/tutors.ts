@@ -100,7 +100,18 @@ export const needsConfirming = (s: Session) => s.status === 'logged' || (s.statu
 
 export const counts = (s: Session, semesterId: string | null) => s.semester_id === semesterId && s.status !== 'cancelled'
 
-export const owed = (list: Session[]) => list.filter(s => s.status === 'confirmed').reduce((n, s) => n + Number(s.rate ?? 0), 0)
+/* Pay works per semester: a confirmed session counts towards the tutor's pay, and Rosebank pays
+   the whole semester's total once the semester has ended. ('paid' is from the old per-session flow.) */
+export const isEarned = (s: Session) => s.status === 'confirmed' || s.status === 'paid'
+
+export const earned = (list: Session[], semesterId: string | null) =>
+  list.filter(s => isEarned(s) && s.semester_id === semesterId).reduce((n, s) => n + Number(s.rate ?? 0), 0)
+
+/* Which week of the semester a date falls in (1 = the first week). */
+export const semWeek = (sem: Semester, iso: string) =>
+  Math.floor((new Date(iso + 'T00:00:00').getTime() - new Date(sem.starts_on + 'T00:00:00').getTime()) / (7 * 86_400_000)) + 1
+
+export const semWeeks = (sem: Semester) => semWeek(sem, sem.ends_on)
 
 export const hhmm = (t: string | null) => (t ? t.slice(0, 5) : '')
 

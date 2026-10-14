@@ -10,11 +10,11 @@ status: v1
 - **A new message** → the person it was sent to.
 - **A new application** → every admin.
 - **Your application was approved or declined** → the student.
-- **Sessions confirmed** or **marked as paid** → the tutor. If admin confirms five at once, that's one notification ("Admin confirmed 5 sessions"), not five.
+- **Sessions confirmed** → the tutor. If admin confirms five at once, that's one notification ("Admin confirmed 5 sessions"), not five.
 - **Session reminder** at 7:00 on the morning of a tutoring session → the tutor ("Tutoring session today · 14:00 · PROG1111 · Lab 2").
 - Later: tutor announcements and quiz invites.
 
-Tapping the notification opens the right screen (e.g. a message opens Messages, a payment opens Pay).
+Tapping the notification opens the right screen (e.g. a message opens Messages, a confirmation opens Pay).
 
 ## Turning them on
 - A **Get set up** card on the home screen: on a phone, step 1 is adding the app to the home screen, step 2 is **Turn on**. It can be closed with ✕.
