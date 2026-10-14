@@ -25,7 +25,19 @@ export const appKey = (uid: string) => `my-application:${uid}`
 
 const fWhen = (iso: string) => new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
 
-export function ApplyTab() {
+/* Opened from Profile → Tutoring (and the home screen card). */
+export function ApplyScreen() {
+  return (
+    <>
+      <NavBar title="Apply to tutor" left={<BackButton />} />
+      <div className="body"><ApplyTab /></div>
+    </>
+  )
+}
+
+export const APP_STATUS = STATUS
+
+function ApplyTab() {
   const { profile } = useAuth()
   const { push } = useStack()
   const uid = profile!.id

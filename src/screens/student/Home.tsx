@@ -7,7 +7,7 @@ import { isOpen, loadMyApplication, loadMyModules } from '../../lib/student'
 import { Icon } from '../../ui/icons'
 import { Badge } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
-import { appKey } from './Apply'
+import { ApplyScreen, appKey } from './Apply'
 import { SetupCard } from '../../ui/Setup'
 import { loadMyAttendance } from '../../lib/attendance'
 import { useStack } from '../../nav/Stack'
@@ -62,7 +62,7 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
       {profile!.is_tutor ? null : (
         <>
           <div className="sect">Tutoring</div>
-          <button className="card card--pad card--gold" style={{ display: 'block', width: '100%', textAlign: 'left' }} onClick={() => open('apply')}>
+          <button className="card card--pad card--gold" style={{ display: 'block', width: '100%', textAlign: 'left' }} onClick={() => { haptic(8); push(<ApplyScreen />) }}>
             {a ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="rmain">

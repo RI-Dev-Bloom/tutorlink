@@ -7,6 +7,8 @@ status: v1
 **In short:** a student ticks the high-risk modules they'd like to tutor, types their mark for each, uploads their results and sends.
 
 ## What it does
+Found in **Profile → Tutoring → Apply to become a tutor** (tutors see **Apply for more modules**), with the application's status next to it. The student home screen has a shortcut card too.
+
 1. The form lists only the **high-risk modules**: the ones admin has opened for tutoring in [[Settings]]. Modules they already tutor don't show. If none are open, it says so.
 2. Tick a module and a box appears to type the final mark. It says straight away whether the mark meets the minimum (75% by default).
 3. Upload the **Academic Statement of Results** (PDF or photo). Big phone photos are shrunk first.

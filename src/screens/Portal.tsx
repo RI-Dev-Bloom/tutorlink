@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuth, type Profile } from '../lib/auth'
-import { Empty, NavBar, TabBar, type Tab } from '../ui/parts'
+import { Badge, Empty, NavBar, TabBar, type Tab } from '../ui/parts'
 import { haptic } from '../ui/haptic'
 import { must, useQuery } from '../lib/data'
 import { supabase } from '../lib/supabase'
@@ -20,7 +20,8 @@ import { CheckIn } from './student/CheckIn'
 import { Group, SHead, SRow } from '../ui/Settings'
 import { resyncPush } from '../lib/push'
 import { AdminTutors } from './admin/Tutors'
-import { ApplyTab } from './student/Apply'
+import { APP_STATUS, ApplyScreen, appKey } from './student/Apply'
+import { loadMyApplication } from '../lib/student'
 import { LecturerHome } from './lecturer/Home'
 import { Inbox } from './messages/Inbox'
 import { loadInbox, unreadTotal, useLiveMessages } from '../lib/messages'
@@ -38,10 +39,9 @@ const PORTALS: Record<View, { tabs: Tab<string>[]; titles: Record<string, string
     tabs: [
       { id: 'home', icon: 'home', label: 'Home' },
       { id: 'modules', icon: 'book', label: 'Modules' },
-      { id: 'apply', icon: 'clip', label: 'Apply' },
       { id: 'profile', icon: 'user', label: 'Profile' },
     ],
-    titles: { home: 'TutorLink', modules: 'My modules', apply: 'Apply to tutor', profile: 'Profile' },
+    titles: { home: 'TutorLink', modules: 'My modules', profile: 'Profile' },
   },
   tutor: {
     tabs: [
@@ -87,7 +87,8 @@ export function Portal() {
   })
   const [tutorView, setTutorView] = useState<'tutor' | 'student'>(() =>
     link.view === 'student' || link.view === 'tutor' ? link.view : savedView() === 'student' ? 'student' : 'tutor')
-  const [tab, setTab] = useState(link.tab ?? 'home')
+  // Applying lives in Profile now; a notification about an application opens it there.
+  const [tab, setTab] = useState(link.tab === 'apply' ? 'profile' : link.tab ?? 'home')
   // The Applications tab shows how many are waiting. Shares the 'applications' key, so a decision updates it.
   const openApps = useQuery('applications', () => profile?.role === 'admin' ? loadOpenCount() : Promise.resolve(0))
   // Plain students have no messages; everyone else gets live updates and an unread count.
@@ -103,7 +104,8 @@ export function Portal() {
     if (!uid || !isStudent) return
     const t = takePendingCheckin()
     if (t) push(<CheckIn token={t} />)
-  }, [uid, isStudent, push])
+    else if (link.tab === 'apply') push(<ApplyScreen />)
+  }, [uid, isStudent, push, link.tab])
   if (!profile) return null
 
   const view: View = profile.role !== 'student' ? profile.role : profile.is_tutor ? tutorView : 'student'
@@ -128,7 +130,6 @@ export function Portal() {
         {tab === 'profile' ? (view === 'admin' ? <AdminSettings /> : <ProfileTab profile={profile} view={view} />)
           : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />
           : view === 'student' && tab === 'modules' ? <MyModulesTab />
-          : view === 'student' && tab === 'apply' ? <ApplyTab />
           : tab === 'inbox' ? <Inbox />
           : view === 'lecturer' && tab === 'home' ? <LecturerHome />
           : view === 'tutor' && tab === 'home' ? <TutorSchedule go={setTab} unread={unread} />
@@ -171,6 +172,7 @@ function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
 
       {view === 'lecturer' ? <MyModules id={profile.id} /> : null}
       {view === 'tutor' ? <TutorModules id={profile.id} /> : null}
+      {profile.role === 'student' ? <Tutoring profile={profile} /> : null}
 
       <DeviceSettings />
 
@@ -194,10 +196,24 @@ function ModuleRows({ title, foot, mods }: { title: string; foot: string; mods: 
   )
 }
 
+/* Profile → Tutoring: apply to become a tutor (or for more modules), and where it stands. */
+function Tutoring({ profile }: { profile: Profile }) {
+  const { push } = useStack()
+  const app = useQuery(appKey(profile.id), () => loadMyApplication(profile.id))
+  const a = app.data
+  return (
+    <Group title="Tutoring" foot={a ? undefined : 'Got a great mark in a high-risk module? Help others with it and get paid per hour.'}>
+      <SRow icon="clip" tone="gold" label={profile.is_tutor ? 'Apply for more modules' : 'Apply to become a tutor'}
+        value={a ? <Badge tone={APP_STATUS[a.status].tone}>{APP_STATUS[a.status].label}</Badge> : undefined}
+        onClick={() => push(<ApplyScreen />)} />
+    </Group>
+  )
+}
+
 /* Tutors see the modules they were approved for. More can be added by applying again. */
 function TutorModules({ id }: { id: string }) {
   const mods = useQuery(`my-tutor-modules:${id}`, () => loadMyTutorModules(id))
-  return <ModuleRows title="Modules you tutor" mods={mods.data} foot="Want to tutor another module? Switch to Student and apply again." />
+  return <ModuleRows title="Modules you tutor" mods={mods.data} foot="Want to tutor another module? Apply for more below." />
 }
 
 /* Lecturers see what they teach; only admin can change it. */
