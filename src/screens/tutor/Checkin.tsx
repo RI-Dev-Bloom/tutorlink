@@ -13,9 +13,10 @@ import { Icon } from '../../ui/icons'
 import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Loading, NavBar, initials } from '../../ui/parts'
 import { QR } from '../../ui/QR'
+import { downloadRegister } from '../../lib/register-pdf'
 import { haptic } from '../../ui/haptic'
 
-type SessionRow = Session & { modules: { name: string } | null }
+type SessionRow = Session & { modules: { name: string } | null; tutor: { full_name: string } | null }
 
 const LENGTHS = [1, 1.5, 2, 2.5, 3, 4]
 const WINDOWS = [5, 10, 15, 20]   // how long students can check in, in minutes
@@ -127,11 +128,12 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
   const { openSheet, toast } = useOverlay()
   const isAdmin = profile?.role === 'admin'
   const key = `session:${sessionId}`
-  const s = useQuery(key, () => must(supabase.from('sessions').select(`${SESSION_COLS}, modules(name)`).eq('id', sessionId).single<SessionRow>()))
+  const s = useQuery(key, () => must(supabase.from('sessions').select(`${SESSION_COLS}, modules(name), tutor:profiles!sessions_tutor_id_fkey(full_name)`).eq('id', sessionId).single<SessionRow>()))
   const att = useQuery(`attendance:${sessionId}`, () => loadAttendance(sessionId))
   const canManage = isAdmin || (!!s.data && s.data.tutor_id === profile?.id)
   const { live } = useLive(() => supabase.rpc('tutor_checkin_live', { p_session: sessionId }), sessionId, canManage)
   const [closing, setClosing] = useState(false)
+  const [pdfBusy, setPdfBusy] = useState(false)
 
   // A new scan bumps the count: fetch the list again.
   const count = live?.count
@@ -150,6 +152,20 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
     setClosing(false)
     if (error) { toast(friendlyError(error)); return }
     haptic(16); invalidate(key, 'open-checkin', 'tutor', 'tutors', 'sessions', 'att-totals', 'att-summary', 'att-roster', 'att-held'); toast(`Closed · ${rows.length} checked in`)
+  }
+
+  const register = async () => {
+    setPdfBusy(true)
+    try {
+      await downloadRegister({
+        moduleCode: session.module_code, moduleName: session.modules?.name ?? session.module_code,
+        date: session.session_date, from: session.starts_at ? hhmm(session.starts_at) : null, to: session.ends_at ? hhmm(session.ends_at) : null,
+        venue: session.venue, hours: Number(session.hours), tutor: session.tutor?.full_name ?? '',
+        status: session.status === 'confirmed' || session.status === 'paid' ? 'Confirmed by admin' : session.status === 'logged' ? 'Waiting for admin to confirm' : 'Not confirmed',
+      }, rows)
+      haptic(12); toast('Register downloaded')
+    } catch (e) { toast(friendlyError(e)) }
+    setPdfBusy(false)
   }
 
   const shareScreen = async () => {
@@ -221,6 +237,12 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
             {rows.map(r => <AttendeeRow key={r.id} r={r} canRemove={editable && (isAdmin || r.method === 'manual' || !open)} />)}
           </div>
         ) : <p className="small muted">{open ? 'Names appear here as students check in.' : 'Nobody checked in.'}</p>}
+
+        {!open && rows.length ? (
+          <button className="btn btn--outline" style={{ marginTop: 16 }} disabled={pdfBusy} onClick={register}>
+            <Icon name="down" size={16} /> {pdfBusy ? 'Preparing…' : 'Download register (PDF)'}
+          </button>
+        ) : null}
       </div></div>
     </>
   )

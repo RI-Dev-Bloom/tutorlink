@@ -98,7 +98,7 @@ export function Portal() {
   const inbox = useQuery('inbox', () => messaging ? loadInbox() : Promise.resolve([]))
   useLiveMessages(messaging)
   const uid = profile?.id
-  useEffect(() => { if (uid) resyncPush(uid) }, [uid])
+  useEffect(() => { if (uid) resyncPush() }, [uid])
   // A check-in QR scanned with the phone's own camera opened the app: finish the check-in.
   const { push } = useStack()
   const isStudent = profile?.role === 'student'

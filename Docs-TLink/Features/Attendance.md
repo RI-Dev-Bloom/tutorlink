@@ -43,13 +43,14 @@ The date and start time are captured automatically.
 - **Close check-in** when done. Otherwise it closes by itself when the window (5–20 minutes) runs out.
 - Starting a check-in again for the same module on the same day reopens that session; the names already there stay.
 - Past sessions open the same list. A session that was never checked in can still have students added by hand.
+- **Download register (PDF)** once the check-in has closed: a one-page register in the app's navy and gold, with the module, date, time, venue, length, tutor, where (in class or online), status, and every student (student number, name, qualification, time, how they checked in; manual ones marked). Lecturers and admin can download it from the session too.
 
 ## Admin
-- A session can only be **confirmed** if at least the **minimum attendance** checked in (3 to start; admin sets 0 to 5 in [[Settings]]). Below it, the session shows "Under 3" instead of a Confirm button.
+- A session can only be **confirmed** if at least the **minimum attendance** checked in (set to **1**; admin can choose 0 to 5 in [[Settings]]). Below it, the session shows "Under 1" instead of a Confirm button.
 - Tapping a session shows who checked in.
 
 ## The student's progress (private)
-On their home screen, one line per module from 0% to 100%: sessions they came to out of sessions held this semester, with marks at 50% and 75%. It turns gold from 75%. Only the student sees it.
+On their home screen, one line per module from 0% to 100%: sessions they came to out of the sessions run **by the tutor(s) they go to** this semester (a module can have several tutors with separate groups, and other groups' sessions don't count against them). Marks at 50% and 75%; it turns gold from 75%. It refreshes when they come back to the app. Only the student sees it. Lecturer and admin lists use the same rule.
 
 ## Who sees what
 | | Their own | Their sessions | Their modules | Everything |

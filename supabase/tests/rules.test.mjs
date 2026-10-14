@@ -563,6 +563,19 @@ await ok('the module roster: each student, sessions attended out of held', async
   if (!s3 || s3.attended !== 2 || s3.held < 2) throw new Error(JSON.stringify(rows))
   return rows.length
 })
+await ok("a student's rate only counts their own tutor's sessions", async () => {
+  // Another tutor runs a PROG1111 session S3 never goes to: S3's "held" mustn't change.
+  const before = (await as(S3, `select held from public.my_attendance() where module_code = 'PROG1111'`))[0].held
+  await db.query(`insert into public.tutor_modules values ($1, 'PROG1111') on conflict do nothing`, [ids.stu2])
+  await as(ids.admin, `insert into public.sessions (tutor_id, module_code, session_date, starts_at, ends_at, status) values ($1, 'PROG1111', $2, '08:00', '09:00', 'logged')`, [ids.stu2, today])
+  eq((await as(S3, `select held from public.my_attendance() where module_code = 'PROG1111'`))[0].held, before, 'held')
+  return eq((await as(ids.lect, `select held from public.attendance_roster($1, 'PROG1111') where student_number = 'ST30000031'`, [semNow]))[0].held, before, 'roster held')
+})
+await ok('notifications: a phone moves to whoever signs in on it', async () => {
+  await as(ids.admin, `select public.claim_push('https://push.test/phone-1', 'k', 'a', 'iPhone')`)
+  await as(S3, `select public.claim_push('https://push.test/phone-1', 'k', 'a', 'iPhone')`)
+  return eq((await db.query(`select user_id from public.push_subscriptions where endpoint = 'https://push.test/phone-1'`)).rows.map(r => r.user_id), [S3], 'owner')
+})
 await ok('another lecturer gets nothing for it', async () => eq((await as(ids.lect2, `select * from public.attendance_roster($1, 'PROG1111')`, [semNow])).length, 0, 'rows'))
 await ok('a student only ever counts themselves', async () => eq((await as(S4, `select * from public.attendance_roster($1, 'PROG1111')`, [semNow])).filter(r => r.student_number !== 'ST30000032').length, 0, 'others'))
 

@@ -8,7 +8,7 @@ status: v1
 
 ## What it does
 Admin's Settings tab, in groups:
-- **Programme:** rate per hour, the minimum mark to tutor a module (75% to start), and the **minimum attendance** for a session to count (3 to start, 0 to 5).
+- **Programme:** rate per hour, the minimum mark to tutor a module (75% to start), and the **minimum attendance** for a session to count (1, can be 0 to 5).
 - **Tutor applications:** **High-risk modules** (the only ones students can apply to tutor, one switch each), response templates, and the **Auto-decline below the minimum** switch. See [[Apply to tutor]].
 - **Messages:** **Keep files for** 3, 4 or 5 days. See [[Messaging]].
 - **Semesters:** name, dates and session quota. Changing the quota for all tutors shows a warning first. See [[Session quota]].

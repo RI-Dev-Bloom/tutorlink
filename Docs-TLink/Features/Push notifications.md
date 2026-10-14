@@ -21,6 +21,9 @@ Tapping the notification opens the right screen (e.g. a message opens Messages, 
 - **Profile → Device → Notifications** (Settings → Device for admin) has a switch to turn them on or off any time. If they were blocked, it says how to allow them again.
 - Notifications belong to the phone and the person: signing out stops that phone getting that person's notifications.
 
+## One phone, one person
+Notifications belong to the phone, and go to whoever is signed in on it now. If someone else signs in on the same phone (or app), the phone moves to them, so it never keeps getting the previous account's notifications. Signing out stops them altogether.
+
 ## Why it's here
 This is the whole point of being an app rather than a website.
 

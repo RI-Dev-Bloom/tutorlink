@@ -28,22 +28,23 @@ const toBytes = (b64: string) => {
   return Uint8Array.from(s, c => c.charCodeAt(0))
 }
 
-async function save(sub: PushSubscription, userId: string) {
+/* This phone now belongs to whoever is signed in, even if someone else turned notifications on here before. */
+async function save(sub: PushSubscription) {
   const j = sub.toJSON()
-  const { error } = await supabase.from('push_subscriptions').upsert({
-    user_id: userId, endpoint: sub.endpoint, p256dh: j.keys!.p256dh, auth: j.keys!.auth, user_agent: navigator.userAgent.slice(0, 200),
-  }, { onConflict: 'endpoint' })
+  const { error } = await supabase.rpc('claim_push', {
+    p_endpoint: sub.endpoint, p_p256dh: j.keys!.p256dh, p_auth: j.keys!.auth, p_user_agent: navigator.userAgent,
+  })
   if (error) throw error
 }
 
 /* Must run straight from a tap: phones only show the "Allow notifications?" prompt then. */
-export async function turnOnPush(userId: string): Promise<PushState> {
+export async function turnOnPush(): Promise<PushState> {
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return permission === 'denied' ? 'blocked' : 'off'
   const reg = await navigator.serviceWorker.ready
   const sub = await reg.pushManager.getSubscription()
     ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toBytes(VAPID) })
-  await save(sub, userId)
+  await save(sub)
   return 'on'
 }
 
@@ -67,11 +68,11 @@ export async function forgetThisDevice() {
 
 /* On every start: if notifications are on, make sure the server still has this phone for this person
    (the browser can rotate the address, or someone else may have used the phone before). */
-export async function resyncPush(userId: string) {
+export async function resyncPush() {
   try {
     if ((await pushState()) !== 'on') return
     const sub = await (await navigator.serviceWorker.ready).pushManager.getSubscription()
-    if (sub) await save(sub, userId)
+    if (sub) await save(sub)
   } catch { /* not worth bothering anyone about */ }
 }
 

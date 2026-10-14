@@ -2,6 +2,7 @@
    your modules and where your application stands. */
 
 import { useAuth } from '../../lib/auth'
+import { useEffect } from 'react'
 import { useQuery } from '../../lib/data'
 import { isOpen, loadMyApplication, loadMyModules } from '../../lib/student'
 import { Icon } from '../../ui/icons'
@@ -20,6 +21,12 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
   const mods = useQuery(`my-modules:${uid}`, () => loadMyModules(uid))
   const app = useQuery(appKey(uid), () => loadMyApplication(uid))
   const att = useQuery('my-attendance', loadMyAttendance)
+  // Coming back to the app (e.g. after checking in from a scanned link) shows the latest numbers.
+  useEffect(() => {
+    const back = () => { if (document.visibilityState === 'visible') att.reload() }
+    document.addEventListener('visibilitychange', back)
+    return () => document.removeEventListener('visibilitychange', back)
+  }, [att.reload])
   const { push } = useStack()
   const first = profile!.full_name.split(' ')[0] || 'there'
   const open = (tab: string) => { haptic(8); go(tab) }

@@ -1,4 +1,5 @@
-/* A student's attendance per module: one line from 0% to 100%. Private to them.
+/* A student's attendance per module: one line from 0% to 100%, out of the sessions run by the
+   tutor(s) they go to. Private to them.
    The marks at 50% and 75% are the "high points" to aim for. */
 
 import type { MyAttendance } from '../lib/attendance'
@@ -18,7 +19,7 @@ export function AttendanceLines({ rows }: { rows: MyAttendance[] }) {
               <span className={'att__fill' + (pct >= 75 ? ' high' : '')} style={{ width: `${pct}%` }} />
               <i style={{ left: '50%' }} /><i style={{ left: '75%' }} />
             </div>
-            <p className="att__meta">{r.held ? `${r.attended} of ${r.held} session${r.held === 1 ? '' : 's'} this semester` : 'No sessions held yet this semester'}</p>
+            <p className="att__meta">{r.held ? `${r.attended} of ${r.held} session${r.held === 1 ? '' : 's'} with your tutor this semester` : 'You haven’t checked in to a session yet'}</p>
           </div>
         )
       })}
