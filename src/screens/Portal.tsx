@@ -17,6 +17,7 @@ import { useStack } from '../nav/Stack'
 import { useOverlay } from '../ui/Overlay'
 import { QualificationSheet } from '../ui/Qualification'
 import { CheckIn } from './student/CheckIn'
+import { AttendanceIndex } from './attendance/Attendance'
 import { Group, SHead, SRow } from '../ui/Settings'
 import { resyncPush } from '../lib/push'
 import { AdminTutors } from './admin/Tutors'
@@ -56,10 +57,11 @@ const PORTALS: Record<View, { tabs: Tab<string>[]; titles: Record<string, string
   lecturer: {
     tabs: [
       { id: 'home', icon: 'people', label: 'Tutors' },
+      { id: 'attendance', icon: 'calChk', label: 'Attendance' },
       { id: 'inbox', icon: 'mail', label: 'Messages' },
       { id: 'profile', icon: 'user', label: 'Profile' },
     ],
-    titles: { home: 'My tutors', inbox: 'Messages', profile: 'Profile' },
+    titles: { home: 'My tutors', attendance: 'Attendance', inbox: 'Messages', profile: 'Profile' },
   },
   admin: {
     tabs: [
@@ -132,6 +134,7 @@ export function Portal() {
           : view === 'student' && tab === 'modules' ? <MyModulesTab />
           : tab === 'inbox' ? <Inbox />
           : view === 'lecturer' && tab === 'home' ? <LecturerHome />
+          : view === 'lecturer' && tab === 'attendance' ? <AttendanceIndex />
           : view === 'tutor' && tab === 'home' ? <TutorSchedule go={setTab} unread={unread} />
           : view === 'tutor' && tab === 'sessions' ? <TutorSessions />
           : view === 'tutor' && tab === 'pay' ? <TutorPay />

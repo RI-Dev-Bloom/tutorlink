@@ -540,6 +540,32 @@ await ok('a session moved to another day that week is reused, not added', async 
   return eq((await db.query(`select count(*)::int n from public.sessions where tutor_id = $1`, [ids.stu2])).rows[0].n, before, 'no extra session')
 })
 
+console.log('\nattendance views')
+const semNow = (await db.query(`select semester_id from public.sessions where id = $1`, [cls])).rows[0].semester_id
+await ok('lecturer sees only their modules', async () => {
+  const mods = (await as(ids.lect, `select module_code from public.attendance_summary($1)`, [semNow])).map(r => r.module_code)
+  return eq(mods, ['PROG1111'], 'modules')
+})
+await ok('admin sees every module, and different students across them', async () => {
+  const mods = (await as(ids.admin, `select module_code from public.attendance_summary($1)`, [semNow])).map(r => r.module_code)
+  if (!mods.includes('PROG1111') || !mods.includes('MATH1111')) throw new Error(mods.join())
+  const [t] = await as(ids.admin, `select * from public.attendance_totals($1)`, [semNow])
+  if (t.students !== 3 || t.checkins < 4) throw new Error(JSON.stringify(t))
+  return t
+})
+await ok('a tutor only counts their own sessions', async () => {
+  const mods = (await as(ids.stu2, `select module_code from public.attendance_summary($1)`, [semNow])).map(r => r.module_code)
+  return eq(mods, ['MATH1111'], 'modules')
+})
+await ok('the module roster: each student, sessions attended out of held', async () => {
+  const rows = await as(ids.lect, `select student_number, attended, held from public.attendance_roster($1, 'PROG1111')`, [semNow])
+  const s3 = rows.find(r => r.student_number === 'ST30000031')
+  if (!s3 || s3.attended !== 2 || s3.held < 2) throw new Error(JSON.stringify(rows))
+  return rows.length
+})
+await ok('another lecturer gets nothing for it', async () => eq((await as(ids.lect2, `select * from public.attendance_roster($1, 'PROG1111')`, [semNow])).length, 0, 'rows'))
+await ok('a student only ever counts themselves', async () => eq((await as(S4, `select * from public.attendance_roster($1, 'PROG1111')`, [semNow])).filter(r => r.student_number !== 'ST30000032').length, 0, 'others'))
+
 console.log('\nsigned-out users')
 await ok('anon sees nothing', async () => {
   await db.exec('begin'); await db.exec('set local role anon')

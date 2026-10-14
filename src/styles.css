@@ -844,3 +844,19 @@ button.srow:active { background: var(--bg); }
 .show__small { margin-top: 8px; font-size: 13px; color: var(--muted2); }
 .show--msg { align-items: center; justify-content: center; text-align: center; gap: 10px; }
 .show--msg h1 { font-family: var(--fh); font-size: 38px; }
+
+/* ---------- attendance views ---------------------------------- */
+
+.figs { display: grid; grid-template-columns: repeat(3, 1fr); padding: 14px 0; background: var(--card); border: 1px solid var(--line); border-radius: var(--rl); }
+.figs div { padding: 0 14px; }
+.figs div + div { border-left: 1px solid var(--lineS); }
+.figs b { display: block; font-size: 20px; font-weight: 600; line-height: 1.1; font-variant-numeric: lining-nums tabular-nums; }
+.figs span { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
+.minibar { display: block; height: 4px; margin-top: 7px; max-width: 160px; border-radius: 2px; background: var(--lineS); overflow: hidden; }
+.minibar span { display: block; height: 100%; border-radius: 2px; background: var(--navy); }
+.minibar span.high { background: var(--gold); }
+.rside--num { flex-direction: column; align-items: flex-end; gap: 1px; }
+.rside--num b { font-size: 15px; font-weight: 600; color: var(--text); font-variant-numeric: lining-nums tabular-nums; }
+.rside--num span { font-size: 11px; color: var(--muted); }
+button.band__stats { width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; color: inherit; font: inherit; padding-left: 0; padding-right: 0; }
+.band__more { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; padding: 0; border: 0; background: none; font-size: 12px; font-weight: 600; color: var(--goldD); }

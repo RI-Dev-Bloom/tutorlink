@@ -20,7 +20,7 @@ import { SessionScreen } from '../tutor/Checkin'
 import { loadSettings } from '../../lib/student'
 
 // Anything that changes a tutor's sessions refreshes every screen that shows them.
-const refresh = () => invalidate('tutor', 'tutors', 'sessions', 'overrides')
+const refresh = () => invalidate('tutor', 'tutors', 'sessions', 'att-totals', 'att-summary', 'att-roster', 'att-held', 'overrides')
 
 
 export function TutorDetail({ id }: { id: string }) {

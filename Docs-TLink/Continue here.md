@@ -43,19 +43,19 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [x] High-risk modules marked (HCIN6222, MATH1111, PROG1111)
 - [ ] **You:** check the R260 rate. It's now **per hour**, so a 1½-hour session pays R390
 - [ ] **You:** check the "Semester 2, 2026" dates (13 Jul–27 Nov)
-- [ ] **Slice 10:** attendance views for lecturers (their modules) and admin, CSV downloads, "students reached" from real check-ins
+- [x] **Slice 10:** attendance views for lecturers, admin and tutors, CSV downloads, real "students reached"
 - [ ] Weekly backups: add the two secrets in GitHub (about 5 minutes together)
 - [ ] **Slice 8:** test on a real iPhone and Android, fix what the team finds, remove all test data and test accounts, handover checklist, suggest a stronger database password
 
 ## Later phases
 - [ ] Phase 2: student module page and announcements from tutors
 - [ ] Phase 3: quizzes (self-paced and live)
-- [x] Phase 4: attendance (brought forward: slice 9 done, slice 10 next)
+- [x] Phase 4: attendance (brought forward and done: slices 9 and 10)
 
 ## How far along (15 Oct)
-Phase 1 plus attendance is about 90% done: slice 10 and the final test pass are left. All phases together are about 65%.
+Phase 1 plus attendance is about 95% done: only the final test pass and handover (slice 8) are left. All phases together are about 70%.
 
 ## To pick up again
-Say "start slice 10". Each slice goes live, you test it on your phone, then we move on.
+Say "start slice 8" for the final test pass and handover, or name a feature to add first. Each slice goes live, you test it on your phone, then we move on.
 
 Related: [[TutorLink]], [[Build plan]], [[Handover]]

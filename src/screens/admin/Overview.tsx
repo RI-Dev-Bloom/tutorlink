@@ -21,6 +21,8 @@ import { SetupCard } from '../../ui/Setup'
 import { loadModules } from './Modules'
 import { SemesterPay } from './SemesterPay'
 import { TutorDetail } from './TutorDetail'
+import { loadTotals } from '../../lib/attendance'
+import { AttendanceScreen, ModuleAttendance } from '../attendance/Attendance'
 
 /* Open applications: how many, and how long the oldest has waited. Shares the 'applications' prefix. */
 const loadAppQueue = async () => {
@@ -44,6 +46,8 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
   const overrides = useQuery(`overrides:${semId}`, () => semId ? loadOverrides(semId) : Promise.resolve([]))
   const modules = useQuery('modules', loadModules)
   const rate = Number(useQuery('settings', loadSettings).data?.rate_per_session ?? 0)
+  // Different students who checked in this semester (one student at five sessions counts once).
+  const totals = useQuery(`att-totals:${semId}`, () => semId ? loadTotals(semId) : Promise.resolve(null))
   const today = todayISO()
 
   const v = useMemo(() => {
@@ -81,7 +85,8 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
       <h2 className="display display--sm">{first ? `Hi ${first}` : 'Overview'}</h2>
       <SetupCard />
 
-      {sem ? <SemesterBand sem={sem} today={today} run={v.done.length} students={v.students} /> : semesters.data ? (
+      {sem ? <SemesterBand sem={sem} today={today} run={v.done.length} students={totals.data?.students ?? 0} checkins={totals.data?.checkins ?? 0}
+        onOpen={() => { haptic(8); push(<AttendanceScreen />) }} /> : semesters.data ? (
         <button className="note note--amber" style={{ marginTop: 16, width: '100%', textAlign: 'left' }} onClick={() => open('profile')}>
           <Icon name="alert" size={15} /><span>Add this semester's dates in Settings so tutors can be scheduled.</span>
         </button>
@@ -139,11 +144,11 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
       {v.coverage.length ? (
         <div className="card">
           {v.coverage.map(({ m, tutors: n, run }) => (
-            <div className="row" key={m.code}>
+            <button className="row" key={m.code} onClick={() => { if (sem) { haptic(8); push(<ModuleAttendance code={m.code} name={m.name} sem={sem} />) } }}>
               <span className={'cov' + (n ? '' : ' cov--gap')}>{n}</span>
               <span className="rmain"><span className="rname">{m.name}</span><span className="rmeta"><span className="mono">{m.code}</span> · {n === 1 ? '1 tutor' : `${n} tutors`}{sem ? ` · ${run} session${run === 1 ? '' : 's'} run` : ''}</span></span>
-              {!n ? <span className="rside"><Badge tone="red">No tutor</Badge></span> : null}
-            </div>
+              <span className="rside">{!n ? <Badge tone="red">No tutor</Badge> : null}<Icon name="chev" size={17} stroke={2.1} /></span>
+            </button>
           ))}
         </div>
       ) : (
@@ -157,12 +162,12 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
 
 /* ---------- where we are in the semester ------------------ */
 
-function SemesterBand({ sem, today, run, students }: { sem: Semester; today: string; run: number; students: number }) {
+function SemesterBand({ sem, today, run, students, checkins, onOpen }: { sem: Semester; today: string; run: number; students: number; checkins: number; onOpen: () => void }) {
   const weeks = semWeeks(sem)
   const before = today < sem.starts_on, after = today > sem.ends_on
   const week = before ? 0 : after ? weeks + 1 : semWeek(sem, today)
   const daysTo = (iso: string) => Math.round((new Date(iso).getTime() - new Date(today).getTime()) / 86_400_000)
-  const avg = run ? (students / run).toFixed(1).replace(/\.0$/, '') : '–'
+  const avg = run ? (checkins / run).toFixed(1).replace(/\.0$/, '') : '–'
 
   return (
     <section className="band" aria-label={before ? `${sem.name} hasn't started` : after ? `${sem.name} has ended` : `${sem.name}, week ${week} of ${weeks}`}>
@@ -178,11 +183,12 @@ function SemesterBand({ sem, today, run, students }: { sem: Semester; today: str
         {Array.from({ length: weeks }, (_, i) => <i key={i} className={i + 1 < week ? 'past' : i + 1 === week ? 'now' : undefined} />)}
       </div>
       <div className="band__dates"><span>{fDate(sem.starts_on)}</span><span>{fDate(sem.ends_on)}</span></div>
-      <div className="band__stats">
+      <button className="band__stats" onClick={onOpen} aria-label="Open attendance">
         <div><b>{run}</b><span>Sessions run</span></div>
         <div><b>{students}</b><span>Students reached</span></div>
         <div><b>{avg}</b><span>Per session</span></div>
-      </div>
+      </button>
+      <button className="band__more" onClick={onOpen}>Attendance by module <Icon name="chev" size={14} stroke={2.2} /></button>
     </section>
   )
 }

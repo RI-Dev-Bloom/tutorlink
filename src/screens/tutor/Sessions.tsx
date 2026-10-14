@@ -9,6 +9,7 @@ import { useOverlay } from '../../ui/Overlay'
 import { Badge, Loading } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { SessionScreen, StartCheckinSheet } from './Checkin'
+import { AttendanceScreen } from '../attendance/Attendance'
 import { useMine } from './mine'
 
 const STATUS: Record<Session['status'], { label: string; tone: 'amber' | 'green' | 'gold' | 'plain' | 'red' }> = {
@@ -34,6 +35,11 @@ export function TutorSessions() {
   return (
     <>
       <div className="pad pad--fab stagger">
+        <button className="row card" style={{ marginBottom: 18 }} onClick={() => { haptic(8); push(<AttendanceScreen />) }}>
+          <span className="avatar"><Icon name="people" size={18} /></span>
+          <span className="rmain"><span className="rname">Your students</span><span className="rmeta">Who comes to your sessions, and how often</span></span>
+          <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
+        </button>
         <div className="sect" style={{ marginTop: 0 }}>Sessions <span className="muted">{past.length}</span></div>
         {past.length ? (
           <div className="card">

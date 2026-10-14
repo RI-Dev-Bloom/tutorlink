@@ -59,8 +59,17 @@ On their home screen, one line per module from 0% to 100%: sessions they came to
 | Lecturer | | | Yes | |
 | Admin | | | | Yes |
 
-## Still to come (slice 10)
-- Lecturer and admin attendance views: per module and per student, with CSV downloads.
-- The Overview's "students reached" counted from check-ins.
+## Attendance views
+The same screens for everyone, showing only what they're allowed to see:
+- **Lecturers:** an **Attendance** tab with their modules.
+- **Admin:** from the Overview (tap the reach figures or **Attendance by module**), every module. Each high-risk module on the Overview opens its attendance too.
+- **Tutors:** **Your students** on the Sessions tab, for their own sessions.
+
+For a semester (earlier ones can be picked at the top): sessions held, **students reached** (different students, so someone at five sessions counts once), and the average per session. Then per module:
+- **Students:** each student's name, student number and qualification, with a line and "7 of 9" (their rate across the module's sessions).
+- **Sessions:** each session with the tutor, venue, length and how many checked in. Tap one for the list (read-only for lecturers).
+- **Downloads (CSV, opens in Excel):** the student list with rates, and every check-in (date, time, module, tutor, venue, student number, name, qualification, how they checked in). The index also downloads every check-in for the semester.
+
+The Overview's "Students reached" and "Per session" now come from real check-ins.
 
 Related: [[Pay]], [[Tutor management]], [[Session quota]], [[Schedule]]

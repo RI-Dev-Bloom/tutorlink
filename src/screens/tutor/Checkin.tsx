@@ -66,7 +66,7 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
     setBusy(true); setError('')
     try {
       const id = await must(supabase.rpc('tutor_start_checkin', { p_module: module, p_venue: venue.trim(), p_hours: hours, p_mode: mode, p_minutes: minutes })) as string
-      haptic(18); invalidate('tutor', 'tutors', 'sessions', 'open-checkin'); closeSheet(); onStarted(id); toast('Check-in is open')
+      haptic(18); invalidate('tutor', 'tutors', 'sessions', 'att-totals', 'att-summary', 'att-roster', 'att-held', 'open-checkin'); closeSheet(); onStarted(id); toast('Check-in is open')
     } catch (err) { haptic(24); setError(friendlyError(err)); setBusy(false) }
   }
 
@@ -129,7 +129,8 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
   const key = `session:${sessionId}`
   const s = useQuery(key, () => must(supabase.from('sessions').select(`${SESSION_COLS}, modules(name)`).eq('id', sessionId).single<SessionRow>()))
   const att = useQuery(`attendance:${sessionId}`, () => loadAttendance(sessionId))
-  const { live } = useLive(() => supabase.rpc('tutor_checkin_live', { p_session: sessionId }), sessionId)
+  const canManage = isAdmin || (!!s.data && s.data.tutor_id === profile?.id)
+  const { live } = useLive(() => supabase.rpc('tutor_checkin_live', { p_session: sessionId }), sessionId, canManage)
   const [closing, setClosing] = useState(false)
 
   // A new scan bumps the count: fetch the list again.
@@ -140,7 +141,7 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
   if (!session) return (<><NavBar title="Session" left={<BackButton />} />{s.error ? <p className="err pad">{s.error}</p> : <Loading />}</>)
 
   const open = !!live?.open
-  const editable = (session.status === 'scheduled' || session.status === 'logged') && session.session_date <= todayISO()
+  const editable = canManage && (session.status === 'scheduled' || session.status === 'logged') && session.session_date <= todayISO()
   const rows = att.data ?? []
 
   const close = async () => {
@@ -148,7 +149,7 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
     const { error } = await supabase.rpc('tutor_close_checkin', { p_session: sessionId })
     setClosing(false)
     if (error) { toast(friendlyError(error)); return }
-    haptic(16); invalidate(key, 'open-checkin', 'tutor', 'tutors', 'sessions'); toast(`Closed · ${rows.length} checked in`)
+    haptic(16); invalidate(key, 'open-checkin', 'tutor', 'tutors', 'sessions', 'att-totals', 'att-summary', 'att-roster', 'att-held'); toast(`Closed · ${rows.length} checked in`)
   }
 
   const shareScreen = async () => {
@@ -232,7 +233,7 @@ function AttendeeRow({ r, canRemove }: { r: AttendanceRow; canRemove: boolean })
     if (!sure) { haptic(12); setSure(true); setTimeout(() => setSure(false), 3000); return }
     const { error } = await supabase.rpc('tutor_remove_attendance', { p_id: r.id })
     if (error) { toast(friendlyError(error)); return }
-    haptic(14); invalidate(`attendance:${r.session_id}`, `session:${r.session_id}`, 'tutor', 'tutors', 'sessions'); toast(`${r.full_name.split(' ')[0]} taken off`)
+    haptic(14); invalidate(`attendance:${r.session_id}`, `session:${r.session_id}`, 'tutor', 'tutors', 'sessions', 'att-totals', 'att-summary', 'att-roster', 'att-held'); toast(`${r.full_name.split(' ')[0]} taken off`)
   }
   return (
     <div className="row">
@@ -264,7 +265,7 @@ function AddStudentSheet({ sessionId }: { sessionId: string }) {
     setBusy(true); setError('')
     try {
       await must(supabase.rpc('tutor_add_attendance', { p_session: sessionId, p_student_number: clean, p_full_name: name.trim(), p_qualification: qual.trim() }))
-      haptic(16); invalidate(`attendance:${sessionId}`, `session:${sessionId}`, 'tutor', 'tutors', 'sessions'); closeSheet(); toast(`${clean} added`)
+      haptic(16); invalidate(`attendance:${sessionId}`, `session:${sessionId}`, 'tutor', 'tutors', 'sessions', 'att-totals', 'att-summary', 'att-roster', 'att-held'); closeSheet(); toast(`${clean} added`)
     } catch (err) { haptic(24); setError(friendlyError(err)); setBusy(false) }
   }
 
