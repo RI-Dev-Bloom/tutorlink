@@ -1,5 +1,5 @@
-/* Student → Home. For now: your modules and where your application stands.
-   Announcements and the next tutorial session land here in a later phase. */
+/* Student → Home. Check in to a session, your attendance per module (private to you),
+   your modules and where your application stands. */
 
 import { useAuth } from '../../lib/auth'
 import { useQuery } from '../../lib/data'
@@ -9,12 +9,18 @@ import { Badge } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { appKey } from './Apply'
 import { SetupCard } from '../../ui/Setup'
+import { loadMyAttendance } from '../../lib/attendance'
+import { useStack } from '../../nav/Stack'
+import { AttendanceLines } from '../../ui/Progress'
+import { CheckIn } from './CheckIn'
 
 export function StudentHome({ go }: { go: (tab: string) => void }) {
   const { profile } = useAuth()
   const uid = profile!.id
   const mods = useQuery(`my-modules:${uid}`, () => loadMyModules(uid))
   const app = useQuery(appKey(uid), () => loadMyApplication(uid))
+  const att = useQuery('my-attendance', loadMyAttendance)
+  const { push } = useStack()
   const first = profile!.full_name.split(' ')[0] || 'there'
   const open = (tab: string) => { haptic(8); go(tab) }
   const a = app.data
@@ -24,7 +30,17 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
       <p className="eyebrow">Rosebank International</p>
       <h2 className="display display--sm">Hi {first}</h2>
       <p className="sub">Your tutoring programme, in one place.</p>
+      <button className="btn" style={{ marginTop: 18 }} onClick={() => { haptic(10); push(<CheckIn />) }}>
+        <Icon name="calChk" size={18} /> Check in to a session
+      </button>
       <SetupCard />
+
+      {att.data?.length ? (
+        <>
+          <div className="sect" style={{ marginTop: 24 }}>My attendance <span className="muted" style={{ textTransform: 'none', letterSpacing: 0 }}>only you see this</span></div>
+          <AttendanceLines rows={att.data} />
+        </>
+      ) : null}
 
       <div className="sect" style={{ marginTop: 24 }}>This semester</div>
       <div className="card">
@@ -71,7 +87,7 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
       )}
 
       <div className="note note--plain" style={{ marginTop: 22 }}><Icon name="clock" size={15} />
-        <span>Coming soon: announcements from your tutors and your next tutorial session.</span></div>
+        <span>Coming soon: announcements from your tutors.</span></div>
     </div>
   )
 }

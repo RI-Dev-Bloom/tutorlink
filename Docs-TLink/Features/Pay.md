@@ -4,11 +4,11 @@ status: v1
 
 # Pay
 
-**In short:** tutors are paid once per semester. Every session admin confirms counts towards the total, and Rosebank pays it all after the semester ends.
+**In short:** tutors are paid **per hour**, once per semester. Every session admin confirms adds its hours × the rate, and Rosebank pays it all after the semester ends.
 
 ## How it works
-1. The tutor runs a session and logs it (how many students came).
-2. Admin checks it against the signed register and confirms it. That locks in the rate per session.
+1. The tutor runs a session with a check-in ([[Attendance]]). Its length (e.g. 1½ hours) is set when the check-in starts.
+2. Admin confirms it, which needs enough students checked in. That locks in the rate per hour; the session pays rate × hours.
 3. Confirmed sessions add up through the semester.
 4. After the semester ends, admin downloads the **pay sheet** and Rosebank pays each tutor their total in one go.
 
@@ -28,6 +28,7 @@ There's no "mark as paid" in the app. The app keeps the count; Rosebank does the
 
 ## Rules
 - Only confirmed sessions count. Waiting and scheduled amounts are estimates at today's rate.
-- The rate comes from [[Settings]]. Changing it doesn't change sessions already confirmed.
+- The **rate per hour** comes from [[Settings]]. Changing it doesn't change sessions already confirmed.
+- The pay sheet and the tutor's statement show hours as well as amounts.
 
 Related: [[Tutor management]], [[Session quota]], [[Admin overview]]

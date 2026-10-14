@@ -169,6 +169,8 @@ await ok('inbox hides threads you lost access to', async () => {
 await ok('other people see none of it', async () => eq((await as(ids.lect2, `select * from public.my_inbox()`)).length, 0, 'rows'))
 
 console.log('\nsessions and quota')
+// These tests predate check-in; the attendance section turns the minimum back on.
+await db.query(`update public.settings set min_attendance = 0`)
 await denied('session outside any semester', () => as(ids.admin, `insert into public.sessions (tutor_id, module_code, session_date) values ($1,'PROG1111','2026-03-02')`, [ids.stu]), 'No semester')
 let sem
 await ok('admin adds semester with quota 3', async () => { sem = (await as(ids.admin, `insert into public.semesters (name, starts_on, ends_on, session_quota) values ('S2 2026','2026-07-13','2026-11-27',3) returning id`))[0].id })
@@ -402,6 +404,127 @@ await ok('one module over the minimum keeps it in; approving adds only that modu
   return eq((await db.query(`select module_code from public.tutor_modules where tutor_id=$1`, [ids.stu2])).rows.map(r => r.module_code), ['MATH1111'], 'tutor modules')
 })
 await denied('signed-in users cannot run the filter', () => as(ids.admin, `select public.auto_decline_applications()`), 'permission denied')
+
+console.log('\nattendance')
+const S3 = '00000000-0000-0000-0000-000000000031', S4 = '00000000-0000-0000-0000-000000000032', S5 = '00000000-0000-0000-0000-000000000033'
+await db.query(`insert into auth.users (id, email, raw_user_meta_data) values
+  ($1, 's3@x', '{"name":"Thandi Three"}'), ($2, 's4@x', '{"name":"Four Student"}'), ($3, 's5@x', '{"name":"Five Student"}')`, [S3, S4, S5])
+await db.query(`update public.profiles set student_number = 'ST300000' || right(id::text, 2) where id in ($1, $2, $3)`, [S3, S4, S5])
+await db.query(`update public.profiles set qualification_code = 'DISD' where id in ($1, $2)`, [S4, S5])
+const today = (await db.query(`select (now() at time zone 'Africa/Johannesburg')::date::text d`)).rows[0].d
+const live = async (sid, who = ids.stu) => (await as(who, `select public.tutor_checkin_live($1) r`, [sid]))[0].r
+let cls, onl
+await ok("tutor starts a class check-in: today's planned session is used, 1.5 hours", async () => {
+  const planned = (await db.query(`select id from public.sessions where tutor_id = $1 and session_date = $2 and status = 'scheduled'`, [ids.stu, today])).rows[0].id
+  cls = (await as(ids.stu, `select public.tutor_start_checkin('PROG1111', 'Lab 3', 1.5, 'class') id`))[0].id
+  eq(cls, planned, 'session')
+  return eq((await db.query(`select status::text, venue, hours::float from public.sessions where id = $1`, [cls])).rows[0], { status: 'logged', venue: 'Lab 3', hours: 1.5 }, 'session')
+})
+await ok('the tutor can find their open check-in', async () => eq((await as(ids.stu, `select public.tutor_open_checkin() id`))[0].id, cls, 'open'))
+await denied('only one open check-in at a time', () => as(ids.stu, `select public.tutor_start_checkin('PROG1111', '', 1, 'class')`), 'already have a check-in open')
+await denied('not for a module they don\'t tutor', () => as(ids.stu, `select public.tutor_start_checkin('NETW1111', '', 1, 'class')`), 'not approved')
+await denied('students cannot see the live code', () => live(cls, S3), 'Session not found')
+await ok('the live screen has a QR token and a 6-letter code', async () => {
+  const r = await live(cls)
+  if (!/^[0-9a-f-]{36}\.\d+\.[0-9a-f]{12}$/.test(r.token) || !/^[A-Z2-9]{6}$/.test(r.code) || !r.open) throw new Error(JSON.stringify(r))
+})
+await denied('a student needs a qualification first', async () => as(S3, `select public.check_in($1)`, [(await live(cls)).token]), 'Choose your qualification first')
+await ok('student scans: details come from their account', async () => {
+  await as(S3, `update public.profiles set qualification_code = 'DISD' where id = $1`, [S3])
+  const r = (await as(S3, `select public.check_in($1) r`, ['https://x.test/tutorlink/?checkin=' + (await live(cls)).token]))[0].r
+  eq([r.module_code, r.already], ['PROG1111', false], 'result')
+  eq((await db.query(`select student_number, full_name, qualification_code, method from public.attendance where student_id = $1`, [S3])).rows[0],
+    { student_number: 'ST30000031', full_name: 'Thandi Three', qualification_code: 'DISD', method: 'qr' }, 'row')
+  return eq((await db.query(`select count(*)::int n from public.student_modules where student_id = $1 and module_code = 'PROG1111'`, [S3])).rows[0].n, 1, 'module added')
+})
+await ok('scanning twice just says so', async () => eq((await as(S3, `select public.check_in($1) r`, [(await live(cls)).token]))[0].r.already, true, 'already'))
+await denied('an old QR stops working', async () => {
+  const t = (await db.query(`select $1::text || '.' || (public.checkin_window() - 10) || '.' || public.checkin_sig(secret, $1::uuid, public.checkin_window() - 10) t from public.checkins where session_id = $1::uuid`, [cls])).rows[0].t
+  return as(S4, `select public.check_in($1)`, [t])
+}, 'expired')
+await denied('a made-up code is refused', async () => as(S4, `select public.check_in($1)`, [(await live(cls)).token.slice(0, -1) + 'x']), "isn't a TutorLink")
+await ok('typing the 6-letter code works too', async () => {
+  await as(S4, `select public.check_in_code($1)`, [(await live(cls)).code.toLowerCase()])
+  return eq((await db.query(`select method from public.attendance where student_id = $1`, [S4])).rows[0].method, 'code', 'method')
+})
+await denied('a tutor cannot check in to their own session', async () => as(ids.stu, `select public.check_in($1)`, [(await live(cls)).token]), 'own session')
+await denied('lecturers cannot check in', async () => as(ids.lect, `select public.check_in($1)`, [(await live(cls)).token]), 'Only students')
+await denied('nobody writes attendance directly', () => as(S5, `insert into public.attendance (session_id, student_number, full_name, method) values ($1, 'ST30000033', 'Five', 'qr')`, [cls]))
+await denied('signed-in users cannot make codes themselves', () => as(S3, `select public.checkin_sig(gen_random_uuid(), gen_random_uuid(), 1)`), 'permission denied')
+await ok('who sees it: the student their own, tutor and lecturer all, others none', async () => {
+  eq((await as(S3, `select id from public.attendance`)).length, 1, 'student')
+  eq((await as(ids.stu, `select id from public.attendance`)).length, 2, 'tutor')
+  eq((await as(ids.lect, `select id from public.attendance`)).length, 2, 'lecturer')
+  eq((await as(ids.lect2, `select id from public.attendance`)).length, 0, 'other lecturer')
+  return eq((await as(ids.stu2, `select id from public.attendance`)).length, 0, 'other tutor')
+})
+await ok('admin cannot confirm with fewer than the minimum', async () => {
+  await as(ids.admin, `update public.settings set min_attendance = 3`)
+  try { await as(ids.admin, `update public.sessions set status = 'confirmed' where id = $1`, [cls]); throw new Error('was allowed') }
+  catch (e) { if (!e.message.includes('at least 3 students')) throw e }
+})
+await ok('tutor adds a student by number (labelled manual)', async () => {
+  await as(ids.stu, `select public.tutor_add_attendance($1, 'st30000033', '', '')`, [cls])
+  return eq((await db.query(`select full_name, method, added_by = $2 as by_tutor from public.attendance where session_id = $1 and student_number = 'ST30000033'`, [cls, ids.stu])).rows[0],
+    { full_name: 'Five Student', method: 'manual', by_tutor: true }, 'row')
+})
+await ok('and someone without an account, by name', async () => {
+  await as(ids.stu, `select public.tutor_add_attendance($1, 'ST39999999', 'Lerato Paper', 'DISD')`, [cls])
+  return eq((await db.query(`select students_attended from public.sessions where id = $1`, [cls])).rows[0].students_attended, 4, 'count')
+})
+await denied('not twice', () => as(ids.stu, `select public.tutor_add_attendance($1, 'ST39999999', 'Lerato Paper', '')`, [cls]), 'already on the list')
+await denied('a name is needed when there is no account', () => as(ids.stu, `select public.tutor_add_attendance($1, 'ST39999998', '', '')`, [cls]), 'name and surname')
+await ok('tutor takes one off again', async () => {
+  const [{ id }] = (await db.query(`select id from public.attendance where student_number = 'ST39999999'`)).rows
+  await as(ids.stu, `select public.tutor_remove_attendance($1)`, [id])
+  return eq((await db.query(`select students_attended from public.sessions where id = $1`, [cls])).rows[0].students_attended, 3, 'count')
+})
+await ok('with 3 checked in, admin confirms; pay = rate x 1.5 hours', async () => {
+  await as(ids.admin, `update public.settings set rate_per_session = 200`)
+  await as(ids.admin, `update public.sessions set status = 'confirmed' where id = $1`, [cls])
+  return eq((await db.query(`select amount::float from public.sessions where id = $1`, [cls])).rows[0].amount, 300, 'amount')
+})
+await denied('the list is locked once confirmed', () => as(ids.stu, `select public.tutor_add_attendance($1, 'ST30000032', '', '')`, [cls]), 'already confirmed')
+await ok('the projector screen works without signing in, and shows no secrets', async () => {
+  const [{ display_id }] = (await db.query(`select display_id from public.checkins where session_id = $1`, [cls])).rows
+  await db.exec('begin'); await db.exec('set local role anon')
+  try {
+    const r = (await db.query(`select public.checkin_display($1) r`, [display_id])).rows[0].r
+    if (!r.open || r.module_name !== 'Programming 1' || r.display_id || r.secret) throw new Error(JSON.stringify(r))
+  } finally { await db.exec('rollback') }
+})
+await ok('closing it stops check-ins and the projector screen', async () => {
+  await as(ids.stu, `select public.tutor_close_checkin($1)`, [cls])
+  const [{ display_id }] = (await db.query(`select display_id from public.checkins where session_id = $1`, [cls])).rows
+  eq((await as(S5, `select public.checkin_display($1) r`, [display_id]))[0].r.open, false, 'display')
+  eq((await as(ids.stu, `select public.tutor_open_checkin() id`))[0].id, null, 'none open')
+  try { await as(S5, `select public.check_in($1)`, [(await live(cls)).token]); throw new Error('was allowed') }
+  catch (e) { if (!e.message.includes('closed')) throw e }
+})
+await ok('online: a 4-digit code to share in Teams', async () => {
+  onl = (await as(ids.stu, `select public.tutor_start_checkin('PROG1111', 'Teams', 1, 'online') id`))[0].id
+  const r = await live(onl)
+  if (r.mode !== 'online' || !/^\d{4}$/.test(r.online_code)) throw new Error(JSON.stringify(r))
+  await as(S3, `select public.check_in_code($1)`, [r.online_code])
+  return eq((await db.query(`select method from public.attendance where session_id = $1`, [onl])).rows[0].method, 'online', 'method')
+})
+await ok("the student's progress: sessions they came to out of those held", async () => {
+  await as(ids.stu, `select public.tutor_close_checkin($1)`, [onl])
+  const r = (await as(S3, `select * from public.my_attendance() where module_code = 'PROG1111'`))[0]
+  if (r.attended !== 2 || r.held < 2) throw new Error(JSON.stringify(r))
+  return r
+})
+await ok('a session moved to another day that week is reused, not added', async () => {
+  const wk = (await db.query(`select date_trunc('week', $1::date)::date::text d`, [today])).rows[0].d
+  const other = (await db.query(`select (case when $1::date = $2::date then $1::date + 1 else $2::date end)::text d`, [today, wk])).rows[0].d
+  await db.query(`insert into public.semesters (name, starts_on, ends_on) select 'Week', $1::date - 7, $1::date + 7 where not exists (select 1 from public.semesters where $2::date between starts_on and ends_on)`, [today, other])
+  const [{ id: planned }] = await as(ids.admin, `insert into public.sessions (tutor_id, module_code, session_date, starts_at, ends_at) values ($1, 'MATH1111', $2, '10:00', '11:00') returning id`, [ids.stu2, other])
+  const before = (await db.query(`select count(*)::int n from public.sessions where tutor_id = $1`, [ids.stu2])).rows[0].n
+  const got = (await as(ids.stu2, `select public.tutor_start_checkin('MATH1111', 'Lab 1', 1, 'class') id`))[0].id
+  eq(got, planned, 'session reused')
+  eq((await db.query(`select session_date::text d from public.sessions where id = $1`, [got])).rows[0].d, today, 'moved to today')
+  return eq((await db.query(`select count(*)::int n from public.sessions where tutor_id = $1`, [ids.stu2])).rows[0].n, before, 'no extra session')
+})
 
 console.log('\nsigned-out users')
 await ok('anon sees nothing', async () => {

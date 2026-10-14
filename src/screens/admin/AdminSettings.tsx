@@ -17,6 +17,7 @@ import { DeviceSettings } from '../../ui/Setup'
 import { HighRiskModules, Modules, loadModules } from './Modules'
 import { Lecturers } from './Lecturers'
 import { Templates } from './Templates'
+import { Qualifications } from './Qualifications'
 
 export function AdminSettings() {
   const { profile, signOut } = useAuth()
@@ -44,12 +45,14 @@ export function AdminSettings() {
       <SHead name={profile?.full_name || 'Admin'} line={`Administrator · ${profile?.email ?? ''}`} />
 
       <Group title="Programme">
-        <SRow icon="wallet" tone="gold" label="Rate per session" value={s ? rand(s.rate_per_session) : '…'}
-          onClick={() => s && openSheet(<NumberSheet field="rate_per_session" label="Rate per session" prefix="R" value={s.rate_per_session}
-            lead="What a tutor earns for each confirmed session. Sessions already confirmed keep the rate they were confirmed at." />)} />
+        <SRow icon="wallet" tone="gold" label="Rate per hour" value={s ? rand(s.rate_per_session) : '…'}
+          onClick={() => s && openSheet(<NumberSheet field="rate_per_session" label="Rate per hour" prefix="R" value={s.rate_per_session}
+            lead="What a tutor earns per hour of a confirmed session (a 1½-hour session pays 1.5 times this). Sessions already confirmed keep the rate they were confirmed at." />)} />
         <SRow icon="check" tone="green" label="Minimum mark" value={s ? `${s.min_mark}%` : '…'}
           onClick={() => s && openSheet(<NumberSheet field="min_mark" label="Minimum mark" suffix="%" value={s.min_mark}
             lead="The mark a student needs in a module to tutor it. Approving only adds the modules where they reach it." />)} />
+        <SRow icon="people" tone="blue" label="Minimum attendance" value={s ? `${s.min_attendance} student${s.min_attendance === 1 ? '' : 's'}` : '…'}
+          onClick={() => s && openSheet(<MinAttendanceSheet value={s.min_attendance} />)} />
       </Group>
 
       <Group title="Tutor applications"
@@ -86,6 +89,7 @@ export function AdminSettings() {
       <Group title="People and modules">
         <SRow icon="board" tone="gold" label="Lecturers" sub="Let lecturers in, set their modules" onClick={() => push(<Lecturers />)} />
         <SRow icon="book" tone="navy" label="Modules" sub="Add, rename, hide or merge" onClick={() => push(<Modules />)} />
+        <SRow icon="cap" tone="slate" label="Qualifications" sub="The list students pick from, e.g. DISD" onClick={() => push(<Qualifications />)} />
       </Group>
 
       <DeviceSettings />
@@ -96,6 +100,34 @@ export function AdminSettings() {
         <SRow label="Sign out" danger onClick={signOut} />
       </Group>
       <p className="app-foot">TutorLink · Rosebank International</p>
+    </div>
+  )
+}
+
+/* ---------- how many must check in for a session to count -- */
+
+function MinAttendanceSheet({ value }: { value: number }) {
+  const { closeSheet, toast } = useOverlay()
+  const [n, setN] = useState(value)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const save = async () => {
+    setBusy(true)
+    const { error: err } = await supabase.from('settings').update({ min_attendance: n, updated_at: new Date().toISOString() }).eq('id', true)
+    setBusy(false)
+    if (err) { haptic(24); setError(friendlyError(err)); return }
+    haptic(14); invalidate('settings'); closeSheet(); toast(`Sessions need ${n} student${n === 1 ? '' : 's'} to count`)
+  }
+  return (
+    <div>
+      <p className="sheet-sub">Settings · Programme</p>
+      <h3 className="sheet-title">Minimum attendance</h3>
+      <p className="sheet-lead">How many students must check in for a session to count. You can only confirm a session that reaches it. 0 turns the check off.</p>
+      <div className="seg" style={{ marginTop: 18 }}>
+        {[0, 1, 2, 3, 4, 5].map(x => <button key={x} className={n === x ? 'on' : ''} onClick={() => { haptic(6); setN(x) }}>{x}</button>)}
+      </div>
+      {error ? <p className="err">{error}</p> : null}
+      <button className="btn" style={{ marginTop: 18 }} disabled={busy || n === value} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
     </div>
   )
 }

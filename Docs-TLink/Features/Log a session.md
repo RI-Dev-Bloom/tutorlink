@@ -4,20 +4,18 @@ status: v1
 
 # Log a session
 
-**In short:** the tutor records a session they ran. It stays Pending until admin confirms it.
+**In short:** a session is logged by running a check-in. It stays Waiting until admin confirms it.
 
-## What it does
-- On the **Schedule** tab, sessions that have happened (today included) show a **Mark** button. The tutor taps it and types how many students came.
-- On the **Sessions** tab, **Log a session** records one that wasn't on the timetable: date, module, times, venue and number of students. The button says "No sessions left" once the limit is reached.
-- The session shows an amber **Waiting** badge until admin confirms it. A session nobody marked shows **Not marked**, and admin can still confirm it or tap Didn't happen.
-
-## Why it's here
-Logging while you're still in the room is quicker and more accurate than doing it at night. And because only admin can confirm, logging a session doesn't count towards your pay by itself.
+## How
+- **Start check-in** on the Schedule or Sessions tab (see [[Attendance]]). That logs the session, with today's date, the start time and the length.
+- A planned session that never had a check-in shows **No check-in**. If it did happen, the tutor opens it and adds the students by hand. Otherwise admin taps **Didn't happen**.
+- The session shows an amber **Waiting** badge until admin confirms it.
 
 ## Session life cycle
-Scheduled → Logged (Pending) → Confirmed. Confirmed sessions are paid out together after the semester ends. Admin can also add a session that's confirmed straight away.
+Scheduled → Logged (check-in) → Confirmed. Confirmed sessions are paid out together after the semester ends, per hour. Admin can also add a one-off session that's confirmed straight away.
 
 ## Rules
-- You can't log a session if it would go over the [[Session quota]].
+- A new session (nothing planned that week) can't go over the [[Session quota]].
+- Admin can only confirm it with enough students checked in.
 
-Related: [[Upload a register]], [[Tutor management]]
+Related: [[Attendance]], [[Tutor management]]

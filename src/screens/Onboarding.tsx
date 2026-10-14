@@ -1,9 +1,11 @@
-/* First sign-in for a student: confirm their name and add their student number (once). */
+/* First sign-in for a student: confirm their name, add their student number (once)
+   and their qualification. Both are recorded with every check-in. */
 
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { friendlyError, supabase } from '../lib/supabase'
 import { NavBar } from '../ui/parts'
+import { QualificationList } from '../ui/Qualification'
 import { haptic } from '../ui/haptic'
 
 const STUDENT_NO = /^ST\d{8}$/
@@ -12,18 +14,19 @@ export function Onboarding() {
   const { profile, reloadProfile, signOut } = useAuth()
   const [name, setName] = useState(profile?.full_name ?? '')
   const [number, setNumber] = useState('')
+  const [qual, setQual] = useState<string | null>(profile?.qualification_code ?? null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
   const clean = number.trim().toUpperCase()
-  const valid = name.trim().length > 1 && STUDENT_NO.test(clean)
+  const valid = name.trim().length > 1 && STUDENT_NO.test(clean) && !!qual
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!profile || !valid) return
     setBusy(true); setError('')
     const { error: err } = await supabase.from('profiles')
-      .update({ full_name: name.trim(), student_number: clean })
+      .update({ full_name: name.trim(), student_number: clean, qualification_code: qual })
       .eq('id', profile.id)
     if (err) { haptic(24); setError(friendlyError(err)); setBusy(false); return }
     haptic(16)
@@ -49,6 +52,10 @@ export function Onboarding() {
               className="mono" maxLength={10} value={number} onChange={e => setNumber(e.target.value)} required />
           </div>
           {number && !STUDENT_NO.test(clean) ? <p className="err">ST followed by 8 digits, e.g. ST12345678</p> : null}
+          <div className="field">
+            <label>Your qualification</label>
+            <QualificationList value={qual} onPick={q => setQual(q.code)} />
+          </div>
           {error ? <p className="err">{error}</p> : null}
         </div>
 

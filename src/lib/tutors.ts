@@ -18,7 +18,9 @@ export type Session = {
   venue: string
   students_attended: number | null
   status: SessionStatus
-  rate: number | null
+  rate: number | null      // per hour, frozen when confirmed
+  hours: number            // length; 1 when the session has no times
+  amount: number | null    // rate × hours, once confirmed
   paid_at: string | null
 }
 
@@ -64,7 +66,7 @@ export async function loadTutor(id: string, semId: string | null): Promise<Tutor
   return { tutor, sessions: sessions ?? [], slots: slots ?? [], override: override?.session_quota ?? null, registers: registers ?? [] }
 }
 
-export const SESSION_COLS = 'id, tutor_id, module_code, semester_id, slot_id, session_date, starts_at, ends_at, venue, students_attended, status, rate, paid_at'
+export const SESSION_COLS = 'id, tutor_id, module_code, semester_id, slot_id, session_date, starts_at, ends_at, venue, students_attended, status, rate, hours, amount, paid_at'
 
 export const loadSemesters = async () =>
   (await must(supabase.from('semesters').select('*').order('starts_on', { ascending: false }).returns<Semester[]>())) ?? []
@@ -104,8 +106,12 @@ export const counts = (s: Session, semesterId: string | null) => s.semester_id =
    the whole semester's total once the semester has ended. ('paid' is from the old per-session flow.) */
 export const isEarned = (s: Session) => s.status === 'confirmed' || s.status === 'paid'
 
+/* What sessions would pay at today's hourly rate (for ones not confirmed yet). */
+export const estimate = (list: Session[], rate: number) => list.reduce((n, s) => n + Number(s.hours ?? 1) * rate, 0)
+export const totalHours = (list: Session[]) => list.reduce((n, s) => n + Number(s.hours ?? 1), 0)
+
 export const earned = (list: Session[], semesterId: string | null) =>
-  list.filter(s => isEarned(s) && s.semester_id === semesterId).reduce((n, s) => n + Number(s.rate ?? 0), 0)
+  list.filter(s => isEarned(s) && s.semester_id === semesterId).reduce((n, s) => n + Number(s.amount ?? 0), 0)
 
 /* Which week of the semester a date falls in (1 = the first week). */
 export const semWeek = (sem: Semester, iso: string) =>

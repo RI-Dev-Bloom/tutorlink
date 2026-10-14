@@ -3,7 +3,7 @@
 
 import { useAuth } from '../../lib/auth'
 import { useQuery } from '../../lib/data'
-import { earned, fDay, isEarned, loadSemesters } from '../../lib/tutors'
+import { earned, estimate, fDay, isEarned, loadSemesters, totalHours } from '../../lib/tutors'
 import { fDate, rand, todayISO } from '../../lib/types'
 import { Icon } from '../../ui/icons'
 import { Ledger } from '../../ui/Ledger'
@@ -37,9 +37,9 @@ export function TutorPay() {
     .filter(x => x.n)
 
   const exportCsv = () => {
-    const rows = [['Date', 'Module', 'Students', 'Rate (R)']]
-    for (const s of [...statement].reverse()) rows.push([s.session_date, s.module_code, String(s.students_attended ?? ''), String(Number(s.rate ?? 0))])
-    rows.push([], ['Total', '', '', String(earned(mine, semId))])
+    const rows = [['Date', 'Module', 'Students', 'Hours', 'Rate per hour (R)', 'Amount (R)']]
+    for (const s of [...statement].reverse()) rows.push([s.session_date, s.module_code, String(s.students_attended ?? ''), String(Number(s.hours)), String(Number(s.rate ?? 0)), String(Number(s.amount ?? 0))])
+    rows.push([], ['Total', '', '', String(totalHours(statement)), '', String(earned(mine, semId))])
     const csv = rows.map(r => r.map(c => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\r\n')
     const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }))   // BOM so Excel reads it right
     const a = Object.assign(document.createElement('a'), {
@@ -55,15 +55,15 @@ export function TutorPay() {
       <Ledger
         label={m.sem ? `Your pay · ${m.sem.name}` : 'Your pay this semester'}
         confirmed={{ n: confirmed.length, amount: earned(mine, semId) }}
-        waiting={{ n: waiting.length, amount: waiting.length * m.rate }}
-        ahead={{ n: ahead.length, amount: ahead.length * m.rate }}
+        waiting={{ n: waiting.length, amount: estimate(waiting, m.rate) }}
+        ahead={{ n: ahead.length, amount: estimate(ahead, m.rate) }}
         foot={<p className="ledger__foot"><Icon name="cal" size={14} />
           {!m.sem ? 'Paid out once the semester ends.'
             : ended ? `The semester ended on ${fDate(m.sem.ends_on)}. Rosebank pays out the confirmed total.`
             : `Paid out in one go after the semester ends on ${fDate(m.sem.ends_on)}.`}</p>} />
 
       <p className="small muted" style={{ marginTop: 10 }}>
-        {rand(m.rate)} per session. A session counts once admin confirms it against the signed register.
+        {rand(m.rate)} per hour · {totalHours(confirmed)} hours confirmed so far. A session counts once admin confirms it, which needs enough students checked in.
       </p>
 
       <div className="sect">Confirmed this semester</div>
@@ -74,10 +74,10 @@ export function TutorPay() {
               <span className="avatar avatar--code">{s.module_code.slice(0, 4)}</span>
               <span className="rmain">
                 <span className="rname">{fDay(s.session_date)}</span>
-                <span className="rmeta"><span className="mono">{s.module_code}</span>{s.students_attended !== null ? ` · ${s.students_attended} students` : ''}</span>
+                <span className="rmeta"><span className="mono">{s.module_code}</span> · {Number(s.hours)} h{s.students_attended !== null ? ` · ${s.students_attended} students` : ''}</span>
               </span>
               <span className="rside">
-                <span className="small" style={{ fontWeight: 700, color: 'var(--text)' }}>{rand(Number(s.rate ?? 0))}</span>
+                <span className="small" style={{ fontWeight: 700, color: 'var(--text)' }}>{rand(Number(s.amount ?? 0))}</span>
                 <Badge tone="gold">Confirmed</Badge>
               </span>
             </div>

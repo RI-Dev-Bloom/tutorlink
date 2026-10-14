@@ -30,7 +30,7 @@ export const loadMyApplication = async (uid: string) => {
 }
 
 export const loadSettings = () =>
-  must(supabase.from('settings').select('rate_per_session, min_mark, auto_decline, file_days').single<Settings>())
+  must(supabase.from('settings').select('rate_per_session, min_mark, auto_decline, file_days, min_attendance').single<Settings>())
 
 export const loadMyTutorModules = async (uid: string) =>
   (await must(supabase.from('tutor_modules').select('module_code, modules(name)')

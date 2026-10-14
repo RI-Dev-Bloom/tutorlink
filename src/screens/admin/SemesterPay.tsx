@@ -31,11 +31,11 @@ export function SemesterPay() {
   const today = todayISO()
 
   const rows = useMemo(() => {
-    const by = new Map<string, { who: Who; confirmed: number; amount: number; waiting: number }>()
+    const by = new Map<string, { who: Who; confirmed: number; hours: number; amount: number; waiting: number }>()
     for (const s of sessions.data ?? []) {
       if (!s.tutor) continue
-      const r = by.get(s.tutor_id) ?? { who: s.tutor, confirmed: 0, amount: 0, waiting: 0 }
-      if (isEarned(s)) { r.confirmed++; r.amount += Number(s.rate ?? 0) }
+      const r = by.get(s.tutor_id) ?? { who: s.tutor, confirmed: 0, hours: 0, amount: 0, waiting: 0 }
+      if (isEarned(s)) { r.confirmed++; r.hours += Number(s.hours); r.amount += Number(s.amount ?? 0) }
       else if (needsConfirming(s)) r.waiting++
       by.set(s.tutor_id, r)
     }
@@ -50,9 +50,9 @@ export function SemesterPay() {
 
   const exportCsv = () => {
     if (!sem) return
-    const out = [['Tutor', 'Student number', 'Email', 'Confirmed sessions', 'Amount (R)']]
-    for (const r of rows.filter(r => r.confirmed)) out.push([r.who.full_name, r.who.student_number ?? '', r.who.email, String(r.confirmed), String(r.amount)])
-    out.push([], ['Total', '', '', String(confirmedN), String(total)])
+    const out = [['Tutor', 'Student number', 'Email', 'Confirmed sessions', 'Hours', 'Amount (R)']]
+    for (const r of rows.filter(r => r.confirmed)) out.push([r.who.full_name, r.who.student_number ?? '', r.who.email, String(r.confirmed), String(r.hours), String(r.amount)])
+    out.push([], ['Total', '', '', String(confirmedN), String(rows.reduce((n, r) => n + r.hours, 0)), String(total)])
     const csv = out.map(r => r.map(c => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\r\n')
     const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }))
     const a = Object.assign(document.createElement('a'), { href: url, download: `TutorLink pay sheet - ${sem.name}.csv` })
@@ -96,7 +96,7 @@ export function SemesterPay() {
                     <span className="avatar">{initials(r.who.full_name)}</span>
                     <span className="rmain">
                       <span className="rname">{r.who.full_name}</span>
-                      <span className="rmeta">{r.confirmed} confirmed{r.who.student_number ? <> · <span className="mono">{r.who.student_number}</span></> : null}</span>
+                      <span className="rmeta">{r.confirmed} confirmed · {r.hours} h{r.who.student_number ? <> · <span className="mono">{r.who.student_number}</span></> : null}</span>
                     </span>
                     <span className="rside">
                       {r.waiting ? <Badge tone="amber">{r.waiting} to confirm</Badge> : null}

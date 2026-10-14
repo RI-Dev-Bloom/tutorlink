@@ -1,12 +1,12 @@
 /* Admin → one tutor: quota, sessions to confirm, earnings this semester, weekly slots, upcoming weeks,
-   one-off sessions and registers. Everything admin does for a tutor, on one page. */
+   one-off sessions, and each session's attendance. Everything admin does for a tutor, on one page. */
 
 import { useMemo, useState, type FormEvent } from 'react'
 import { invalidate, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
 import {
   WEEKDAYS, counts, currentSemester, hhmm, loadSemesters, loadTutor, needsConfirming, earned, isEarned, when,
-  type Register, type Session, type Slot, type TutorRow,
+  type Session, type Slot, type TutorRow,
 } from '../../lib/tutors'
 import { fDate, rand, todayISO, type Semester } from '../../lib/types'
 import { useStack } from '../../nav/Stack'
@@ -16,6 +16,8 @@ import { BackButton, Badge, Loading, NavBar, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { SlotForm } from './SlotForm'
 import { Thread } from '../messages/Thread'
+import { SessionScreen } from '../tutor/Checkin'
+import { loadSettings } from '../../lib/student'
 
 // Anything that changes a tutor's sessions refreshes every screen that shows them.
 const refresh = () => invalidate('tutor', 'tutors', 'sessions', 'overrides')
@@ -30,6 +32,7 @@ export function TutorDetail({ id }: { id: string }) {
   const data = useQuery(`tutor:${id}:${semId}`, () => loadTutor(id, semId))
   const [busy, setBusy] = useState<string | null>(null)
   const [showHistory, setShowHistory] = useState(false)
+  const min = useQuery('settings', loadSettings).data?.min_attendance ?? 3
 
   const d = data.data
   const today = todayISO()
@@ -109,22 +112,23 @@ export function TutorDetail({ id }: { id: string }) {
             <div className="card">
               {view.toConfirm.map(s => (
                 <div className="row" key={s.id}>
-                  <span className="rmain">
+                  <button className="rmain rmain--btn" onClick={() => push(<SessionScreen sessionId={s.id} />)}>
                     <span className="rname">{when(s)}</span>
                     <span className="rmeta"><span className="mono">{s.module_code}</span>
-                      {s.status === 'logged' ? ` · ${s.students_attended ?? 0} students` : ' · tutor didn’t mark it'}
-                      {d.registers.some(r => r.session_id === s.id) ? ' · register ✓' : ''}</span>
-                  </span>
+                      {s.status === 'logged' ? ` · ${s.students_attended ?? 0} checked in · ${Number(s.hours)} h` : ' · no check-in'}</span>
+                  </button>
                   <span className="rside" style={{ gap: 6 }}>
                     {s.status === 'scheduled' ? (
                       <button className="btn btn--outline btn--sm" disabled={busy === s.id} onClick={() => setStatus(s, 'cancelled', 'Marked as didn’t happen')}>Didn’t happen</button>
                     ) : null}
-                    <button className="btn btn--sm" disabled={busy === s.id} onClick={() => setStatus(s, 'confirmed', 'Session confirmed')}>Confirm</button>
+                    {(s.students_attended ?? 0) >= min
+                      ? <button className="btn btn--sm" disabled={busy === s.id} onClick={() => setStatus(s, 'confirmed', 'Session confirmed')}>Confirm</button>
+                      : s.status === 'logged' ? <Badge tone="red">Under {min}</Badge> : null}
                   </span>
                 </div>
               ))}
             </div>
-            <p className="small muted" style={{ marginTop: 8 }}>Check each one against the register first. Confirming locks in the current rate per session.</p>
+            <p className="small muted" style={{ marginTop: 8 }}>Tap a session to see who checked in. It needs at least {min} student{min === 1 ? '' : 's'} to be confirmed. Confirming locks in the current rate per hour.</p>
           </>
         ) : null}
 
@@ -188,14 +192,6 @@ export function TutorDetail({ id }: { id: string }) {
           + Add a one-off session
         </button>
 
-        {/* ---- registers ---- */}
-        <div className="sect">Registers</div>
-        {d.registers.length ? (
-          <div className="card">
-            {d.registers.map(r => <RegisterRow key={r.id} r={r} />)}
-          </div>
-        ) : <p className="small muted">{first} hasn't uploaded any registers yet.</p>}
-
         {/* ---- history ---- */}
         {view.history.length ? (
           <>
@@ -205,13 +201,13 @@ export function TutorDetail({ id }: { id: string }) {
             {showHistory ? (
               <div className="card">
                 {view.history.map(s => (
-                  <div className="row" key={s.id}>
-                    <span className="rmain"><span className="rname">{when(s)}</span><span className="rmeta mono">{s.module_code}</span></span>
+                  <button className="row" key={s.id} onClick={() => push(<SessionScreen sessionId={s.id} />)}>
+                    <span className="rmain"><span className="rname">{when(s)}</span><span className="rmeta"><span className="mono">{s.module_code}</span> · {s.students_attended ?? 0} checked in · {Number(s.hours)} h</span></span>
                     <span className="rside">
-                      <span className="small">{rand(Number(s.rate ?? 0))}</span>
-                      <Badge tone="green">Confirmed</Badge>
+                      <span className="small">{rand(Number(s.amount ?? 0))}</span>
+                      <Icon name="chev" size={17} stroke={2.1} />
                     </span>
-                  </div>
+                  </button>
                 ))}
               </div>
             ) : null}
@@ -219,24 +215,6 @@ export function TutorDetail({ id }: { id: string }) {
         ) : null}
       </div></div>
     </>
-  )
-}
-
-function RegisterRow({ r }: { r: Register }) {
-  const { toast } = useOverlay()
-  const open = async () => {
-    const w = window.open('', '_blank')   // open first: phones block pop-ups opened after an await
-    const { data, error } = await supabase.storage.from('registers').createSignedUrl(r.storage_path, 600)
-    if (error || !data) { w?.close(); toast(friendlyError(error)); return }
-    if (w) w.location.href = data.signedUrl; else window.location.href = data.signedUrl
-  }
-  return (
-    <button className="row" onClick={open}>
-      <span className="avatar"><Icon name="doc" size={18} /></span>
-      <span className="rmain"><span className="rname" style={{ overflowWrap: 'anywhere' }}>{r.file_name}</span>
-        <span className="rmeta"><span className="mono">{r.module_code}</span> · {fDate(r.uploaded_at.slice(0, 10))}</span></span>
-      <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
-    </button>
   )
 }
 
@@ -321,7 +299,7 @@ function EndSlotSheet({ slot, sessions }: { slot: Slot; sessions: Session[] }) {
   )
 }
 
-/* A session that wasn't on the timetable. Admin already has the register, so it's confirmed straight away. */
+/* A session that wasn't on the timetable and had no check-in. Admin vouches for it, so it's confirmed straight away. */
 function OneOffSheet({ tutor }: { tutor: TutorRow }) {
   const { closeSheet, toast } = useOverlay()
   const [module, setModule] = useState(tutor.tutor_modules[0]?.module_code ?? '')
@@ -348,7 +326,7 @@ function OneOffSheet({ tutor }: { tutor: TutorRow }) {
     <form onSubmit={save}>
       <p className="sheet-sub">{tutor.full_name}</p>
       <h3 className="sheet-title">Add a one-off session</h3>
-      <p className="sheet-lead">For a session that happened outside the timetable. It's confirmed straight away and counts towards the limit.</p>
+      <p className="sheet-lead">For a session that happened without a check-in. It's confirmed straight away, counts towards the limit, and pays for its length (1 hour if you leave the times out).</p>
       <div className="sheet-form">
         <div className="chips" style={{ marginTop: 6 }}>
           {tutor.tutor_modules.map(m => (

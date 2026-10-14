@@ -57,16 +57,16 @@ It's a web app you install on your phone (a PWA). It runs on free services only:
 **Why —** "Where am I meant to be?" is the first thing a tutor opens the app for. → [[Schedule]]
 
 ### Log a session
-**What —** Tap Mark on a live session, or log one manually. It stays Pending until admin confirms it.
-**Why —** Logging on the spot is quicker and more accurate, and Pending stops tutors from paying themselves. → [[Log a session]]
+**What —** Start a check-in when the session runs. It stays Waiting until admin confirms it.
+**Why —** Logging on the spot is quicker and more accurate, and only admin can confirm, so tutors can't pay themselves. → [[Log a session]]
 
 ### Session quota
 **What —** Admin sets a limit (24 to start) for everyone or for one tutor. The tutor sees "used X of Y". At the limit, no more sessions can be added.
 **Why —** It stops the programme from paying for more sessions than the budget allows. → [[Session quota]]
 
-### Upload a register
-**What —** Take a photo of the signed attendance sheet, or attach a PDF, against a module.
-**Why —** It's the proof admin checks before confirming a session. → [[Upload a register]]
+### Attendance (check-in)
+**What —** The tutor shows a QR code that changes every 15 seconds (or a 4-digit code for Teams). Students check in on their phones; name, student number, qualification and time come from their account.
+**Why —** It proves the session happened and replaces the paper register. Admin needs enough check-ins to confirm a session. → [[Attendance]]
 
 ### Pay
 **What —** What's approved, what's pending, the rate, and a CSV statement to download.
@@ -159,10 +159,6 @@ It's a web app you install on your phone (a PWA). It runs on free services only:
 **What —** Tutors write quizzes. Students play them live and timed in a session, or in their own time.
 **Why —** It makes revision active and fun, and it shows the tutor what the class doesn't get. → [[Quizzes]]
 
-### Attendance system
-**What —** Students check in to a session, probably by scanning a QR code.
-**Why —** It proves the session happened, and could eventually replace the paper register. → [[Attendance]]
-
 ### Other ideas parked for later
-**What —** Broadcast to a whole module, file attachments in messages, lecturer sign-off on new tutors.
+**What —** Broadcast to a whole module, lecturer sign-off on new tutors.
 **Why —** These are useful, but not needed to ship. → [[Parked ideas]]

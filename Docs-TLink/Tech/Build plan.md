@@ -26,11 +26,13 @@ Built in slices, each one tested on a phone before the next.
 | 5 | Tutors: schedule, mark and log sessions, registers, pay | Done 13 Oct 2026 |
 | 6 | Messaging and the lecturer dashboard | Done 13 Oct 2026 |
 | 7 | Push notifications and the install guide | Done 13 Oct 2026 |
-| 8 | Real-phone test pass, docs, handover checklist | Next |
+| 9 | [[Attendance]]: check-in (QR and online code), pay per hour, qualifications, student progress | Done 15 Oct 2026 |
+| 10 | Attendance views for lecturers and admin, CSV downloads, reach from check-ins | Next |
+| 8 | Real-phone test pass, docs, handover checklist | After 10 |
 
 - **Students:** Google sign-in, student number, [[Module picker]], [[Apply to tutor]].
 - **Admin:** [[Admin overview]], [[Applications]], [[Approve and decline]], [[Tutor management]], [[Settings]] (including semesters and quota), [[Manage modules]], [[Admin creates accounts]].
-- **Tutors:** [[Tutor view switch]], [[Schedule]], [[Log a session]], [[Session quota]], [[Upload a register]], [[Pay]].
+- **Tutors:** [[Tutor view switch]], [[Schedule]], [[Log a session]], [[Session quota]], [[Attendance]], [[Pay]].
 - **Lecturers:** [[Lecturer dashboard]].
 - **Everyone:** [[Messaging]], [[Unread and delivered]], [[Push notifications]], [[Install the app]].
 - Test on a real iPhone and a real Android phone.
@@ -40,6 +42,7 @@ Built in slices, each one tested on a phone before the next.
 
 ## Phase 3: [[Quizzes]]
 
-## Phase 4: [[Attendance]]
+## Phase 4: Attendance
+Brought forward and built as slices 9 and 10. See [[Attendance]].
 
 Then: [[Handover]]

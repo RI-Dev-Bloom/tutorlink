@@ -7,8 +7,13 @@ import { Welcome } from './screens/Welcome'
 import { Onboarding } from './screens/Onboarding'
 import { Portal } from './screens/Portal'
 import { ChangePassword } from './screens/ChangePassword'
+import { Display } from './screens/Display'
+
+// A check-in shown on a laptop or projector: a page of its own, no sign-in, no phone frame.
+const SHOW = new URLSearchParams(window.location.search).get('show')
 
 export default function App() {
+  if (SHOW) return <Display id={SHOW} />
   return (
     <div id="device">
       <AuthProvider>

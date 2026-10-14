@@ -8,7 +8,7 @@ import { useQuery } from '../../lib/data'
 import { loadSettings } from '../../lib/student'
 import { supabase } from '../../lib/supabase'
 import {
-  counts, currentSemester, earned, isEarned, loadOpenSessions, loadOverrides, loadSemesters, loadTutors,
+  counts, currentSemester, earned, estimate, isEarned, loadOpenSessions, loadOverrides, loadSemesters, loadTutors,
   needsConfirming, semWeek, semWeeks, type Session,
 } from '../../lib/tutors'
 import { fDate, todayISO, type Semester } from '../../lib/types'
@@ -125,8 +125,8 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
           <button className="ledger-btn" onClick={() => { haptic(8); push(<SemesterPay />) }}>
             <Ledger label="Payout at the semester end"
               confirmed={{ n: v.confirmed.length, amount: earned(v.confirmed, semId) }}
-              waiting={{ n: v.waiting.length, amount: v.waiting.length * rate }}
-              ahead={{ n: v.ahead.length, amount: v.ahead.length * rate }}
+              waiting={{ n: v.waiting.length, amount: estimate(v.waiting, rate) }}
+              ahead={{ n: v.ahead.length, amount: estimate(v.ahead, rate) }}
               foot={<p className="ledger__foot"><Icon name="cal" size={14} />Paid out after {fDate(sem.ends_on)}. Tap for the pay sheet.</p>} />
           </button>
 

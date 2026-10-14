@@ -1,41 +1,64 @@
-/* Tutor → Schedule (home). Sessions to mark, what's coming up, what admin still
-   has to confirm, and how much of the semester's limit is used. */
+/* Tutor → Schedule (home). Start a check-in (or jump back into the open one), this week's
+   planned session, sessions that were never checked in, what's coming, and the semester limit. */
 
-import { useState, type FormEvent } from 'react'
 import { useAuth } from '../../lib/auth'
-import { must } from '../../lib/data'
-import { friendlyError, supabase } from '../../lib/supabase'
+import { loadOpenCheckin } from '../../lib/attendance'
+import { useQuery } from '../../lib/data'
 import { hhmm, fDay, type Session } from '../../lib/tutors'
 import { todayISO } from '../../lib/types'
+import { useStack } from '../../nav/Stack'
 import { Icon } from '../../ui/icons'
 import { useOverlay } from '../../ui/Overlay'
 import { Badge, Empty, Loading } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
-import { refreshMine, useMine } from './mine'
 import { SetupCard } from '../../ui/Setup'
+import { SessionScreen, StartCheckinSheet } from './Checkin'
+import { useMine } from './mine'
+
+const monday = (iso: string) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d.toLocaleDateString('en-CA') }
+const plus = (iso: string, n: number) => { const d = new Date(iso + 'T00:00:00'); d.setDate(d.getDate() + n); return d.toLocaleDateString('en-CA') }
 
 export function TutorSchedule({ go, unread }: { go: (tab: string) => void; unread: number }) {
   const { profile } = useAuth()
+  const { push } = useStack()
   const { openSheet } = useOverlay()
   const m = useMine()
+  const openId = useQuery('open-checkin', loadOpenCheckin)
   const today = todayISO()
 
   if (m.loading) return <Loading />
   if (m.error || !m.d) return <p className="err pad">{m.error}</p>
 
-  const all = m.d.sessions
-  const toMark = all.filter(s => s.status === 'scheduled' && s.session_date <= today)
-  const coming = all.filter(s => s.session_date > today && (s.status === 'scheduled' || s.status === 'cancelled')).slice(0, 8)
+  const d = m.d
+  const mon = monday(today), sun = plus(mon, 6)
+  const all = d.sessions
+  const thisWeek = all.filter(s => s.status === 'scheduled' && s.session_date >= mon && s.session_date <= sun)
+  const missed = all.filter(s => s.status === 'scheduled' && s.session_date < mon).reverse()
+  const coming = all.filter(s => s.session_date > sun && (s.status === 'scheduled' || s.status === 'cancelled')).slice(0, 6)
   const waiting = all.filter(s => s.status === 'logged')
   const first = profile!.full_name.split(' ')[0]
+  const open = (id: string) => { haptic(8); push(<SessionScreen sessionId={id} />) }
+  const start = () => { haptic(10); openSheet(<StartCheckinSheet d={d} onStarted={open} />) }
 
   return (
     <div className="pad stagger">
       <p className="eyebrow">Welcome back</p>
       <h2 className="display display--sm">{first}</h2>
       <div className="chips" style={{ marginTop: 10 }}>
-        {m.d.tutor.tutor_modules.map(t => <span key={t.module_code} className="chip chip--static chip--sm"><span className="code">{t.module_code}</span>{t.modules?.name}</span>)}
+        {d.tutor.tutor_modules.map(t => <span key={t.module_code} className="chip chip--static chip--sm"><span className="code">{t.module_code}</span>{t.modules?.name}</span>)}
       </div>
+
+      {openId.data ? (
+        <button className="live-card" onClick={() => open(openId.data!)}>
+          <span className="live-dot" aria-hidden />
+          <span className="rmain"><span className="rname">Check-in is open</span><span className="rmeta">Show the code, see who's here, close it when you're done</span></span>
+          <Icon name="chev" size={17} stroke={2.1} />
+        </button>
+      ) : (
+        <button className="btn" style={{ marginTop: 18 }} disabled={!m.sem} onClick={start}>
+          <Icon name="calChk" size={18} /> Start check-in
+        </button>
+      )}
 
       <SetupCard />
       {unread ? (
@@ -55,43 +78,33 @@ export function TutorSchedule({ go, unread }: { go: (tab: string) => void; unrea
         </div>
       ) : null}
 
-      {toMark.length ? (
+      <div className="sect">This week</div>
+      {thisWeek.length ? (
         <>
-          <div className="sect">To mark</div>
+          <div className="card">{thisWeek.map(s => <SessionRow key={s.id} s={s} today={today} />)}</div>
+          <p className="small muted" style={{ marginTop: 8 }}>Running it on another day this week? Just start the check-in that day. It moves the session for you.</p>
+        </>
+      ) : <p className="small muted">Nothing planned this week. Start a check-in when you run a session.</p>}
+
+      {missed.length ? (
+        <>
+          <div className="sect">Not checked in</div>
           <div className="card">
-            {toMark.map(s => (
-              <div className="row" key={s.id}>
-                <span className={'avatar avatar--code' + (s.session_date === today ? ' avatar--gold' : '')}>{s.module_code.slice(0, 4)}</span>
-                <span className="rmain">
-                  <span className="rname">{s.session_date === today ? 'Today' : fDay(s.session_date)}{s.starts_at ? ` · ${hhmm(s.starts_at)}–${hhmm(s.ends_at)}` : ''}</span>
-                  <span className="rmeta"><span className="mono">{s.module_code}</span>{s.venue ? ` · ${s.venue}` : ''}</span>
-                </span>
-                <span className="rside">
-                  <button className="btn btn--sm" onClick={() => { haptic(8); openSheet(<MarkSheet session={s} />) }}>Mark</button>
-                </span>
-              </div>
+            {missed.map(s => (
+              <button className="row" key={s.id} onClick={() => open(s.id)}>
+                <span className="avatar avatar--code">{s.module_code.slice(0, 4)}</span>
+                <span className="rmain"><span className="rname">{fDay(s.session_date)}</span><span className="rmeta"><span className="mono">{s.module_code}</span>{s.venue ? ` · ${s.venue}` : ''}</span></span>
+                <span className="rside"><Badge tone="red">No check-in</Badge><Icon name="chev" size={17} stroke={2.1} /></span>
+              </button>
             ))}
           </div>
-          <p className="small muted" style={{ marginTop: 8 }}>After each session, tap Mark and say how many students came.</p>
+          <p className="small muted" style={{ marginTop: 8 }}>If it happened, open it and add the students by hand.</p>
         </>
       ) : null}
 
       <div className="sect">Coming up</div>
       {coming.length ? (
-        <div className="card">
-          {coming.map(s => (
-            <div className="row" key={s.id}>
-              <span className="avatar avatar--code">{s.module_code.slice(0, 4)}</span>
-              <span className="rmain">
-                <span className="rname" style={s.status === 'cancelled' ? { color: 'var(--muted)', textDecoration: 'line-through' } : undefined}>
-                  {fDay(s.session_date)}{s.starts_at ? ` · ${hhmm(s.starts_at)}–${hhmm(s.ends_at)}` : ''}
-                </span>
-                <span className="rmeta"><span className="mono">{s.module_code}</span>{s.venue ? ` · ${s.venue}` : ''}</span>
-              </span>
-              <span className="rside">{s.status === 'cancelled' ? <Badge tone="plain">Cancelled</Badge> : null}</span>
-            </div>
-          ))}
-        </div>
+        <div className="card">{coming.map(s => <SessionRow key={s.id} s={s} today={today} />)}</div>
       ) : (
         <Empty icon="cal" title="Nothing scheduled" line="Admin sets your weekly session time. It'll show up here." />
       )}
@@ -101,7 +114,7 @@ export function TutorSchedule({ go, unread }: { go: (tab: string) => void; unrea
           <div className="sect">Waiting for admin</div>
           <button className="note note--gold" style={{ width: '100%', textAlign: 'left' }} onClick={() => { haptic(8); go('sessions') }}>
             <Icon name="clock" size={15} />
-            <span><b>{waiting.length} session{waiting.length === 1 ? '' : 's'}</b> marked and waiting to be confirmed. Upload the signed register so admin can check it.</span>
+            <span><b>{waiting.length} session{waiting.length === 1 ? '' : 's'}</b> checked in and waiting for admin to confirm.</span>
           </button>
         </>
       ) : null}
@@ -109,34 +122,18 @@ export function TutorSchedule({ go, unread }: { go: (tab: string) => void; unrea
   )
 }
 
-function MarkSheet({ session: s }: { session: Session }) {
-  const { closeSheet, toast } = useOverlay()
-  const [n, setN] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-
-  const save = async (e: FormEvent) => {
-    e.preventDefault()
-    setBusy(true); setError('')
-    try {
-      await must(supabase.rpc('tutor_mark_session', { p_session: s.id, p_students: +n }))
-      haptic(16); refreshMine(); closeSheet(); toast('Marked — admin will confirm it')
-    } catch (err) { haptic(24); setError(friendlyError(err)); setBusy(false) }
-  }
-
+function SessionRow({ s, today }: { s: Session; today: string }) {
+  const off = s.status === 'cancelled'
   return (
-    <form onSubmit={save}>
-      <p className="sheet-sub">{s.module_code} · {fDay(s.session_date)}</p>
-      <h3 className="sheet-title">How many students came?</h3>
-      <p className="sheet-lead">Count everyone who signed the register. Admin confirms it, and it counts towards your pay for the semester.</p>
-      <div className="sheet-form">
-        <div className="field">
-          <label htmlFor="f-n">Students</label>
-          <input id="f-n" type="text" inputMode="numeric" maxLength={3} autoFocus value={n} onChange={e => setN(e.target.value.replace(/\D/g, ''))} />
-        </div>
-        {error ? <p className="err">{error}</p> : null}
-        <button className="btn" style={{ marginTop: 16 }} disabled={busy || n === ''}>{busy ? 'Saving…' : 'Mark session'}</button>
-      </div>
-    </form>
+    <div className="row">
+      <span className={'avatar avatar--code' + (s.session_date === today ? ' avatar--gold' : '')}>{s.module_code.slice(0, 4)}</span>
+      <span className="rmain">
+        <span className="rname" style={off ? { color: 'var(--muted)', textDecoration: 'line-through' } : undefined}>
+          {s.session_date === today ? 'Today' : fDay(s.session_date)}{s.starts_at ? ` · ${hhmm(s.starts_at)}–${hhmm(s.ends_at)}` : ''}
+        </span>
+        <span className="rmeta"><span className="mono">{s.module_code}</span>{s.venue ? ` · ${s.venue}` : ''}</span>
+      </span>
+      <span className="rside">{off ? <Badge tone="plain">Cancelled</Badge> : null}</span>
+    </div>
   )
 }

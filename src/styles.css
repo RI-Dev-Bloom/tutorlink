@@ -778,3 +778,69 @@ button.srow:active { background: var(--bg); }
 .wk__col.now .wk__bar { background: var(--gold); }
 .wk__col.future .wk__bar { height: 3px !important; background: var(--lineS); border-radius: 2px; }
 .wk__axis { display: flex; justify-content: space-between; margin-top: 6px; padding-left: 18px; font-family: var(--fm); font-size: 9.5px; color: var(--muted2); }
+
+/* ---------- check-in (tutor) --------------------------------- */
+
+.rmain--btn { display: block; padding: 0; border: 0; background: none; text-align: left; color: inherit; }
+.live-card {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin-top: 18px; padding: 14px 15px;
+  background: var(--card); border: 1px solid var(--greenBd); border-radius: var(--rl); text-align: left; color: var(--text);
+}
+.live-dot { width: 10px; height: 10px; flex: 0 0 auto; border-radius: 50%; background: var(--green); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+.sess-head { margin-bottom: 14px; }
+.sess-head .rname { font-size: 17px; }
+.checkin { display: flex; flex-direction: column; align-items: center; padding: 18px 16px 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--rl); text-align: center; }
+.qr { display: block; width: 100%; max-width: 280px; height: auto; aspect-ratio: 1; }
+.checkin__code { margin-top: 12px; font-family: var(--fm); font-size: 26px; font-weight: 600; letter-spacing: .22em; color: var(--text); padding-left: .22em; }
+.checkin__pin { font-family: var(--fh); font-size: 72px; font-weight: 700; line-height: 1; letter-spacing: .12em; color: var(--text); font-variant-numeric: lining-nums tabular-nums; padding-left: .12em; }
+.checkin__hint { margin-top: 10px; font-size: 12.5px; line-height: 1.55; color: var(--muted); max-width: 300px; }
+.checkin__bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--rl); font-size: 13px; color: var(--muted); }
+.checkin__bar b { font-size: 16px; color: var(--text); }
+.iconbtn--danger { color: var(--red); background: var(--redBg); }
+
+/* ---------- check-in (student) ------------------------------- */
+
+.scan { position: relative; width: 100%; aspect-ratio: 1; border-radius: var(--rl); overflow: hidden; background: var(--navy); }
+.scan video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan__frame { position: absolute; inset: 16%; border: 2px solid rgba(255, 255, 255, .9); border-radius: 12px; }
+.scan__msg { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; font-size: 13.5px; line-height: 1.6; color: #fff; }
+.scan__hint { position: absolute; left: 0; right: 0; bottom: 12px; text-align: center; font-size: 12.5px; color: #fff; }
+.codein { display: flex; gap: 8px; }
+.codein input { flex: 1; min-width: 0; padding: 12px 14px; font-family: var(--fm); font-size: 18px; letter-spacing: .14em; text-transform: uppercase; border: 1px solid var(--line); border-radius: var(--r); background: var(--card); color: var(--text); }
+.codein input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--goldBg); }
+.done { display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 18px; }
+.done__tick { width: 72px; height: 72px; display: grid; place-items: center; border-radius: 50%; background: var(--greenBg); border: 2px solid var(--greenBd); color: var(--green); }
+.pick__box--round { border-radius: 50%; }
+
+/* ---------- attendance line (student, private) --------------- */
+
+.att + .att { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--lineS); }
+.att__top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.att__name { font-size: 14px; font-weight: 600; min-width: 0; }
+.att__name .mono { margin-left: 8px; font-size: 11px; font-weight: 400; color: var(--muted); }
+.att__pct { font-size: 15px; font-weight: 600; font-variant-numeric: lining-nums tabular-nums; }
+.att__track { position: relative; height: 6px; margin-top: 9px; border-radius: 3px; background: var(--lineS); }
+.att__fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--navy); transition: width .6s var(--ease); }
+.att__fill.high { background: var(--gold); }
+.att__track i { position: absolute; top: -3px; width: 1px; height: 12px; background: var(--muted2); }
+.att__meta { margin-top: 7px; font-size: 11.5px; color: var(--muted); }
+
+/* ---------- the projector screen (?show=…) ------------------- */
+
+.show { position: fixed; inset: 0; z-index: 10; overflow: auto; display: flex; flex-direction: column; background: #fff; color: var(--text); font-family: var(--fb); }
+.show__head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; padding: 22px 32px; border-bottom: 1px solid var(--line); font-size: 15px; color: var(--muted); }
+.show__brand { font-family: var(--fm); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--navy); }
+.show__main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6vw; padding: 32px; flex-wrap: wrap; }
+.show__qr { width: min(62vh, 80vw); }
+.show__qr .qr { max-width: none; }
+.show__pin { font-family: var(--fh); font-size: min(26vh, 22vw); font-weight: 700; line-height: 1; letter-spacing: .1em; font-variant-numeric: lining-nums tabular-nums; }
+.show__side { max-width: 420px; }
+.show__step { font-size: 22px; line-height: 1.45; }
+.show__label { margin-top: 28px; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.show__code { margin-top: 4px; font-family: var(--fm); font-size: 44px; font-weight: 600; letter-spacing: .2em; }
+.show__count { margin-top: 28px; font-size: 18px; color: var(--muted); }
+.show__count b { font-size: 34px; color: var(--text); margin-right: 4px; }
+.show__small { margin-top: 8px; font-size: 13px; color: var(--muted2); }
+.show--msg { align-items: center; justify-content: center; text-align: center; gap: 10px; }
+.show--msg h1 { font-family: var(--fh); font-size: 38px; }

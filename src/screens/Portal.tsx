@@ -12,6 +12,11 @@ import { AdminApplications, loadOpenCount } from './admin/Applications'
 import { AdminOverview } from './admin/Overview'
 import { AdminSettings } from './admin/AdminSettings'
 import { DeviceSettings } from '../ui/Setup'
+import { takePendingCheckin } from '../lib/attendance'
+import { useStack } from '../nav/Stack'
+import { useOverlay } from '../ui/Overlay'
+import { QualificationSheet } from '../ui/Qualification'
+import { CheckIn } from './student/CheckIn'
 import { Group, SHead, SRow } from '../ui/Settings'
 import { resyncPush } from '../lib/push'
 import { AdminTutors } from './admin/Tutors'
@@ -91,6 +96,14 @@ export function Portal() {
   useLiveMessages(messaging)
   const uid = profile?.id
   useEffect(() => { if (uid) resyncPush(uid) }, [uid])
+  // A check-in QR scanned with the phone's own camera opened the app: finish the check-in.
+  const { push } = useStack()
+  const isStudent = profile?.role === 'student'
+  useEffect(() => {
+    if (!uid || !isStudent) return
+    const t = takePendingCheckin()
+    if (t) push(<CheckIn token={t} />)
+  }, [uid, isStudent, push])
   if (!profile) return null
 
   const view: View = profile.role !== 'student' ? profile.role : profile.is_tutor ? tutorView : 'student'
@@ -141,6 +154,7 @@ const ROLE_LINE: Record<View, string> = {
 
 function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
   const { signOut } = useAuth()
+  const { openSheet } = useOverlay()
   return (
     <div className="pad stagger">
       <SHead name={displayName(profile) || profile.email} line={`${ROLE_LINE[view]} · Rosebank International`} gold={view === 'lecturer'} />
@@ -148,6 +162,10 @@ function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
       <Group title="Account">
         <SRow icon="mail" tone="blue" label="Email" value={profile.email} />
         {profile.student_number ? <SRow icon="cap" tone="navy" label="Student number" value={<span className="mono">{profile.student_number}</span>} /> : null}
+        {profile.role === 'student' ? (
+          <SRow icon="book" tone="gold" label="Qualification" value={<span className="mono">{profile.qualification_code ?? 'Choose'}</span>}
+            onClick={() => openSheet(<QualificationSheet />)} />
+        ) : null}
         <SRow icon="user" tone="slate" label="Role" value={profile.is_tutor ? 'Student and tutor' : ROLE_LINE[view]} />
       </Group>
 

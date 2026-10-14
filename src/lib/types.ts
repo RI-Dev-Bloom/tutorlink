@@ -4,7 +4,7 @@ export type Module = { code: string; name: string; hidden: boolean; high_risk: b
 
 export type Semester = { id: string; name: string; starts_on: string; ends_on: string; session_quota: number }
 
-export type Settings = { rate_per_session: number; min_mark: number; auto_decline: boolean; file_days: number }
+export type Settings = { rate_per_session: number; min_mark: number; auto_decline: boolean; file_days: number; min_attendance: number }
 
 export type Lecturer = {
   id: string

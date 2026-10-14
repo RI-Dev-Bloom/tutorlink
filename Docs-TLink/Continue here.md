@@ -8,6 +8,7 @@ We're in **Phase 1**, building the real app in 8 small slices. **Slices 1–7 ar
 App: https://ri-dev-bloom.github.io/tutorlink/
 
 ## What we've done lately
+- [x] **Slice 9, attendance (15 Oct):** check-in with a changing QR (in class) or 4-digit code (Teams), laptop screen link, manual adds, pay per hour, minimum attendance to confirm, qualifications, student progress line. Paper registers are out
 - [x] **Overview and pay (14 Oct):** new admin Overview (semester band, to do, payout, week-by-week chart, high-risk coverage). Pay is now per semester: no "mark as paid", a pay sheet for finance at the end
 - [x] **Tweaks (14 Oct):** lecturers get in by email with Google (no password), settings look like a phone's Settings, "Device" instead of "This phone", files on messages (removed after 3–5 days), high-risk modules only for applications, auto-decline below the minimum
 - [x] **Slice 7:** push notifications and the install guide (13 Oct)
@@ -30,7 +31,7 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [x] Approved students get a **Tutor** button to switch views
 - [x] Admin Overview: semester progress, reach, to do, payout, weekly chart, module coverage
 - [x] Admin tutor pages: session limit, weekly slots, cancel a week, confirm, earnings this semester
-- [x] Tutors: schedule, mark sessions, log extra ones, upload registers, semester pay with a CSV statement
+- [x] Tutors: schedule, check-in (QR / online code), attendance lists, semester pay per hour with a CSV statement
 - [x] Semester pay sheet for finance (CSV), paid out once after each semester
 - [x] Live messages between tutors, lecturers and admin, with unread counts, "seen", and files that expire
 - [x] Lecturer home: tutors on their modules, their next session, latest message
@@ -40,6 +41,7 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 
 ## What's left
 - [ ] **You:** mark which modules are high-risk (Settings → High-risk modules). None are yet, so students can't apply until you do
+- [ ] **Slice 10:** attendance views for lecturers and admin, CSV downloads
 - [ ] **Slice 8:** final test on real phones, then handover
 - [ ] Turn on weekly backups (they still need their two secrets, about 5 minutes)
 - [ ] Check the "Semester 2, 2026" dates (13 Jul–27 Nov) and the R260 rate
