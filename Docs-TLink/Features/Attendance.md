@@ -11,7 +11,8 @@ status: v1
 - **Module**, if they tutor more than one.
 - **In class** (QR code) or **Online (Teams)** (a 4-digit code).
 - **Venue**, filled in from the timetable.
-- **Length**: 1, 1½, 2, 2½, 3 or 4 hours. This sets the end time, and the pay (pay is per hour).
+- **Session length**: 1, 1½, 2, 2½, 3 or 4 hours. This sets the end time, and the pay (pay is per hour).
+- **Check-in open for**: 5, 10, 15 or 20 minutes (10 to start). After that, nobody can check in (the tutor can still add someone by hand).
 
 The date and start time are captured automatically.
 
@@ -23,7 +24,9 @@ The date and start time are captured automatically.
 - A photo of the QR sent to friends at home stops working within about a minute.
 
 ## Online (Teams)
-- The tutor gets a **4-digit code** to paste into the Teams chat. Students type it in TutorLink. These check-ins are labelled **Online**.
+- Online sessions only: the tutor gets a **4-digit code that changes every 30 seconds** (each code works for about a minute).
+- The tutor **shares their screen in Teams** with the code showing (**Show on a laptop** opens it full-screen). Students type it in TutorLink. These check-ins are labelled **Online**.
+- Why it changes: a code forwarded to a friend who isn't in the session is dead by the time they type it. A short check-in window (e.g. 5 minutes) narrows it further.
 
 ## Checking in (student)
 - **Check in to a session** on the student home screen. Point the camera at the QR, or type the code.
@@ -37,7 +40,8 @@ The date and start time are captured automatically.
 - Names appear live as students check in, with the time and how they checked in: **QR**, **Code**, **Online** or **Manual**.
 - **+ Add by hand** for someone with no phone or data: student number, plus name if they're not on TutorLink. Shown as **Manual** so admin can see it.
 - A wrong entry can be taken off until admin confirms the session.
-- **Close check-in** when done. Otherwise it closes by itself 15 minutes after the end time.
+- **Close check-in** when done. Otherwise it closes by itself when the window (5–20 minutes) runs out.
+- Starting a check-in again for the same module on the same day reopens that session; the names already there stay.
 - Past sessions open the same list. A session that was never checked in can still have students added by hand.
 
 ## Admin

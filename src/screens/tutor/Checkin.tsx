@@ -18,6 +18,7 @@ import { haptic } from '../../ui/haptic'
 type SessionRow = Session & { modules: { name: string } | null }
 
 const LENGTHS = [1, 1.5, 2, 2.5, 3, 4]
+const WINDOWS = [5, 10, 15, 20]   // how long students can check in, in minutes
 const fHours = (h: number) => `${h} h`.replace('.5 h', '½ h')
 
 /* Monday of this week, on the phone's clock. */
@@ -43,9 +44,12 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
   const firstMod = mods.find(c => planned(c)?.session_date === today) ?? mods.find(c => planned(c)) ?? mods[0] ?? ''
   const [module, setModule] = useState(firstMod)
   const p = planned(module)
+  // Already ran one for this module today? Starting again reopens that session.
+  const again = d.sessions.find(s => s.module_code === module && s.session_date === today && s.status === 'logged')
   const [mode, setMode] = useState<'class' | 'online'>('class')
   const [venue, setVenue] = useState(p?.venue ?? '')
   const [hours, setHours] = useState(p && Number(p.hours) && LENGTHS.includes(Number(p.hours)) ? Number(p.hours) : 1)
+  const [minutes, setMinutes] = useState(10)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -61,7 +65,7 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
     e.preventDefault()
     setBusy(true); setError('')
     try {
-      const id = await must(supabase.rpc('tutor_start_checkin', { p_module: module, p_venue: venue.trim(), p_hours: hours, p_mode: mode })) as string
+      const id = await must(supabase.rpc('tutor_start_checkin', { p_module: module, p_venue: venue.trim(), p_hours: hours, p_mode: mode, p_minutes: minutes })) as string
       haptic(18); invalidate('tutor', 'tutors', 'sessions', 'open-checkin'); closeSheet(); onStarted(id); toast('Check-in is open')
     } catch (err) { haptic(24); setError(friendlyError(err)); setBusy(false) }
   }
@@ -92,15 +96,22 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
           <label htmlFor="f-cv">Venue</label>
           <input id="f-cv" type="text" maxLength={60} placeholder={mode === 'class' ? 'e.g. Lab 2' : ''} value={venue} onChange={e => setVenue(e.target.value)} />
         </div>
-        <div className="field"><label>Length</label>
+        <div className="field"><label>Session length</label>
           <div className="chips">
             {LENGTHS.map(h => <button type="button" key={h} className={'chip chip--sm' + (hours === h ? ' on' : '')} onClick={() => { haptic(6); setHours(h) }}>{fHours(h)}</button>)}
           </div>
         </div>
+        <div className="field"><label>Check-in open for</label>
+          <div className="seg">
+            {WINDOWS.map(m => <button type="button" key={m} className={minutes === m ? 'on' : ''} onClick={() => { haptic(6); setMinutes(m) }}>{m} min</button>)}
+          </div>
+        </div>
         <p className="small muted" style={{ marginTop: 12 }}>
-          {p ? (p.session_date === today ? `Uses today's ${module} session.` : `Uses your ${module} session planned for ${fDay(p.session_date)}, moved to today.`)
+          {again ? `Reopens today's ${module} check-in (the names already there stay).`
+            : p ? (p.session_date === today ? `Uses today's ${module} session.` : `Uses your ${module} session planned for ${fDay(p.session_date)}, moved to today.`)
             : `No ${module} session planned this week, so this adds one (it counts towards your limit).`}
-          {mode === 'class' ? ' Students scan a QR code that changes every 15 seconds.' : ' You get a 4-digit code to share in Teams.'}
+          {mode === 'class' ? ' Students scan a QR code that changes every 15 seconds.' : ' You get a 4-digit code that changes every 30 seconds: share your screen in Teams so everyone sees it.'}
+          {` Check-in closes after ${minutes} minutes.`}
         </p>
         {error ? <p className="err">{error}</p> : null}
         <button className="btn" style={{ marginTop: 16 }} disabled={busy || !module}>{busy ? 'Starting…' : 'Start check-in'}</button>
@@ -148,9 +159,6 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
     try { if (typeof navigator.share === 'function') { await navigator.share({ title: 'TutorLink check-in', text }); return } } catch { return }
     try { await navigator.clipboard.writeText(url); toast('Link copied. Open it on the laptop') } catch { toast(url) }
   }
-  const copyCode = async () => {
-    try { await navigator.clipboard.writeText(live?.online_code ?? ''); haptic(10); toast('Code copied. Paste it in the Teams chat') } catch { /* shown on screen anyway */ }
-  }
 
   return (
     <>
@@ -179,9 +187,9 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
           <div className="checkin">
             <p className="eyebrow" style={{ marginBottom: 6 }}>Online code</p>
             <div className="checkin__pin">{live.online_code}</div>
-            <p className="checkin__hint">Share this in the Teams chat. Students tap <b>Check in</b> in TutorLink and type it.</p>
+            <p className="checkin__hint">It changes every 30 seconds, so a code sent to someone who isn't here stops working. <b>Share your screen in Teams</b> with this showing; students tap <b>Check in</b> in TutorLink and type it.</p>
             <div className="btnrow" style={{ marginTop: 12 }}>
-              <button className="btn btn--outline btn--sm" onClick={copyCode}><Icon name="clip" size={15} /> Copy code</button>
+              <button className="btn btn--outline btn--sm" onClick={shareScreen}><Icon name="share" size={15} /> Show on a laptop</button>
             </div>
           </div>
         ) : null}

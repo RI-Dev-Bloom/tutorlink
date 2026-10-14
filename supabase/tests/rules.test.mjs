@@ -505,13 +505,23 @@ await ok('closing it stops check-ins and the projector screen', async () => {
   try { await as(S5, `select public.check_in($1)`, [(await live(cls)).token]); throw new Error('was allowed') }
   catch (e) { if (!e.message.includes('closed')) throw e }
 })
-await ok('online: a 4-digit code to share in Teams', async () => {
-  onl = (await as(ids.stu, `select public.tutor_start_checkin('PROG1111', 'Teams', 1, 'online') id`))[0].id
+await denied('check-in stays open 5 to 20 minutes', () => as(ids.stu, `select public.tutor_start_checkin('PROG1111', 'Teams', 1, 'online', 25)`), '5 to 20 minutes')
+await ok('online: a 4-digit code, open for the 5 minutes chosen', async () => {
+  onl = (await as(ids.stu, `select public.tutor_start_checkin('PROG1111', 'Teams', 1, 'online', 5) id`))[0].id
+  const mins = (await db.query(`select extract(epoch from closes_at - now()) / 60 m from public.checkins where session_id = $1`, [onl])).rows[0].m
+  if (mins < 4.9 || mins > 5.1) throw new Error('open for ' + mins)
   const r = await live(onl)
   if (r.mode !== 'online' || !/^\d{4}$/.test(r.online_code)) throw new Error(JSON.stringify(r))
   await as(S3, `select public.check_in_code($1)`, [r.online_code])
   return eq((await db.query(`select method from public.attendance where session_id = $1`, [onl])).rows[0].method, 'online', 'method')
 })
+await denied('a forwarded online code stops working after a minute', async () => {
+  const old = (await db.query(`select public.checkin_pin(secret, $1::uuid, floor(extract(epoch from now()) / 30)::bigint - 3) p from public.checkins where session_id = $1::uuid`, [onl])).rows[0].p
+  const cur = (await live(onl)).online_code
+  if (old === cur) return as(S4, `select public.check_in_code('xxxx')`)
+  return as(S4, `select public.check_in_code($1)`, [old])
+}, "isn't right or has expired")
+await ok('the online screen shows no QR', async () => { const r = await live(onl); if (r.token || r.code) throw new Error(JSON.stringify(r)) })
 await ok("the student's progress: sessions they came to out of those held", async () => {
   await as(ids.stu, `select public.tutor_close_checkin($1)`, [onl])
   const r = (await as(S3, `select * from public.my_attendance() where module_code = 'PROG1111'`))[0]

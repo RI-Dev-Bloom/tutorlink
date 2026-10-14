@@ -86,7 +86,7 @@ export function CheckIn({ token }: { token?: string }) {
             <button className="btn btn--sm" disabled={busy || !(clean.length === 4 || clean.length === 6)}>{busy ? '…' : 'Check in'}</button>
           </div>
         </form>
-        <p className="small muted" style={{ marginTop: 8 }}>6 letters under the QR in class, or the 4-digit code your tutor shares online.</p>
+        <p className="small muted" style={{ marginTop: 8 }}>6 letters under the QR in class, or the 4-digit code on your tutor's shared screen online.</p>
       </div></div>
     </>
   )
