@@ -94,10 +94,23 @@ await denied('student cannot set the flag on themselves', () => as(ids.stu2, `up
 await ok('lecturer clears own flag after new password', async () => eq((await as(ids.lect, `update public.profiles set must_change_password = false where id = $1 returning must_change_password`, [ids.lect]))[0].must_change_password, false, 'flag'))
 
 console.log('\nmodules')
-await ok('student adds a module (normalised)', () => as(ids.stu, `select public.add_module(' webd1111 ', 'Web Development') as code`))
-await ok('adding an existing code reuses it', () => as(ids.stu, `select public.add_module('PROG1111', 'Typo name') as code`))
+await denied('students can no longer add modules', () => as(ids.stu, `select public.add_module('WEBD1111', 'Web Development')`), 'Only admin')
+await ok('admin adds a module (normalised)', () => as(ids.admin, `select public.add_module(' webd1111 ', 'Web Development') as code`))
+await ok('adding an existing code reuses it', () => as(ids.admin, `select public.add_module('PROG1111', 'Typo name') as code`))
 await ok('existing name untouched', async () => eq((await db.query(`select name from public.modules where code='PROG1111'`)).rows[0].name, 'Programming 1', 'name'))
-await denied('bad module code rejected', () => as(ids.stu, `select public.add_module('PROG11', 'x')`))
+await denied('bad module code rejected', () => as(ids.admin, `select public.add_module('PROG11', 'x')`))
+await ok("Rosebank's codes that aren't 4+4 are allowed", async () => eq((await db.query(`select count(*)::int n from public.modules where code in ('ACAD121', 'XBLAW5119', 'XADAD7112', 'INPCF110')`)).rows[0].n, 4, 'codes'))
+await ok('the catalogue is loaded: 32 qualifications, 800 links, 154 electives', async () => {
+  eq((await db.query(`select count(*)::int q from public.qualifications where faculty is not null`)).rows[0].q, 32, 'qualifications')
+  return eq((await db.query(`select count(*)::int n, count(*) filter (where elective)::int e from public.qualification_modules`)).rows[0], { n: 800, e: 154 }, 'links')
+})
+await ok('DISD0601 by year matches the code rule', async () => {
+  const rows = (await db.query(`select year, string_agg(module_code, ' ' order by module_code) m from public.qualification_modules where qualification_code = 'DISD0601' group by year order by year`)).rows
+  return eq(rows.map(r => [r.year, r.m]), [
+    [1, 'BUIS5111 IQTT5111 ITPP5112 OPSY5121 PRLD5121 PROG5121 PROG6112 WEDE5020'],
+    [2, 'DATA6211 DATA6222 HCIN6222 IPMA6212 PROG6212 PROG6221 SAND6221 WEDE6021'],
+    [3, 'ADDB6311 APPR6312 ISEC6321 OPSC6311 OPSC6312 SQAT6322 XISD5319 XISD6329']], 'years')
+})
 await denied('student cannot rename modules', async () => { const r = await as(ids.stu, `update public.modules set name='Hacked' where code='PROG1111' returning code`); if (!r.length) throw new Error('0 rows (RLS)') })
 await ok('student picks modules', () => as(ids.stu, `insert into public.student_modules values ($1,'PROG1111'),($1,'NETW1111')`, [ids.stu]))
 await denied('student cannot pick for someone else', () => as(ids.stu, `insert into public.student_modules values ($1,'PROG1111')`, [ids.stu2]))
@@ -609,6 +622,46 @@ await ok('tutors title their check-ins too', async () => {
   const id = (await as(ids.stu2, `select public.start_checkin('MATH1111', 'Test prep', 'Matrices', 'Lab 1', 1, 'class', 5) id`))[0].id
   await as(ids.stu2, `select public.tutor_close_checkin($1)`, [id])
   return eq((await db.query(`select kind, title from public.sessions where id = $1`, [id])).rows[0], { kind: 'tutorial', title: 'Test prep' }, 'tutorial')
+})
+
+console.log('\nqualifications and modules')
+const S6 = '00000000-0000-0000-0000-000000000041'
+await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 's6@x', '{"name":"Nandi New"}')`, [S6])
+await db.query(`update public.profiles set student_number = 'ST40000041' where id = $1`, [S6])
+await ok("a student picks qualification and year: that year's modules are added", async () => {
+  eq((await as(S6, `select public.set_my_study('DISD0601', 2) n`))[0].n, 8, 'added')
+  const p = (await db.query(`select qualification_code, study_year from public.profiles where id = $1`, [S6])).rows[0]
+  eq(p, { qualification_code: 'DISD0601', study_year: 2 }, 'profile')
+  return eq((await db.query(`select count(*)::int n from public.student_modules where student_id = $1 and module_code = 'HCIN6222'`, [S6])).rows[0].n, 1, 'HCIN6222')
+})
+await ok('electives are not added for them', async () => {
+  await as(S6, `select public.set_my_study('HCEC0501', 1)`)
+  return eq((await db.query(`select count(*)::int n from public.student_modules where student_id = $1 and module_code = 'COZU5112'`, [S6])).rows[0].n, 0, 'isiZulu')
+})
+await denied('only from the official list', () => as(S6, `select public.set_my_study('NOPE01', 1)`), 'from the list')
+await denied('lecturers do not have a qualification', () => as(ids.lect, `select public.set_my_study('DISD0601', 1)`), 'Only students')
+await ok("who's missing: enrolled students with no check-in, for the module's lecturer", async () => {
+  await db.query(`insert into public.student_modules values ($1, 'PROG1111') on conflict do nothing`, [S6])
+  const rows = await as(ids.lect, `select student_number, held from public.module_missing($1, 'PROG1111')`, [semNow])
+  if (!rows.some(r => r.student_number === 'ST40000041')) throw new Error(JSON.stringify(rows))
+  if (rows.some(r => r.student_number === 'ST30000031')) throw new Error('lists someone who came')
+  return rows.length
+})
+await ok('other lecturers and students get nothing', async () => {
+  eq((await as(ids.lect2, `select * from public.module_missing($1, 'PROG1111')`, [semNow])).length, 0, 'lect2')
+  return eq((await as(S3, `select * from public.module_missing($1, 'PROG1111')`, [semNow])).length, 0, 'student')
+})
+await ok('demand per module, for admin', async () => {
+  const [r] = await as(ids.admin, `select * from public.module_demand() where module_code = 'IQTT5111'`)
+  if (r.qualifications < 10) throw new Error(JSON.stringify(r))
+  return r
+})
+await denied('demand is admin only', () => as(ids.lect, `select * from public.module_demand()`), 'Admin only')
+await ok('reach by faculty, from the qualification on each check-in', async () => {
+  await db.query(`update public.attendance set qualification_code = 'DISD0601' where student_number = 'ST30000031'`)
+  const rows = await as(ids.admin, `select faculty, students from public.attendance_by_faculty($1)`, [semNow])
+  if (!rows.some(r => r.faculty === 'Information and Communications Technology' && r.students >= 1)) throw new Error(JSON.stringify(rows))
+  return rows
 })
 
 console.log('\nsigned-out users')

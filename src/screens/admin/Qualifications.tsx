@@ -1,8 +1,8 @@
-/* Admin → Qualifications: the list students pick from (e.g. DISD). Students can add a missing
-   one, so this is where names get fixed and old ones hidden. */
+/* Admin → Qualifications: Rosebank's official list students pick from, by faculty.
+   Names get fixed and old ones hidden here. */
 
 import { useState, type FormEvent } from 'react'
-import { loadQualifications, type Qualification } from '../../lib/attendance'
+import { loadQualifications, shortQual, type Qualification } from '../../lib/catalogue'
 import { invalidate, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
 import { Icon } from '../../ui/icons'
@@ -13,6 +13,8 @@ import { haptic } from '../../ui/haptic'
 export function Qualifications() {
   const { openSheet } = useOverlay()
   const all = useQuery('qualifications', loadQualifications)
+  const groups = [...new Set((all.data ?? []).map(q => q.faculty ?? 'Other'))].sort()
+    .map(f => ({ faculty: f, items: (all.data ?? []).filter(q => (q.faculty ?? 'Other') === f) }))
   return (
     <>
       <NavBar title="Qualifications" left={<BackButton />} />
@@ -20,17 +22,20 @@ export function Qualifications() {
         <p className="small muted">Students choose one when they sign up. It's recorded with every check-in.</p>
         {all.loading ? <Loading /> : null}
         {all.error ? <p className="err">{all.error}</p> : null}
-        {all.data?.length ? (
-          <div className="card" style={{ marginTop: 14 }}>
-            {all.data.map(q => (
+        {groups.map(g => (
+          <div key={g.faculty}>
+          <div className="sect">{g.faculty} · {g.items.length}</div>
+          <div className="card">
+            {g.items.map(q => (
               <button className="row" key={q.code} onClick={() => openSheet(<QualSheet q={q} />)}>
                 <span className="avatar avatar--code">{q.code.slice(0, 4)}</span>
-                <span className="rmain"><span className="rname" style={q.hidden ? { color: 'var(--muted)' } : undefined}>{q.name}</span><span className="rmeta mono">{q.code}</span></span>
+                <span className="rmain"><span className="rname" style={q.hidden ? { color: 'var(--muted)' } : undefined}>{shortQual(q.name)}</span><span className="rmeta mono">{q.code}</span></span>
                 <span className="rside">{q.hidden ? <Badge tone="plain">Hidden</Badge> : null}<Icon name="chev" size={17} stroke={2.1} /></span>
               </button>
             ))}
           </div>
-        ) : null}
+          </div>
+        ))}
       </div></div>
       <button className="fab fab--low" onClick={() => openSheet(<QualSheet />)}>
         <Icon name="plus" size={18} stroke={2.2} /> Add qualification
@@ -46,7 +51,7 @@ function QualSheet({ q }: { q?: Qualification }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const c = code.trim().toUpperCase()
-  const valid = /^[A-Z][A-Z0-9]{1,9}$/.test(c) && name.trim().length >= 2
+  const valid = /^[A-Z0-9]{2,10}$/.test(c) && name.trim().length >= 2
 
   const run = async (work: () => PromiseLike<{ error: unknown }>, done: string) => {
     setBusy(true); setError('')
@@ -69,7 +74,7 @@ function QualSheet({ q }: { q?: Qualification }) {
       <div className="sheet-form">
         <div className="field">
           <label htmlFor="f-qc">Code</label>
-          <input id="f-qc" className="mono" type="text" autoCapitalize="characters" placeholder="DISD" maxLength={10} value={code} onChange={e => setCode(e.target.value)} />
+          <input id="f-qc" className="mono" type="text" autoCapitalize="characters" placeholder="DISD0601" maxLength={10} value={code} onChange={e => setCode(e.target.value)} />
         </div>
         <div className="field">
           <label htmlFor="f-qn">Full name</label>

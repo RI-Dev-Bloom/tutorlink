@@ -79,6 +79,7 @@ The same screens for everyone, showing only what they're allowed to see:
 
 Lecturers and admin switch between **Tutorials** and **Lectures**, so the two are never mixed. For a semester (earlier ones can be picked at the top): sessions held, **students reached** (different students, so someone at five sessions counts once), and the average per session. Then per module:
 - **Students:** each student's name, student number and qualification, with a line and "7 of 9" (their rate across the module's sessions).
+- **Never checked in:** lecturers and admin also see students who take the module but haven't checked in once ("0 of 9"). They're in the CSV too, marked "Never".
 - **Sessions:** each session with the tutor, venue, length and how many checked in. Tap one for the list (read-only for lecturers).
 - **Downloads (CSV, opens in Excel):** the student list with rates, and every check-in (date, time, module, tutor, venue, student number, name, qualification, how they checked in). The index also downloads every check-in for the semester.
 

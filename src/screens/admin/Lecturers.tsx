@@ -4,12 +4,13 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { adminUsers, appLink, invalidate, must, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
-import { displayName, type Lecturer, type Module } from '../../lib/types'
+import { displayName, type Lecturer } from '../../lib/types'
 import { useStack } from '../../nav/Stack'
 import { Icon } from '../../ui/icons'
 import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Empty, Loading, NavBar, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
+import { ModulePicker } from '../../ui/ModulePicker'
 import { loadModules } from './Modules'
 import { Thread } from '../messages/Thread'
 
@@ -89,7 +90,6 @@ function AddLecturer() {
   const [error, setError] = useState('')
   const [created, setCreated] = useState<Created | null>(null)
 
-  const toggle = (code: string) => { haptic(6); setPicked(p => p.includes(code) ? p.filter(c => c !== code) : [...p, code]) }
   const valid = first.trim() && last.trim() && /\S+@\S+\.\S+/.test(email) && picked.length > 0
 
   const submit = async (e: FormEvent) => {
@@ -151,14 +151,7 @@ function AddLecturer() {
 
         <div className="field">
           <label>Modules they teach {picked.length ? `(${picked.length})` : ''}</label>
-          {modules.loading ? <Loading /> : null}
-          <div className="chips">
-            {(modules.data ?? []).filter(m => !m.hidden).map((m: Module) => (
-              <button type="button" key={m.code} className={'chip' + (picked.includes(m.code) ? ' on' : '')} onClick={() => toggle(m.code)}>
-                <span className="code">{m.code}</span>{m.name}
-              </button>
-            ))}
-          </div>
+          <ModulePicker value={picked} onChange={setPicked} />
           <p className="small muted" style={{ marginTop: 8 }}>They'll only see — and only be able to message — tutors on these modules.</p>
         </div>
 
@@ -179,7 +172,6 @@ function LecturerDetail({ id }: { id: string }) {
   const { back, push } = useStack()
   const lecturer = useQuery(`lecturer:${id}`, () =>
     must(supabase.from('profiles').select('id, title, full_name, email, must_change_password, lecturer_modules(module_code)').eq('id', id).single<Lecturer>()))
-  const modules = useQuery('modules', loadModules)
   const [picked, setPicked] = useState<string[] | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -222,14 +214,7 @@ function LecturerDetail({ id }: { id: string }) {
         ) : null}
 
         <div className="sect" style={{ marginTop: 26 }}>Modules they teach</div>
-        <div className="chips">
-          {(modules.data ?? []).filter(m => !m.hidden || chosen.includes(m.code)).map(m => (
-            <button type="button" key={m.code} className={'chip' + (chosen.includes(m.code) ? ' on' : '')}
-              onClick={() => { haptic(6); setPicked(chosen.includes(m.code) ? chosen.filter(c => c !== m.code) : [...chosen, m.code]) }}>
-              <span className="code">{m.code}</span>{m.name}
-            </button>
-          ))}
-        </div>
+        <ModulePicker value={chosen} onChange={setPicked} />
         {changed ? (
           <div className="btnrow" style={{ marginTop: 14 }}>
             <button className="btn btn--outline" onClick={() => setPicked(null)} disabled={busy}>Undo</button>

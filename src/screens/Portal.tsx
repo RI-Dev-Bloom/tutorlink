@@ -167,7 +167,7 @@ function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
         <SRow icon="mail" tone="blue" label="Email" value={profile.email} />
         {profile.student_number ? <SRow icon="cap" tone="navy" label="Student number" value={<span className="mono">{profile.student_number}</span>} /> : null}
         {profile.role === 'student' ? (
-          <SRow icon="book" tone="gold" label="Qualification" value={<span className="mono">{profile.qualification_code ?? 'Choose'}</span>}
+          <SRow icon="book" tone="gold" label="Qualification" value={<span className="mono">{profile.qualification_code ? `${profile.qualification_code}${profile.study_year ? ` · Y${profile.study_year}` : ''}` : 'Choose'}</span>}
             onClick={() => openSheet(<QualificationSheet />)} />
         ) : null}
         <SRow icon="user" tone="slate" label="Role" value={profile.is_tutor ? 'Student and tutor' : ROLE_LINE[view]} />

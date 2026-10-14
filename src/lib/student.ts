@@ -37,8 +37,3 @@ export const loadMyTutorModules = async (uid: string) =>
     .eq('tutor_id', uid).order('module_code').returns<MyModule[]>())) ?? []
 
 export const isOpen = (s: ApplicationStatus) => s === 'pending' || s === 'under_review'
-
-/* Adds a module everyone can then pick. If the code already exists, you get that one. */
-export async function addModule(code: string, name: string) {
-  return must(supabase.rpc('add_module', { p_code: code, p_name: name.trim() })) as Promise<string>
-}

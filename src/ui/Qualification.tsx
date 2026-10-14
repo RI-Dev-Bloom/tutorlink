@@ -1,9 +1,10 @@
-/* Picking your qualification (e.g. DISD: Diploma in IT: Software Development).
-   It's recorded with every check-in. Missing from the list? Add it; admin can tidy the list later. */
+/* A student's qualification and year of study. Picking them adds that year's modules
+   (electives, like a home language, they tick themselves under Modules).
+   Used when they first sign up, in Profile, and at a first check-in. */
 
 import { useMemo, useState } from 'react'
 import { useAuth } from '../lib/auth'
-import { loadQualifications, type Qualification } from '../lib/attendance'
+import { facultiesOf, loadQualificationModules, loadQualifications, shortQual, yearsIn } from '../lib/catalogue'
 import { invalidate, must, useQuery } from '../lib/data'
 import { friendlyError, supabase } from '../lib/supabase'
 import { Icon } from './icons'
@@ -11,93 +12,111 @@ import { useOverlay } from './Overlay'
 import { Loading } from './parts'
 import { haptic } from './haptic'
 
-/* The list on its own: used inside onboarding and inside the sheet below. */
-export function QualificationList({ value, onPick }: { value: string | null; onPick: (q: Qualification) => void }) {
+export type Study = { qualification: string | null; year: number | null }
+
+export function StudyPicker({ value, onChange }: { value: Study; onChange: (s: Study) => void }) {
   const all = useQuery('qualifications', loadQualifications)
   const [q, setQ] = useState('')
-  const [adding, setAdding] = useState(false)
-  const shown = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    return (all.data ?? []).filter(x => !x.hidden && (!s || x.code.toLowerCase().includes(s) || x.name.toLowerCase().includes(s)))
+  const [browsing, setBrowsing] = useState(!value.qualification)
+  const chosen = (all.data ?? []).find(x => x.code === value.qualification)
+  const mods = useQuery(`qual-modules:${value.qualification ?? ''}`, () => value.qualification ? loadQualificationModules(value.qualification) : Promise.resolve([]))
+  const years = yearsIn(mods.data ?? [])
+  const adds = (mods.data ?? []).filter(m => m.year === value.year && !m.elective)
+  const electives = (mods.data ?? []).filter(m => m.year === value.year && m.elective).length
+
+  const groups = useMemo(() => {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean)
+    const list = (all.data ?? []).filter(x => !x.hidden && words.every(w => `${x.code} ${x.name} ${x.faculty ?? ''}`.toLowerCase().includes(w)))
+    return facultiesOf(all.data ?? []).map(f => ({ faculty: f, items: list.filter(x => x.faculty === f) })).filter(g => g.items.length)
   }, [all.data, q])
 
-  if (adding) return <AddQualification initial={q} onAdded={onPick} onCancel={() => setAdding(false)} />
-
-  return (
-    <>
-      {(all.data?.length ?? 0) > 6 ? (
-        <div className="field" style={{ marginTop: 0 }}>
-          <input type="search" placeholder="Search by code or name" value={q} onChange={e => setQ(e.target.value)} aria-label="Search qualifications" />
+  if (!browsing && chosen) return (
+    <div>
+      <button type="button" className="pick on" style={{ border: '1px solid var(--line)', borderRadius: 'var(--r)', background: 'var(--card)' }}
+        onClick={() => { haptic(6); setBrowsing(true) }}>
+        <span className="pick__box pick__box--round"><Icon name="check" size={14} stroke={2.6} /></span>
+        <span className="rmain"><span className="rname">{shortQual(chosen.name)}</span><span className="rmeta"><span className="mono">{chosen.code}</span> · {chosen.faculty} · tap to change</span></span>
+      </button>
+      <div className="field"><label>Year of study</label>
+        <div className="seg">
+          {Array.from({ length: years }, (_, i) => i + 1).map(y => (
+            <button type="button" key={y} className={value.year === y ? 'on' : ''} onClick={() => { haptic(6); onChange({ ...value, year: y }) }}>Year {y}</button>
+          ))}
         </div>
-      ) : null}
-      <div className="card" style={{ marginTop: 10, maxHeight: '38vh', overflowY: 'auto' }}>
-        {all.loading ? <Loading /> : null}
-        {shown.map(x => (
-          <button type="button" key={x.code} className={'pick' + (value === x.code ? ' on' : '')} aria-pressed={value === x.code} onClick={() => { haptic(8); onPick(x) }}>
-            <span className="pick__box pick__box--round">{value === x.code ? <Icon name="check" size={14} stroke={2.6} /> : null}</span>
-            <span className="rmain"><span className="rname">{x.name}</span><span className="rmeta mono">{x.code}</span></span>
-          </button>
-        ))}
-        {all.data && !shown.length ? <p className="small muted" style={{ padding: 14 }}>Nothing matches “{q}”.</p> : null}
       </div>
-      <button type="button" className="btn btn--ghost" style={{ marginTop: 6 }} onClick={() => setAdding(true)}>Not listed? Add yours</button>
-    </>
+      {value.year ? (
+        mods.loading ? <Loading /> : (
+          <div className="adds">
+            <p className="small muted">These {adds.length} modules are added for you:</p>
+            <div className="chips" style={{ marginTop: 8 }}>
+              {adds.map(m => <span key={m.module_code} className="chip chip--static chip--sm"><span className="code">{m.module_code}</span>{m.modules?.name}</span>)}
+            </div>
+            {electives ? <p className="small muted" style={{ marginTop: 8 }}>Plus {electives} elective{electives === 1 ? '' : 's'} (e.g. a language): tick yours under Modules.</p> : null}
+          </div>
+        )
+      ) : null}
+    </div>
   )
-}
-
-function AddQualification({ initial, onAdded, onCancel }: { initial: string; onAdded: (q: Qualification) => void; onCancel: () => void }) {
-  const [code, setCode] = useState(/^[a-z0-9]{2,10}$/i.test(initial.trim()) ? initial.trim().toUpperCase() : '')
-  const [name, setName] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
-  const c = code.trim().toUpperCase()
-  const valid = /^[A-Z][A-Z0-9]{1,9}$/.test(c) && name.trim().length >= 2
-
-  // Not a <form>: this sits inside the onboarding form, and forms can't nest.
-  const add = async () => {
-    setBusy(true); setError('')
-    try {
-      const got = await must(supabase.rpc('add_qualification', { p_code: c, p_name: name.trim() })) as string
-      invalidate('qualifications'); onAdded({ code: got, name: name.trim(), hidden: false })
-    } catch (err) { haptic(24); setError(friendlyError(err)); setBusy(false) }
-  }
 
   return (
     <div>
-      <div className="field">
-        <label htmlFor="f-qc">Code</label>
-        <input id="f-qc" className="mono" type="text" autoCapitalize="characters" placeholder="DISD" maxLength={10} value={code} onChange={e => setCode(e.target.value)} />
+      <div className="field" style={{ marginTop: 0 }}>
+        <input type="search" placeholder="Search, e.g. software, BCom, DISD" value={q} onChange={e => setQ(e.target.value)} aria-label="Search qualifications" />
       </div>
-      <div className="field">
-        <label htmlFor="f-qn">Full name</label>
-        <input id="f-qn" type="text" placeholder="Diploma in IT: Software Development" maxLength={120} value={name} onChange={e => setName(e.target.value)} />
-      </div>
-      {error ? <p className="err">{error}</p> : null}
-      <div className="btnrow" style={{ marginTop: 14 }}>
-        <button type="button" className="btn btn--outline" onClick={onCancel}>Back</button>
-        <button type="button" className="btn" disabled={busy || !valid} onClick={add}>{busy ? 'Adding…' : 'Add'}</button>
+      <div className="card" style={{ marginTop: 10, maxHeight: '46vh', overflowY: 'auto' }}>
+        {all.loading ? <Loading /> : null}
+        {groups.map(g => (
+          <div key={g.faculty}>
+            <p className="group-head">{g.faculty}</p>
+            {g.items.map(x => (
+              <button type="button" key={x.code} className={'pick' + (value.qualification === x.code ? ' on' : '')}
+                onClick={() => { haptic(8); setBrowsing(false); onChange({ qualification: x.code, year: value.qualification === x.code ? value.year : 1 }) }}>
+                <span className="pick__box pick__box--round">{value.qualification === x.code ? <Icon name="check" size={14} stroke={2.6} /> : null}</span>
+                <span className="rmain"><span className="rname">{shortQual(x.name)}</span><span className="rmeta mono">{x.code}</span></span>
+              </button>
+            ))}
+          </div>
+        ))}
+        {all.data && !groups.length ? <p className="small muted" style={{ padding: 14 }}>Nothing matches “{q}”.</p> : null}
       </div>
     </div>
   )
 }
 
-/* As a sheet: saves straight to your profile, then carries on (e.g. finishes the check-in). */
+/* Saves through the database: sets the qualification and year, and adds that year's modules. */
+export async function saveStudy(s: Study) {
+  return (await must(supabase.rpc('set_my_study', { p_qualification: s.qualification, p_year: s.year }))) as number
+}
+
+/* As a sheet, from Profile or a first check-in. */
 export function QualificationSheet({ onDone }: { onDone?: () => void }) {
   const { profile, reloadProfile } = useAuth()
   const { closeSheet, toast } = useOverlay()
+  const [study, setStudy] = useState<Study>({ qualification: profile?.qualification_code ?? null, year: profile?.study_year ?? null })
   const [busy, setBusy] = useState(false)
-  const pick = async (q: Qualification) => {
-    if (!profile || busy) return
-    setBusy(true)
-    const { error } = await supabase.from('profiles').update({ qualification_code: q.code }).eq('id', profile.id)
-    if (error) { toast(friendlyError(error)); setBusy(false); return }
-    haptic(14); await reloadProfile(); closeSheet(); onDone?.()
+  const [error, setError] = useState('')
+  const unchanged = study.qualification === profile?.qualification_code && study.year === profile?.study_year
+
+  const save = async () => {
+    if (!study.qualification || !study.year) return
+    setBusy(true); setError('')
+    try {
+      const added = await saveStudy(study)
+      haptic(14); await reloadProfile(); invalidate('my-modules', 'my-attendance')
+      closeSheet(); toast(added ? `Saved · ${added} module${added === 1 ? '' : 's'} added` : 'Saved'); onDone?.()
+    } catch (e) { haptic(24); setError(friendlyError(e)); setBusy(false) }
   }
+
   return (
     <div>
       <p className="sheet-sub">Recorded with every check-in</p>
       <h3 className="sheet-title">Your qualification</h3>
-      <div className="sheet-form"><QualificationList value={profile?.qualification_code ?? null} onPick={pick} /></div>
+      <div className="sheet-form">
+        <StudyPicker value={study} onChange={setStudy} />
+        {error ? <p className="err">{error}</p> : null}
+        <button className="btn" style={{ marginTop: 16 }} disabled={busy || !study.qualification || !study.year || unchanged} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
+        <p className="small muted" style={{ marginTop: 8 }}>Modules you already have stay. Remove any under Modules.</p>
+      </div>
     </div>
   )
 }

@@ -8,7 +8,7 @@ status: v1
 
 ## What it does
 1. Student taps **Sign in with Google** and picks their Gmail account.
-2. First time only: they enter their full name, their **student number** (format `ST` + 8 digits, e.g. `ST12345678`), and pick their modules ([[Module picker]]).
+2. First time only: they enter their full name, their **student number** (format `ST` + 8 digits, e.g. `ST12345678`), and pick their qualification and year, which adds their modules ([[Module picker]]).
 3. After that, they go straight in.
 
 ## Why it's here

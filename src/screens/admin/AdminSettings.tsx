@@ -88,8 +88,8 @@ export function AdminSettings() {
 
       <Group title="People and modules">
         <SRow icon="board" tone="gold" label="Lecturers" sub="Let lecturers in, set their modules" onClick={() => push(<Lecturers />)} />
-        <SRow icon="book" tone="navy" label="Modules" sub="Add, rename, hide or merge" onClick={() => push(<Modules />)} />
-        <SRow icon="cap" tone="slate" label="Qualifications" sub="The list students pick from, e.g. DISD" onClick={() => push(<Qualifications />)} />
+        <SRow icon="book" tone="navy" label="Modules" sub="The official list, by faculty" onClick={() => push(<Modules />)} />
+        <SRow icon="cap" tone="slate" label="Qualifications" sub="By faculty, e.g. DISD0601" onClick={() => push(<Qualifications />)} />
       </Group>
 
       <DeviceSettings />

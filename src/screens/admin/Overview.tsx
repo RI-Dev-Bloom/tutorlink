@@ -22,6 +22,7 @@ import { loadModules } from './Modules'
 import { SemesterPay } from './SemesterPay'
 import { TutorDetail } from './TutorDetail'
 import { loadTotals } from '../../lib/attendance'
+import { loadDemand, loadFacultyReach, type FacultyReach } from '../../lib/catalogue'
 import { AttendanceScreen, ModuleAttendance } from '../attendance/Attendance'
 
 /* Open applications: how many, and how long the oldest has waited. Shares the 'applications' prefix. */
@@ -47,6 +48,8 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
   const modules = useQuery('modules', loadModules)
   const rate = Number(useQuery('settings', loadSettings).data?.rate_per_session ?? 0)
   // Different students who checked in this semester (one student at five sessions counts once).
+  const demand = useQuery('module-demand', loadDemand)
+  const reach = useQuery(`faculty-reach:${semId}`, () => semId ? loadFacultyReach(semId) : Promise.resolve([]))
   const totals = useQuery(`att-totals:${semId}`, () => semId ? loadTotals(semId) : Promise.resolve(null))
   const today = todayISO()
 
@@ -69,9 +72,10 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
       m,
       tutors: tutorList.filter(t => t.tutor_modules.some(x => x.module_code === m.code)).length,
       run: done.filter(s => s.module_code === m.code).length,
-    })).sort((a, b) => a.tutors - b.tutors || a.m.code.localeCompare(b.m.code))
+      takers: demand.data?.find(d => d.module_code === m.code)?.students ?? 0,
+    })).sort((a, b) => Number(!!a.tutors) - Number(!!b.tutors) || b.takers - a.takers || a.m.code.localeCompare(b.m.code))
     return { done, students, confirmBy, toConfirmN: toConfirm.length, nearLimit, waiting, ahead, confirmed, coverage }
-  }, [sessions.data, tutors.data, overrides.data, modules.data, sem, semId, today])
+  }, [sessions.data, tutors.data, overrides.data, modules.data, demand.data, sem, semId, today])
 
   const first = (profile?.full_name || '').split(' ')[0]
   const open = (tab: string) => { haptic(8); go(tab) }
@@ -143,10 +147,10 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
       <div className="sect"><span>High-risk modules</span>{gaps ? <Badge tone="red">{gaps} without a tutor</Badge> : null}</div>
       {v.coverage.length ? (
         <div className="card">
-          {v.coverage.map(({ m, tutors: n, run }) => (
+          {v.coverage.map(({ m, tutors: n, run, takers }) => (
             <button className="row" key={m.code} onClick={() => { if (sem) { haptic(8); push(<ModuleAttendance code={m.code} name={m.name} sem={sem} />) } }}>
               <span className={'cov' + (n ? '' : ' cov--gap')}>{n}</span>
-              <span className="rmain"><span className="rname">{m.name}</span><span className="rmeta"><span className="mono">{m.code}</span> · {n === 1 ? '1 tutor' : `${n} tutors`}{sem ? ` · ${run} session${run === 1 ? '' : 's'} run` : ''}</span></span>
+              <span className="rmain"><span className="rname">{m.name}</span><span className="rmeta"><span className="mono">{m.code}</span> · {takers} student{takers === 1 ? '' : 's'} · {n === 1 ? '1 tutor' : `${n} tutors`}{sem ? ` · ${run} session${run === 1 ? '' : 's'} run` : ''}</span></span>
               <span className="rside">{!n ? <Badge tone="red">No tutor</Badge> : null}<Icon name="chev" size={17} stroke={2.1} /></span>
             </button>
           ))}
@@ -156,6 +160,31 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
           <Icon name="alert" size={15} /><span>No high-risk modules yet. Mark them in Settings so students can apply to tutor them.</span>
         </button>
       )}
+
+      {reach.data?.length ? (
+        <>
+          <div className="sect">Reach by faculty</div>
+          <FacultyBars rows={reach.data} />
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+/* ---------- who tutorials reach, by faculty --------------- */
+
+function FacultyBars({ rows }: { rows: FacultyReach[] }) {
+  const max = Math.max(1, ...rows.map(r => r.students))
+  return (
+    <div className="card card--pad reach">
+      {rows.map(r => (
+        <div className="reach__row" key={r.faculty}>
+          <div className="reach__label"><span>{r.faculty}</span><b>{r.students}</b></div>
+          <div className="reach__track" aria-hidden="true"><span style={{ width: `${(r.students / max) * 100}%` }} /></div>
+          <span className="reach__meta">{r.checkins} check-in{r.checkins === 1 ? '' : 's'}</span>
+        </div>
+      ))}
+      <p className="small muted" style={{ marginTop: 10 }}>Students who came to at least one tutorial this semester, by their qualification's faculty.</p>
     </div>
   )
 }

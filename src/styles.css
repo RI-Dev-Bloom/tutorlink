@@ -868,3 +868,21 @@ button.band__stats { width: 100%; background: none; border-left: 0; border-right
 .show__session { padding: 22px 32px 0; text-align: center; }
 .show__kind { font-family: var(--fm); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--goldD); }
 .show__session h1 { margin-top: 6px; font-family: var(--fh); font-size: clamp(28px, 4vw, 44px); color: var(--navy); line-height: 1.1; }
+
+/* Qualification picker: faculty headings in the list, and the modules a year adds. */
+.group-head { position: sticky; top: 0; z-index: 1; margin: 0; padding: 9px 15px 7px; background: var(--card); border-bottom: 1px solid var(--lineS); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.group-head ~ .group-head, div + div > .group-head { border-top: 1px solid var(--lineS); }
+.adds { margin-top: 14px; padding: 13px 14px; border: 1px solid var(--lineS); border-radius: var(--r); background: var(--card); }
+.adds .chips { gap: 6px; }
+.chips--scroll { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 0 16px 2px; }
+.chips--scroll::-webkit-scrollbar { display: none; }
+.chips--scroll .chip { flex: 0 0 auto; white-space: nowrap; }
+.demand { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* Overview → reach by faculty: flat bars, one series. */
+.reach__row + .reach__row { margin-top: 12px; }
+.reach__label { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.reach__label b { font-variant-numeric: tabular-nums; font-weight: 600; }
+.reach__track { height: 6px; margin-top: 6px; border-radius: 4px; background: var(--lineS); overflow: hidden; }
+.reach__track span { display: block; height: 100%; min-width: 4px; border-radius: 4px; background: var(--navy); }
+.reach__meta { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }

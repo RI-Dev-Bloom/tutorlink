@@ -56,8 +56,6 @@ export type CheckInResult = {
   kind: Kind
 }
 
-export type Qualification = { code: string; name: string; hidden: boolean }
-
 export type MyAttendance = { module_code: string; module_name: string; kind: Kind; attended: number; held: number; last_at: string | null }
 
 export const METHOD: Record<Method, string> = { qr: 'QR', code: 'Code', online: 'Online', manual: 'Manual' }
@@ -70,9 +68,6 @@ export const loadAttendance = async (sessionId: string) =>
     .eq('session_id', sessionId).order('checked_in_at', { ascending: false }).returns<AttendanceRow[]>())) ?? []
 
 export const loadOpenCheckin = async () => (await must(supabase.rpc('tutor_open_checkin'))) as string | null
-
-export const loadQualifications = async () =>
-  (await must(supabase.from('qualifications').select('code, name, hidden').order('code').returns<Qualification[]>())) ?? []
 
 export const loadMyAttendance = async () => ((await must(supabase.rpc('my_attendance'))) ?? []) as MyAttendance[]
 

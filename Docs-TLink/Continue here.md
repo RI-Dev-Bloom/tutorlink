@@ -8,6 +8,8 @@ We're in **Phase 1**, building the real app in 8 small slices. **Slices 1–7 ar
 App: https://ri-dev-bloom.github.io/tutorlink/
 
 ## What we've done lately
+- [x] **Rosebank's official list (15 Oct):** 32 qualifications and about 600 modules, by faculty. Students pick their qualification and year and that year's modules are added. Only admin adds modules. Lecturers see who never checked in, admin sees demand on high-risk modules and reach by faculty, and module lists have search and faculty filters
+- [x] **Lecture check-ins (15 Oct):** lecturers run their own, and every check-in has a title and topic
 - [x] **Slice 9, attendance (15 Oct):** check-in with a changing QR (in class) or 4-digit code (Teams), laptop screen link, manual adds, pay per hour, minimum attendance to confirm, qualifications, student progress line. Paper registers are out
 - [x] **Overview and pay (14 Oct):** new admin Overview (semester band, to do, payout, week-by-week chart, high-risk coverage). Pay is now per semester: no "mark as paid", a pay sheet for finance at the end
 - [x] **Tweaks (14 Oct):** lecturers get in by email with Google (no password), settings look like a phone's Settings, "Device" instead of "This phone", files on messages (removed after 3–5 days), high-risk modules only for applications, auto-decline below the minimum
@@ -25,7 +27,7 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [x] Lecturers: admin lets their email in, they sign in with Google (a password only for non-Google emails)
 - [x] Settings: pay rate, minimum mark, semesters and session limit
 - [x] Modules: add, rename, hide, merge
-- [x] Students: pick modules, add a missing one
+- [x] Students: pick qualification and year (modules added for them), tick electives
 - [x] Apply to tutor: only high-risk modules, type your % for each, upload results, track the status
 - [x] Admin: applications queue, results check, approve or decline with templates, optional auto-decline
 - [x] Approved students get a **Tutor** button to switch views
@@ -40,7 +42,7 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [x] Daily keep-alive runs by itself
 
 ## What's left
-- [x] High-risk modules marked (HCIN6222, MATH1111, PROG1111)
+- [x] High-risk modules marked (PROG5121, IQTT5111, HCIN6222)
 - [ ] **You:** check the R260 rate. It's now **per hour**, so a 1½-hour session pays R390
 - [ ] **You:** check the "Semester 2, 2026" dates (13 Jul–27 Nov)
 - [x] **Slice 10:** attendance views for lecturers, admin and tutors, CSV downloads, real "students reached"

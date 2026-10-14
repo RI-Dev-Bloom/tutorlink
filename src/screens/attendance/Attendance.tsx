@@ -7,6 +7,7 @@ import { useAuth } from '../../lib/auth'
 import {
   KIND_LABEL, checkinRows, loadCheckins, loadHeld, loadOpenCheckin, loadRoster, loadSummary, loadTotals, type Kind, type RosterRow,
 } from '../../lib/attendance'
+import { loadMissing } from '../../lib/catalogue'
 import { downloadCsv } from '../../lib/csv'
 import { must, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
@@ -180,11 +181,14 @@ export function ModuleAttendance({ code, name, sem, kind = 'tutorial' }: { code:
   const { toast } = useOverlay()
   const roster = useQuery(`att-roster:${sem.id}:${code}:${kind}`, () => loadRoster(sem.id, code, kind))
   const held = useQuery(`att-held:${sem.id}:${code}:${kind}`, () => loadHeld(sem.id, code, kind))
+  // Students who take the module but haven't checked in once (only admin and its lecturers get these).
+  const missing = useQuery(`att-missing:${sem.id}:${code}:${kind}`, () => loadMissing(sem.id, code, kind))
   const [view, setView] = useState<'students' | 'sessions'>('students')
   const [busy, setBusy] = useState(false)
 
   const students = roster.data ?? []
   const sessions = held.data ?? []
+  const absent = missing.data ?? []
   // Real check-ins only (sessions from before check-in existed may carry a typed-in count).
   const checkins = students.reduce((n, r) => n + r.attended, 0)
 
@@ -198,6 +202,7 @@ export function ModuleAttendance({ code, name, sem, kind = 'tutorial' }: { code:
     downloadCsv([
       ['Student number', 'Name', 'Qualification', 'Sessions attended', 'Sessions held', 'Attendance %', 'Last checked in'],
       ...students.map(r => [r.student_number, r.full_name, r.qualification_code ?? '', r.attended, r.held, pct(r), r.last_at?.slice(0, 10) ?? '']),
+      ...absent.map(r => [r.student_number, r.full_name, r.qualification_code ?? '', 0, r.held, 0, 'Never']),
     ], `TutorLink ${kind} attendance - ${code} - ${sem.name}.csv`)
     haptic(12); toast('Student list downloaded')
   }
@@ -247,8 +252,27 @@ export function ModuleAttendance({ code, name, sem, kind = 'tutorial' }: { code:
           ) : <p className="small muted" style={{ marginTop: 12 }}>No {code} sessions held yet.</p>
         )}
 
+        {view === 'students' && absent.length ? (
+          <>
+            <div className="sect">Never checked in · {absent.length}</div>
+            <div className="card">
+              {absent.map(r => (
+                <div className="row" key={r.student_number}>
+                  <span className="avatar">{initials(r.full_name)}</span>
+                  <span className="rmain">
+                    <span className="rname">{r.full_name}</span>
+                    <span className="rmeta"><span className="mono">{r.student_number}</span>{r.qualification_code ? ` · ${r.qualification_code}` : ''}</span>
+                  </span>
+                  <span className="rside rside--num"><b>0%</b><span>0 of {r.held}</span></span>
+                </div>
+              ))}
+            </div>
+            <p className="small muted" style={{ marginTop: 8 }}>Take {code} but haven't checked in to a {kind === 'lecture' ? 'lecture' : 'tutorial'} yet.</p>
+          </>
+        ) : null}
+
         <div className="btnrow" style={{ marginTop: 16 }}>
-          <button className="btn btn--outline btn--sm" disabled={!students.length} onClick={exportStudents}><Icon name="down" size={15} /> Student list</button>
+          <button className="btn btn--outline btn--sm" disabled={!students.length && !absent.length} onClick={exportStudents}><Icon name="down" size={15} /> Student list</button>
           <button className="btn btn--outline btn--sm" disabled={busy || !checkins} onClick={exportCheckins}><Icon name="down" size={15} /> {busy ? 'Preparing…' : 'Check-ins'}</button>
         </div>
         <p className="small muted" style={{ marginTop: 8, textAlign: 'center' }}>CSV files that open in Excel</p>

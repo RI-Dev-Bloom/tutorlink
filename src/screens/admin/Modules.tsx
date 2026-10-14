@@ -10,8 +10,10 @@ import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Empty, Loading, NavBar } from '../../ui/parts'
 import { Group, SRow, Switch } from '../../ui/Settings'
 import { haptic } from '../../ui/haptic'
+import { FacultyChips, useFacultyModules } from '../../ui/ModulePicker'
+import { loadDemand, type Demand } from '../../lib/catalogue'
 
-const CODE = /^[A-Z]{4}\d{4}$/
+const CODE = /^[A-Z]{3,5}\d{3,4}$/
 
 export const loadModules = () =>
   must(supabase.from('modules').select('code, name, hidden, high_risk').order('code').returns<Module[]>())
@@ -20,11 +22,13 @@ export function Modules() {
   const { openSheet } = useOverlay()
   const modules = useQuery('modules', loadModules)
   const [q, setQ] = useState('')
+  const [faculty, setFaculty] = useState<string | null>(null)
+  const inFaculty = useFacultyModules(faculty)
 
   const shown = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    return (modules.data ?? []).filter(m => !s || m.code.toLowerCase().includes(s) || m.name.toLowerCase().includes(s))
-  }, [modules.data, q])
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean)
+    return (modules.data ?? []).filter(m => (!inFaculty || inFaculty.has(m.code)) && words.every(w => `${m.code} ${m.name}`.toLowerCase().includes(w)))
+  }, [modules.data, q, inFaculty])
 
   return (
     <>
@@ -33,8 +37,9 @@ export function Modules() {
         <div className="field">
           <input type="search" placeholder="Search by code or name" value={q} onChange={e => setQ(e.target.value)} aria-label="Search modules" />
         </div>
+        <div style={{ marginTop: 10 }}><FacultyChips value={faculty} onChange={setFaculty} /></div>
         <p className="small muted" style={{ margin: '10px 0 14px' }}>
-          {modules.data ? `${modules.data.length} modules · students can add missing ones when they pick theirs` : ' '}
+          {modules.data ? `${shown.length} of ${modules.data.length} modules · from Rosebank's official list` : ' '}
         </p>
         {modules.loading ? <Loading /> : null}
         {modules.error ? <p className="err">{modules.error}</p> : null}
@@ -179,16 +184,22 @@ function ModuleSheet({ module: m, all }: { module: Module; all: Module[] }) {
 export function HighRiskModules() {
   const { toast } = useOverlay()
   const modules = useQuery('modules', loadModules)
+  const demand = useQuery('module-demand', loadDemand)
   const [q, setQ] = useState('')
+  const [faculty, setFaculty] = useState<string | null>(null)
+  const inFaculty = useFacultyModules(faculty)
   const [busy, setBusy] = useState<string | null>(null)
 
-  const all = (modules.data ?? []).filter(m => !m.hidden)
+  const by = useMemo(() => new Map((demand.data ?? []).map(d => [d.module_code, d])), [demand.data])
+  const all = useMemo(() => (modules.data ?? []).filter(m => !m.hidden), [modules.data])
   const on = all.filter(m => m.high_risk)
+  // Switched-on first, then the most-taken. Without a search, only the top of the list shows.
   const shown = useMemo(() => {
-    const s = q.trim().toLowerCase()
-    return all.filter(m => !s || m.code.toLowerCase().includes(s) || m.name.toLowerCase().includes(s))
-      .sort((a, b) => Number(b.high_risk) - Number(a.high_risk) || a.code.localeCompare(b.code))
-  }, [all, q])
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean)
+    const list = all.filter(m => (!inFaculty || inFaculty.has(m.code)) && words.every(w => `${m.code} ${m.name}`.toLowerCase().includes(w)))
+      .sort((a, b) => Number(b.high_risk) - Number(a.high_risk) || (by.get(b.code)?.students ?? 0) - (by.get(a.code)?.students ?? 0) || a.code.localeCompare(b.code))
+    return words.length ? list : list.slice(0, Math.max(on.length + 40, 60))
+  }, [all, q, inFaculty, by, on.length])
 
   const flip = async (m: Module, v: boolean) => {
     setBusy(m.code)
@@ -202,22 +213,30 @@ export function HighRiskModules() {
     <>
       <NavBar title="High-risk modules" left={<BackButton />} />
       <div className="body"><div className="pad">
-        <p className="small muted">Students can only apply to tutor the modules switched on here. Turning one off doesn't affect tutors already approved for it.</p>
+        <p className="small muted">Students can only apply to tutor the modules switched on here. Turning one off doesn't affect tutors already approved for it. Sorted by how many students take each one.</p>
         <div className="field" style={{ marginTop: 14 }}>
           <input type="search" placeholder="Search by code or name" value={q} onChange={e => setQ(e.target.value)} aria-label="Search modules" />
         </div>
+        <div style={{ marginTop: 10 }}><FacultyChips value={faculty} onChange={setFaculty} /></div>
         {modules.loading ? <Loading /> : null}
         {modules.error ? <p className="err">{modules.error}</p> : null}
         {modules.data && !shown.length ? <Empty icon="book" title="No match" line="Nothing matches that search." /> : null}
         {shown.length ? (
           <Group title={`${on.length} open for tutoring`}>
             {shown.map(m => (
-              <SRow key={m.code} label={m.name} sub={<span className="mono">{m.code}</span>}
+              <SRow key={m.code} label={m.name} sub={<><span className="mono">{m.code}</span> <DemandLine d={by.get(m.code)} /></>}
                 right={<Switch on={m.high_risk} disabled={busy === m.code} onChange={v => flip(m, v)} label={`${m.code} high-risk`} />} />
             ))}
           </Group>
         ) : null}
+        {!q.trim() && shown.length < all.length ? <p className="small muted" style={{ marginTop: 10 }}>Showing the most-taken. Search to find any other.</p> : null}
       </div></div>
     </>
   )
+}
+
+/* "· 48 students · 2 tutors" */
+export function DemandLine({ d }: { d?: Demand }) {
+  if (!d || (!d.students && !d.tutors)) return null
+  return <span className="demand">· {d.students} student{d.students === 1 ? '' : 's'} · {d.tutors} tutor{d.tutors === 1 ? '' : 's'}</span>
 }
