@@ -44,8 +44,11 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [ ] **You:** check the R260 rate. It's now **per hour**, so a 1½-hour session pays R390
 - [ ] **You:** check the "Semester 2, 2026" dates (13 Jul–27 Nov)
 - [x] **Slice 10:** attendance views for lecturers, admin and tutors, CSV downloads, real "students reached"
-- [ ] Weekly backups: add the two secrets in GitHub (about 5 minutes together)
-- [ ] **Slice 8:** test on a real iPhone and Android, fix what the team finds, remove all test data and test accounts, handover checklist, suggest a stronger database password
+- [x] Weekly backups: working since 10 Oct (fresh one taken 14 Oct)
+- [x] Slice 8 so far: every tab checked on the live site for every role, Supabase security/speed review done, [[Phone test]] script and [[Handover]] runbook written
+- [ ] **You and the team:** run the [[Phone test]] on a real iPhone and Android
+- [ ] Remove test data and accounts (when the team has finished testing)
+- [ ] Handover: change the database password and the tutorlink.ri@gmail.com password
 
 ## Later phases
 - [ ] Phase 2: student module page and announcements from tutors

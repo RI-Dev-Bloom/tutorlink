@@ -17,7 +17,7 @@ In the holidays nobody uses it, so it would go to sleep.
 **Trap within the trap:** GitHub switches off scheduled jobs after 60 days with no changes to the repo. **Fix:** the same job saves a tiny "last ping" file to the repo, which counts as a change.
 
 ## Trap 2: the free tier has no backups
-**Fix:** a weekly GitHub Actions job copies the whole database into a **separate, private** repo. It never goes in the public one, because it contains student records.
+**Fix:** a weekly GitHub Actions job (Sundays) copies the whole database into a **separate, private** repo, `RI-Dev-Bloom/tutorlink-backups`. It never goes in the public one, because it contains student records. Working since 10 Oct 2026; checked again on 14 Oct.
 
 ## What could ever cost money
-Only outgrowing the free limits, which is very unlikely for one campus. If storage ever fills up, old registers can be deleted after payment.
+Only outgrowing the free limits, which is very unlikely for one campus. Storage stays small: message files are removed after 3–5 days, and attendance is a few small rows per session.
