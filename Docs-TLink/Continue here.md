@@ -43,7 +43,7 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [ ] **Slice 8:** final test on real phones, then handover
 - [ ] Turn on weekly backups (they still need their two secrets, about 5 minutes)
 - [ ] Check the "Semester 2, 2026" dates (13 Jul–27 Nov) and the R260 rate
-- [ ] Before handover: delete the QA test accounts and data, and suggest a stronger database password
+- [ ] Before handover: delete the QA test accounts and data (including the three team test accounts tutorlink.ri+test-admin/tutor/student), and suggest a stronger database password
 
 ## Later phases
 - [ ] Student module dashboard and announcements

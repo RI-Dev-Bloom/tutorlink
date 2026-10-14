@@ -30,7 +30,7 @@ function useInstallable() {
 function why(role: string, tutor: boolean) {
   if (role === 'admin') return 'New applications and messages, even when the app is closed.'
   if (role === 'lecturer') return 'Messages from your tutors and admin, even when the app is closed.'
-  if (tutor) return 'Messages, a reminder on session days, and when you’ve been paid.'
+  if (tutor) return 'Messages, a reminder on session days, and when admin confirms your sessions.'
   return 'Hear back the moment admin decides on your application.'
 }
 
