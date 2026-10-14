@@ -80,9 +80,6 @@ svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
   body {
     display: flex; align-items: center; justify-content: center;
     background: var(--navy);
-    background-image:
-      radial-gradient(ellipse at 20% 30%, rgba(200,168,64,.10) 0%, transparent 55%),
-      radial-gradient(ellipse at 80% 75%, rgba(20,61,107,.55) 0%, transparent 55%);
   }
   #device {
     width: 400px; height: 844px;
@@ -708,28 +705,24 @@ button.srow:active { background: var(--bg); }
 .pickin { display: flex; align-items: center; gap: 10px; padding: 0 15px 13px 49px; }
 .pickin .markin { flex: 0 0 auto; }
 
-/* ---------- admin overview: the semester band ---------------- */
+/* ---------- admin overview: the semester tracker -------------- */
+/* Flat and quiet: one number, one row of week ticks, three figures. No glows, no shadows. */
 
-.band {
-  margin-top: 18px; padding: 18px 18px 16px; border-radius: var(--rl);
-  background: var(--navy); color: #fff; position: relative; overflow: hidden;
-}
-.band::after {   /* a faint gold glow in the corner */
-  content: ""; position: absolute; right: -60px; top: -60px; width: 180px; height: 180px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(200, 168, 64, .22), transparent 70%); pointer-events: none;
-}
-.band__top { display: flex; justify-content: space-between; gap: 10px; font-family: var(--fm); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255, 255, 255, .62); }
-.band__week { display: flex; align-items: flex-end; gap: 10px; margin-top: 10px; }
-.band__n { font-family: var(--fh); font-size: 64px; font-weight: 700; line-height: .85; color: var(--gold); font-variant-numeric: lining-nums tabular-nums; }
-.band__of { font-size: 12.5px; line-height: 1.25; color: rgba(255, 255, 255, .78); padding-bottom: 3px; }
-.band__track { position: relative; height: 4px; margin-top: 16px; border-radius: 2px; background: rgba(255, 255, 255, .14); }
-.band__track span { position: absolute; inset: 0 auto 0 0; border-radius: 2px; background: var(--gold); }
-.band__track i { position: absolute; top: 50%; width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 3px var(--navy), 0 0 0 4px rgba(200, 168, 64, .5); }
-.band__dates { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px; color: rgba(255, 255, 255, .55); }
-.band__stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, .12); }
-.band__stats div + div { border-left: 1px solid rgba(255, 255, 255, .12); padding-left: 12px; }
-.band__stats b { display: block; font-family: var(--fh); font-size: 26px; font-weight: 700; line-height: 1; font-variant-numeric: lining-nums tabular-nums; }
-.band__stats span { display: block; margin-top: 5px; font-size: 10.5px; color: rgba(255, 255, 255, .62); }
+.band { margin-top: 18px; padding: 18px 16px 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--rl); }
+.band__top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 12px; color: var(--muted); }
+.band__top b { font-weight: 600; color: var(--text); }
+.band__week { display: flex; align-items: baseline; gap: 6px; margin-top: 12px; }
+.band__n { font-family: var(--fh); font-size: 46px; font-weight: 600; line-height: .9; color: var(--text); font-variant-numeric: lining-nums tabular-nums; }
+.band__of { font-size: 13px; color: var(--muted); }
+.ticks { display: flex; gap: 3px; margin-top: 14px; }
+.ticks i { flex: 1; height: 6px; border-radius: 1px; background: var(--lineS); }
+.ticks i.past { background: var(--navy); }
+.ticks i.now { background: var(--gold); }
+.band__dates { display: flex; justify-content: space-between; margin-top: 7px; font-family: var(--fm); font-size: 10px; color: var(--muted2); }
+.band__stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--lineS); }
+.band__stats div + div { padding-left: 12px; border-left: 1px solid var(--lineS); }
+.band__stats b { display: block; font-size: 18px; font-weight: 600; color: var(--text); line-height: 1.1; font-variant-numeric: lining-nums tabular-nums; }
+.band__stats span { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
 
 /* to do */
 .count-pill { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 9px; background: var(--gold); color: var(--navy); font-size: 10px; letter-spacing: 0; }

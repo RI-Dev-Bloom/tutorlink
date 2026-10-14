@@ -160,23 +160,23 @@ export function AdminOverview({ go }: { go: (tab: string) => void }) {
 function SemesterBand({ sem, today, run, students }: { sem: Semester; today: string; run: number; students: number }) {
   const weeks = semWeeks(sem)
   const before = today < sem.starts_on, after = today > sem.ends_on
-  const week = Math.min(weeks, Math.max(1, semWeek(sem, today)))
-  const span = new Date(sem.ends_on).getTime() - new Date(sem.starts_on).getTime()
-  const pct = before ? 0 : after ? 100 : Math.round(((new Date(today).getTime() - new Date(sem.starts_on).getTime()) / span) * 100)
+  const week = before ? 0 : after ? weeks + 1 : semWeek(sem, today)
   const daysTo = (iso: string) => Math.round((new Date(iso).getTime() - new Date(today).getTime()) / 86_400_000)
   const avg = run ? (students / run).toFixed(1).replace(/\.0$/, '') : '–'
 
   return (
-    <section className="band" aria-label={`${sem.name}, week ${week} of ${weeks}`}>
+    <section className="band" aria-label={before ? `${sem.name} hasn't started` : after ? `${sem.name} has ended` : `${sem.name}, week ${week} of ${weeks}`}>
       <div className="band__top">
-        <span>{sem.name}</span>
+        <b>{sem.name}</b>
         <span>{before ? `Starts in ${daysTo(sem.starts_on)} days` : after ? 'Ended' : `${daysTo(sem.ends_on)} days left`}</span>
       </div>
       <div className="band__week">
-        {before ? <span className="band__n">–</span> : <span className="band__n">{week}</span>}
-        <span className="band__of">{before ? 'not started' : <>week<br />of {weeks}</>}</span>
+        <span className="band__n">{before ? 0 : Math.min(week, weeks)}</span>
+        <span className="band__of">of {weeks} weeks</span>
       </div>
-      <div className="band__track" aria-hidden><span style={{ width: `${pct}%` }} /><i style={{ left: `${pct}%` }} /></div>
+      <div className="ticks" aria-hidden>
+        {Array.from({ length: weeks }, (_, i) => <i key={i} className={i + 1 < week ? 'past' : i + 1 === week ? 'now' : undefined} />)}
+      </div>
       <div className="band__dates"><span>{fDate(sem.starts_on)}</span><span>{fDate(sem.ends_on)}</span></div>
       <div className="band__stats">
         <div><b>{run}</b><span>Sessions run</span></div>
