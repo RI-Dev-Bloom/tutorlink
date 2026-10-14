@@ -61,8 +61,8 @@ The backup holds all records (people, sessions, attendance, messages). Uploaded 
 - Supabase's "leaked password protection" is a paid feature. It only matters for the few staff email-and-password logins; everyone else uses Google.
 
 ## Before handing over (checklist)
-- [ ] Remove the test accounts: `tutorlink.ri+qa-admin`, `tutorlink.ri+qa-lect`, `tutorlink.ri+qa-lect3` (Sam QA-Student) `@gmail.com`, and the team test accounts `admin@`, `tutor@`, `student@`, `lecturer@gmail.com`.
-- [ ] Remove the test data: `QA Semester 2099`, modules `QATS9999` and `QATS9997`, and the test sessions, check-ins, messages, applications and uploaded files those accounts made.
+- [x] Old test accounts and test data removed (15 Oct 2026).
+- [ ] Remove the **demo** accounts `admin1–3@`, `lecturer1–4@`, `student1–7@gmail.com` (see [[Demo script]]) and everything they made: sessions, check-ins, messages, applications, uploaded results files and the HCIT qualification if Rosebank doesn't use it.
 - [ ] Check the real settings: semester dates, **rate per hour**, minimum mark, minimum attendance, high-risk modules.
 - [ ] Change the **database password** (Supabase → Database → Settings), then update the `SUPABASE_DB_URL` secret on GitHub so backups keep working. Run the Backup job once by hand (GitHub → Actions → Backup → Run workflow) to check.
 - [ ] Change the tutorlink.ri@gmail.com password and hand it over.

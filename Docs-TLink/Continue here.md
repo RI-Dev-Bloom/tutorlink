@@ -47,7 +47,8 @@ App: https://ri-dev-bloom.github.io/tutorlink/
 - [x] Weekly backups: working since 10 Oct (fresh one taken 14 Oct)
 - [x] Slice 8 so far: every tab checked on the live site for every role, Supabase security/speed review done, [[Phone test]] script and [[Handover]] runbook written
 - [ ] **You and the team:** run the [[Phone test]] on a real iPhone and Android
-- [ ] Remove test data and accounts (when the team has finished testing)
+- [x] Old test data removed; **demo data** set up for the stakeholder demo (16 Oct): see [[Demo script]]
+- [ ] After the demo: remove the demo accounts and data
 - [ ] Handover: change the database password and the tutorlink.ri@gmail.com password
 
 ## Later phases
