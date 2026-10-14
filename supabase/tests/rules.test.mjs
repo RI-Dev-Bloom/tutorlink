@@ -484,6 +484,10 @@ await ok('with 3 checked in, admin confirms; pay = rate x 1.5 hours', async () =
   await as(ids.admin, `update public.sessions set status = 'confirmed' where id = $1`, [cls])
   return eq((await db.query(`select amount::float from public.sessions where id = $1`, [cls])).rows[0].amount, 300, 'amount')
 })
+await ok('a session past midnight counts the right hours (23:30 to 00:30 is 1)', async () => {
+  const [{ id }] = await as(ids.admin, `insert into public.sessions (tutor_id, module_code, session_date, starts_at, ends_at) values ($1, 'PROG1111', $2, '23:30', '00:30') returning id`, [ids.stu, today])
+  return eq((await db.query(`select hours::float from public.sessions where id = $1`, [id])).rows[0].hours, 1, 'hours')
+})
 await denied('the list is locked once confirmed', () => as(ids.stu, `select public.tutor_add_attendance($1, 'ST30000032', '', '')`, [cls]), 'already confirmed')
 await ok('the projector screen works without signing in, and shows no secrets', async () => {
   const [{ display_id }] = (await db.query(`select display_id from public.checkins where session_id = $1`, [cls])).rows
