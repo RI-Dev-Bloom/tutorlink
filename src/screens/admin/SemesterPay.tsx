@@ -19,7 +19,7 @@ type PaySession = Session & { tutor: Who | null }
 const loadSemesterSessions = async (semId: string) =>
   (await must(supabase.from('sessions')
     .select(`${SESSION_COLS}, tutor:profiles!sessions_tutor_id_fkey(id, full_name, student_number, email)`)
-    .eq('semester_id', semId).neq('status', 'cancelled').returns<PaySession[]>())) ?? []
+    .eq('semester_id', semId).eq('kind', 'tutorial').neq('status', 'cancelled').returns<PaySession[]>())) ?? []
 
 export function SemesterPay() {
   const { push } = useStack()

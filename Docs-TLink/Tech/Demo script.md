@@ -25,7 +25,7 @@ The semester is in week 14 of 20, with real-looking history: about 30 sessions, 
 3. **Live check-in** (student3 on one phone, student4 on another). Megan: **Start check-in** → In class → 1 h → 10 min. Thabo: **Check in to a session** → scan the QR. His name appears on Megan's phone within seconds. Optionally **Show on a laptop** for the projector, and try an online code.
 4. **Close and download** (student3). Close check-in → **Download register (PDF)**.
 5. **Confirm and pay** (admin1). To do → Megan's session → Confirm. Pay this semester → **Pay sheet** → download the CSV.
-6. **Lecturer** (lecturer1). Tutors tab, then **Attendance** → Programming 1: each student's rate, the sessions, the CSV. Messages: the worksheet sent to Ayanda.
+6. **Lecturer** (lecturer1). Attendance tab: **Start a lecture check-in** (title Revision, topic of your choice) and let a student scan it. Below: recent lectures. Switch **Tutorials / Lectures** → Programming 1: each student's rate, the sessions, the CSV. Messages: the worksheet sent to Ayanda.
 7. **Student** (student4). Home: the private attendance lines per module.
 8. **Messages** (student1 / lecturer1 / admin1). Threads between tutors, lecturers and admin, with unread counts and "seen".
 

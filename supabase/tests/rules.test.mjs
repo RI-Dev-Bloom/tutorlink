@@ -422,7 +422,7 @@ await ok("tutor starts a class check-in: today's planned session is used, 1.5 ho
 })
 await ok('the tutor can find their open check-in', async () => eq((await as(ids.stu, `select public.tutor_open_checkin() id`))[0].id, cls, 'open'))
 await denied('only one open check-in at a time', () => as(ids.stu, `select public.tutor_start_checkin('PROG1111', '', 1, 'class')`), 'already have a check-in open')
-await denied('not for a module they don\'t tutor', () => as(ids.stu, `select public.tutor_start_checkin('NETW1111', '', 1, 'class')`), 'not approved')
+await denied('not for a module they don\'t tutor', () => as(ids.stu, `select public.tutor_start_checkin('NETW1111', '', 1, 'class')`), "don't teach or tutor")
 await denied('students cannot see the live code', () => live(cls, S3), 'Session not found')
 await ok('the live screen has a QR token and a 6-letter code', async () => {
   const r = await live(cls)
@@ -578,6 +578,38 @@ await ok('notifications: a phone moves to whoever signs in on it', async () => {
 })
 await ok('another lecturer gets nothing for it', async () => eq((await as(ids.lect2, `select * from public.attendance_roster($1, 'PROG1111')`, [semNow])).length, 0, 'rows'))
 await ok('a student only ever counts themselves', async () => eq((await as(S4, `select * from public.attendance_roster($1, 'PROG1111')`, [semNow])).filter(r => r.student_number !== 'ST30000032').length, 0, 'others'))
+
+console.log('\nlectures and session titles')
+let lec
+await denied('a check-in needs a title', () => as(ids.lect, `select public.start_checkin('PROG1111', '', 'Loops', 'Hall A', 1, 'class', 10)`), 'Give the session a title')
+await denied('and a topic', () => as(ids.lect, `select public.start_checkin('PROG1111', 'Revision', ' ', 'Hall A', 1, 'class', 10)`), 'what the session is about')
+await denied('only for a module they teach', () => as(ids.lect2, `select public.start_checkin('PROG1111', 'Revision', 'Loops', 'Hall A', 1, 'class', 10)`), "don't teach or tutor")
+await ok('a lecturer starts a lecture check-in, no slot needed', async () => {
+  lec = (await as(ids.lect, `select public.start_checkin('PROG1111', 'Revision', 'Loops and arrays', 'Hall A', 1.5, 'class', 10) id`))[0].id
+  return eq((await db.query(`select kind, title, topic, status::text, tutor_id = $2 as runs_it from public.sessions where id = $1`, [lec, ids.lect])).rows[0],
+    { kind: 'lecture', title: 'Revision', topic: 'Loops and arrays', status: 'logged', runs_it: true }, 'lecture')
+})
+await ok('a student checks in and sees the title', async () => {
+  const r = (await as(S4, `select public.check_in_code($1) r`, [(await live(lec, ids.lect)).code]))[0].r
+  return eq([r.kind, r.title, r.topic], ['lecture', 'Revision', 'Loops and arrays'], 'result')
+})
+await denied('lectures are never confirmed or paid', () => as(ids.admin, `update public.sessions set status = 'confirmed' where id = $1`, [lec]), "Lectures aren't confirmed")
+await ok("lectures don't mix with tutorial attendance", async () => {
+  const tut = (await as(ids.lect, `select module_code from public.attendance_summary($1)`, [semNow])).map(r => r.module_code)
+  const lecs = await as(ids.lect, `select module_code, students from public.attendance_summary($1, 'lecture')`, [semNow])
+  eq(lecs, [{ module_code: 'PROG1111', students: 1 }], 'lecture summary')
+  const mine = await as(S4, `select kind, attended from public.my_attendance() where module_code = 'PROG1111' order by kind`)
+  if (!mine.some(r => r.kind === 'lecture' && r.attended === 1)) throw new Error(JSON.stringify(mine))
+  return tut
+})
+await ok('tutors title their check-ins too', async () => {
+  await as(ids.lect, `select public.tutor_close_checkin($1)`, [lec])
+  const open = (await as(ids.stu2, `select public.tutor_open_checkin() id`))[0].id
+  if (open) await as(ids.stu2, `select public.tutor_close_checkin($1)`, [open])
+  const id = (await as(ids.stu2, `select public.start_checkin('MATH1111', 'Test prep', 'Matrices', 'Lab 1', 1, 'class', 5) id`))[0].id
+  await as(ids.stu2, `select public.tutor_close_checkin($1)`, [id])
+  return eq((await db.query(`select kind, title from public.sessions where id = $1`, [id])).rows[0], { kind: 'tutorial', title: 'Test prep' }, 'tutorial')
+})
 
 console.log('\nsigned-out users')
 await ok('anon sees nothing', async () => {

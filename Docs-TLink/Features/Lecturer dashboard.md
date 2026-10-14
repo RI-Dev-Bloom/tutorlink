@@ -10,7 +10,7 @@ status: v1
 - Their module chips along the top, and counts of tutors, sessions run this semester and unread messages.
 - A list of the tutors on their modules, with each tutor's **next session** (day, time, venue), their latest message, and a gold count if it's unread.
 - Tap a tutor to open the thread.
-- An **Attendance** tab: their modules' sessions, every student's attendance rate, and CSV downloads. See [[Attendance]].
+- An **Attendance** tab: **Start a lecture check-in** for their own lectures, their recent lectures, and attendance for their modules (tutorials and lectures separately), with CSV downloads. See [[Attendance]].
 - Profile shows their modules (read-only).
 
 ## Why it's here

@@ -17,6 +17,9 @@ export type RegisterInfo = {
   hours: number
   tutor: string
   status: string        // e.g. "Confirmed by admin"
+  kind: 'tutorial' | 'lecture'
+  title: string | null  // e.g. Revision
+  topic: string | null  // e.g. Loops and arrays
 }
 
 const longDate = (iso: string) =>
@@ -41,6 +44,8 @@ export async function downloadRegister(info: RegisterInfo, rows: AttendanceRow[]
   doc.text(info.moduleName, M, 45)
   doc.setFont('courier', 'normal'); doc.setFontSize(9.5); doc.setTextColor(MUTED)
   doc.text(info.moduleCode, M, 50.5)
+  const label = [info.title, info.topic].filter(Boolean).join(' · ')
+  if (label) { doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(TEXT); doc.text(label, M + 22, 50.5) }
 
   // ---- details, two columns
   const details: [string, string][] = [
@@ -48,8 +53,8 @@ export async function downloadRegister(info: RegisterInfo, rows: AttendanceRow[]
     ['Time', info.from ? `${info.from} – ${info.to ?? ''}` : '–'],
     ['Venue', info.venue || (online ? 'Online' : '–')],
     ['Length', `${info.hours} hour${info.hours === 1 ? '' : 's'}`],
-    ['Tutor', info.tutor],
-    ['Where', online ? 'Online (Teams)' : 'In class'],
+    [info.kind === 'lecture' ? 'Lecturer' : 'Tutor', info.tutor],
+    ['Type', `${info.kind === 'lecture' ? 'Lecture' : 'Tutorial'} · ${online ? 'online (Teams)' : 'in class'}`],
     ['Checked in', `${list.length} student${list.length === 1 ? '' : 's'}`],
     ['Status', info.status],
   ]

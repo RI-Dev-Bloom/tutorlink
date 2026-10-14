@@ -24,7 +24,7 @@ async function loadMyTutors(uid: string, semId: string | null) {
   const [links, sessions] = await Promise.all([
     must(supabase.from('tutor_modules').select('module_code, tutor:profiles!tutor_modules_tutor_id_fkey(id, full_name)').in('module_code', codes).returns<Row[]>()),
     must(supabase.from('sessions').select('id, tutor_id, module_code, semester_id, session_date, starts_at, ends_at, venue, status')
-      .in('module_code', codes).neq('status', 'cancelled').order('session_date').returns<Session[]>()),
+      .in('module_code', codes).eq('kind', 'tutorial').neq('status', 'cancelled').order('session_date').returns<Session[]>()),
   ])
   const byTutor = new Map<string, { id: string; full_name: string; modules: string[] }>()
   for (const l of links ?? []) {

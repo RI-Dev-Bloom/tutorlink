@@ -4,11 +4,13 @@ status: v1
 
 # Attendance
 
-**In short:** the tutor starts a check-in, students check in on their phones, and that's the proof the session happened. It replaces the paper register.
+**In short:** the tutor (at a tutorial) or the lecturer (at a lecture) starts a check-in, students check in on their phones, and that's the record. It replaces the paper register.
 
 ## Starting a check-in (tutor)
 **Start check-in** on the Schedule tab. Choose:
 - **Module**, if they tutor more than one.
+- **Session title**: Introduction, Revision, Refresher, Practical, Test prep, Q&A, or their own (Other…). Required.
+- **What it's about**: the topic, e.g. "Loops and arrays". Required.
 - **In class** (QR code) or **Online (Teams)** (a 4-digit code).
 - **Venue**, filled in from the timetable.
 - **Session length**: 1, 1½, 2, 2½, 3 or 4 hours. This sets the end time, and the pay (pay is per hour).
@@ -17,6 +19,12 @@ status: v1
 The date and start time are captured automatically.
 
 **Rescheduled sessions:** tutors often run the week's session on another day. The check-in uses the session planned for that module this week (Monday to Sunday) and moves it to today, so it doesn't use up an extra session. If nothing was planned that week, it adds one, which counts towards the [[Session quota]].
+
+## Lectures (lecturers)
+- Lecturers check students in at their own lectures: **Attendance tab → Start a lecture check-in**, for any module they teach. No slot from admin is needed.
+- Same form (title, topic, in class or online, venue, length, how long check-in stays open) and the same QR, codes, laptop link, manual adds and PDF register.
+- Lectures are **not** paid, confirmed or counted against any limit, and they never appear in admin's To do or the pay sheet.
+- Their recent lectures are listed under the button, with how many checked in.
 
 ## In class
 - The tutor's phone shows a big **QR code that changes every 15 seconds**, with a **6-letter code** underneath for anyone whose camera won't scan.
@@ -50,7 +58,7 @@ The date and start time are captured automatically.
 - Tapping a session shows who checked in.
 
 ## The student's progress (private)
-On their home screen, one line per module from 0% to 100%: sessions they came to out of the sessions run **by the tutor(s) they go to** this semester (a module can have several tutors with separate groups, and other groups' sessions don't count against them). Marks at 50% and 75%; it turns gold from 75%. It refreshes when they come back to the app. Only the student sees it. Lecturer and admin lists use the same rule.
+On their home screen, one line per module from 0% to 100%: sessions they came to out of the sessions run **by the tutor(s) they go to** this semester (a module can have several tutors with separate groups, and other groups' sessions don't count against them). Marks at 50% and 75%; it turns gold from 75%. It refreshes when they come back to the app. Lectures get their own line (marked LECTURES), out of the lectures run by the lecturer(s) they go to. Only the student sees it. Lecturer and admin lists use the same rule.
 
 ## Who sees what
 | | Their own | Their sessions | Their modules | Everything |
@@ -60,13 +68,16 @@ On their home screen, one line per module from 0% to 100%: sessions they came to
 | Lecturer | | | Yes | |
 | Admin | | | | Yes |
 
+## Titles everywhere
+The title and topic show on the live screen, the laptop/projector screen, the student's "You're checked in", the PDF register, session lists, and the CSV (which also says Tutorial or Lecture, and who ran it).
+
 ## Attendance views
 The same screens for everyone, showing only what they're allowed to see:
 - **Lecturers:** an **Attendance** tab with their modules.
 - **Admin:** from the Overview (tap the reach figures or **Attendance by module**), every module. Each high-risk module on the Overview opens its attendance too.
 - **Tutors:** **Your students** on the Sessions tab, for their own sessions.
 
-For a semester (earlier ones can be picked at the top): sessions held, **students reached** (different students, so someone at five sessions counts once), and the average per session. Then per module:
+Lecturers and admin switch between **Tutorials** and **Lectures**, so the two are never mixed. For a semester (earlier ones can be picked at the top): sessions held, **students reached** (different students, so someone at five sessions counts once), and the average per session. Then per module:
 - **Students:** each student's name, student number and qualification, with a line and "7 of 9" (their rate across the module's sessions).
 - **Sessions:** each session with the tutor, venue, length and how many checked in. Tap one for the list (read-only for lecturers).
 - **Downloads (CSV, opens in Excel):** the student list with rates, and every check-in (date, time, module, tutor, venue, student number, name, qualification, how they checked in). The index also downloads every check-in for the semester.

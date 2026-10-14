@@ -1,7 +1,7 @@
 /* Tutor → Sessions: every session that's happened, how many checked in and where it stands.
    Tap one for its attendance list. Check-in replaces the paper register. */
 
-import { hhmm, fDay, type Session } from '../../lib/tutors'
+import { hhmm, fDay, sessionLabel, type Session } from '../../lib/tutors'
 import { todayISO } from '../../lib/types'
 import { useStack } from '../../nav/Stack'
 import { Icon } from '../../ui/icons'
@@ -52,6 +52,7 @@ export function TutorSessions() {
                     <span className="mono">{s.module_code}</span>
                     {s.students_attended !== null ? ` · ${s.students_attended} checked in` : ''} · {Number(s.hours)} h
                   </span>
+                  {sessionLabel(s) ? <span className="rmeta" style={{ color: 'var(--text)' }}>{sessionLabel(s)}</span> : null}
                 </span>
                 <span className="rside"><Badge tone={STATUS[s.status].tone}>{STATUS[s.status].label}</Badge><Icon name="chev" size={17} stroke={2.1} /></span>
               </button>
@@ -62,7 +63,7 @@ export function TutorSessions() {
         <div className="note note--plain" style={{ marginTop: 14 }}><Icon name="alert" size={15} />
           <span>A session counts towards your pay once admin confirms it. Admin needs enough students checked in to confirm it.</span></div>
       </div>
-      <button className="fab" disabled={!m.sem} onClick={() => { haptic(10); openSheet(<StartCheckinSheet d={d} onStarted={open} />) }}>
+      <button className="fab" disabled={!m.sem} onClick={() => { haptic(10); openSheet(<StartCheckinSheet kind="tutorial" modules={d.tutor.tutor_modules.map(m => ({ code: m.module_code, name: m.modules?.name ?? m.module_code }))} sessions={d.sessions} onStarted={open} />) }}>
         <Icon name="calChk" size={18} /> Start check-in
       </button>
     </>

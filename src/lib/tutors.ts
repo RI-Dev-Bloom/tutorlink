@@ -22,6 +22,9 @@ export type Session = {
   hours: number            // length; 1 when the session has no times
   amount: number | null    // rate × hours, once confirmed
   paid_at: string | null
+  kind: 'tutorial' | 'lecture'   // a lecture is run by a lecturer: never paid, confirmed or limited
+  title: string | null     // e.g. Revision
+  topic: string | null     // e.g. Loops and arrays
 }
 
 export type Slot = {
@@ -66,7 +69,7 @@ export async function loadTutor(id: string, semId: string | null): Promise<Tutor
   return { tutor, sessions: sessions ?? [], slots: slots ?? [], override: override?.session_quota ?? null, registers: registers ?? [] }
 }
 
-export const SESSION_COLS = 'id, tutor_id, module_code, semester_id, slot_id, session_date, starts_at, ends_at, venue, students_attended, status, rate, hours, amount, paid_at'
+export const SESSION_COLS = 'id, tutor_id, module_code, semester_id, slot_id, session_date, starts_at, ends_at, venue, students_attended, status, rate, hours, amount, paid_at, kind, title, topic'
 
 export const loadSemesters = async () =>
   (await must(supabase.from('semesters').select('*').order('starts_on', { ascending: false }).returns<Semester[]>())) ?? []
@@ -86,7 +89,7 @@ export const loadTutors = async () =>
 
 /* Every session that isn't settled yet, plus this semester's — enough for counts and money. */
 export const loadOpenSessions = async (semesterId: string | null) => {
-  let q = supabase.from('sessions').select(SESSION_COLS)
+  let q = supabase.from('sessions').select(SESSION_COLS).eq('kind', 'tutorial')
   q = semesterId ? q.or(`status.in.(scheduled,logged,confirmed),semester_id.eq.${semesterId}`) : q.in('status', ['scheduled', 'logged', 'confirmed'])
   return (await must(q.order('session_date').returns<Session[]>())) ?? []
 }
@@ -125,5 +128,8 @@ export const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
 
 export const fDay = (iso: string) =>
   new Date(iso + 'T00:00:00').toLocaleDateString('en-ZA', { weekday: 'short', day: 'numeric', month: 'short' })
+
+/* "Revision · Loops and arrays", or empty for sessions from before titles. */
+export const sessionLabel = (s: { title: string | null; topic: string | null }) => [s.title, s.topic].filter(Boolean).join(' · ')
 
 export const when = (s: Session) => [fDay(s.session_date), s.starts_at ? `${hhmm(s.starts_at)}–${hhmm(s.ends_at)}` : ''].filter(Boolean).join(' · ')

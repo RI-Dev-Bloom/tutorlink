@@ -19,7 +19,16 @@ export type Live = {
   module_name?: string
   venue?: string
   tutor?: string
+  title?: string | null
+  topic?: string | null
+  kind?: Kind
 }
+
+export type Kind = 'tutorial' | 'lecture'
+export const KIND_LABEL: Record<Kind, string> = { tutorial: 'Tutorials', lecture: 'Lectures' }
+
+/* Quick picks for a session's title; anything else can be typed. */
+export const SESSION_TITLES = ['Introduction', 'Revision', 'Refresher', 'Practical', 'Test prep', 'Q&A']
 
 export type Method = 'qr' | 'code' | 'online' | 'manual'
 
@@ -42,11 +51,14 @@ export type CheckInResult = {
   tutor: string
   already: boolean
   checked_in_at: string
+  title: string | null
+  topic: string | null
+  kind: Kind
 }
 
 export type Qualification = { code: string; name: string; hidden: boolean }
 
-export type MyAttendance = { module_code: string; module_name: string; attended: number; held: number; last_at: string | null }
+export type MyAttendance = { module_code: string; module_name: string; kind: Kind; attended: number; held: number; last_at: string | null }
 
 export const METHOD: Record<Method, string> = { qr: 'QR', code: 'Code', online: 'Online', manual: 'Manual' }
 
@@ -115,37 +127,39 @@ export type Totals = { sessions: number; checkins: number; students: number }
 export type ModuleSummary = { module_code: string; module_name: string; sessions: number; checkins: number; students: number }
 export type RosterRow = { student_number: string; full_name: string; qualification_code: string | null; attended: number; held: number; last_at: string | null }
 
-export const loadTotals = async (semId: string) =>
-  (((await must(supabase.rpc('attendance_totals', { p_semester: semId }))) as Totals[] | null) ?? [])[0] ?? { sessions: 0, checkins: 0, students: 0 }
+export const loadTotals = async (semId: string, kind: Kind = 'tutorial') =>
+  (((await must(supabase.rpc('attendance_totals', { p_semester: semId, p_kind: kind }))) as Totals[] | null) ?? [])[0] ?? { sessions: 0, checkins: 0, students: 0 }
 
-export const loadSummary = async (semId: string) =>
-  ((await must(supabase.rpc('attendance_summary', { p_semester: semId }))) ?? []) as ModuleSummary[]
+export const loadSummary = async (semId: string, kind: Kind = 'tutorial') =>
+  ((await must(supabase.rpc('attendance_summary', { p_semester: semId, p_kind: kind }))) ?? []) as ModuleSummary[]
 
-export const loadRoster = async (semId: string, module: string) =>
-  ((await must(supabase.rpc('attendance_roster', { p_semester: semId, p_module: module }))) ?? []) as RosterRow[]
+export const loadRoster = async (semId: string, module: string, kind: Kind = 'tutorial') =>
+  ((await must(supabase.rpc('attendance_roster', { p_semester: semId, p_module: module, p_kind: kind }))) ?? []) as RosterRow[]
 
 export type HeldSession = {
   id: string; session_date: string; starts_at: string | null; ends_at: string | null; venue: string
-  students_attended: number | null; status: string; hours: number; tutor: { full_name: string } | null
+  students_attended: number | null; status: string; hours: number; title: string | null; topic: string | null
+  tutor: { full_name: string; title: string } | null
 }
-export const loadHeld = async (semId: string, module: string) =>
+export const loadHeld = async (semId: string, module: string, kind: Kind = 'tutorial') =>
   ((await must(supabase.from('sessions')
-    .select('id, session_date, starts_at, ends_at, venue, students_attended, status, hours, tutor:profiles!sessions_tutor_id_fkey(full_name)')
-    .eq('semester_id', semId).eq('module_code', module).in('status', ['logged', 'confirmed', 'paid'])
+    .select('id, session_date, starts_at, ends_at, venue, students_attended, status, hours, title, topic, tutor:profiles!sessions_tutor_id_fkey(full_name, title)')
+    .eq('semester_id', semId).eq('module_code', module).eq('kind', kind).in('status', ['logged', 'confirmed', 'paid'])
     .order('session_date', { ascending: false }).returns<HeldSession[]>())) ?? [])
 
 type ExportRow = {
   student_number: string; full_name: string; qualification_code: string | null; method: Method; checked_in_at: string
-  session: { session_date: string; starts_at: string | null; module_code: string; venue: string; tutor: { full_name: string } | null }
+  session: { session_date: string; starts_at: string | null; module_code: string; venue: string; kind: Kind; title: string | null; topic: string | null
+    tutor: { full_name: string; title: string } | null }
 }
 
 /* Every check-in for a semester (optionally one module), a page at a time: one request returns at most 1 000 rows. */
-export async function loadCheckins(semId: string, module?: string) {
+export async function loadCheckins(semId: string, module?: string, kind: Kind = 'tutorial') {
   const all: ExportRow[] = []
   for (let from = 0; ; from += 1000) {
     let q = supabase.from('attendance')
-      .select('student_number, full_name, qualification_code, method, checked_in_at, session:sessions!inner(session_date, starts_at, module_code, venue, semester_id, status, tutor:profiles!sessions_tutor_id_fkey(full_name))')
-      .eq('session.semester_id', semId).in('session.status', ['logged', 'confirmed', 'paid'])
+      .select('student_number, full_name, qualification_code, method, checked_in_at, session:sessions!inner(session_date, starts_at, module_code, venue, semester_id, status, kind, title, topic, tutor:profiles!sessions_tutor_id_fkey(full_name, title))')
+      .eq('session.semester_id', semId).eq('session.kind', kind).in('session.status', ['logged', 'confirmed', 'paid'])
     if (module) q = q.eq('session.module_code', module)
     const page = (await must(q.order('checked_in_at').range(from, from + 999).returns<ExportRow[]>())) ?? []
     all.push(...page)
@@ -153,8 +167,11 @@ export async function loadCheckins(semId: string, module?: string) {
   }
 }
 
+const runBy = (t: { full_name: string; title: string } | null) => t ? [t.title, t.full_name].filter(Boolean).join(' ') : ''
+
 export const checkinRows = (rows: ExportRow[]) => [
-  ['Date', 'Time', 'Module', 'Tutor', 'Venue', 'Student number', 'Name', 'Qualification', 'Checked in by'],
-  ...rows.map(r => [r.session.session_date, hhmmOf(r.checked_in_at), r.session.module_code, r.session.tutor?.full_name ?? '',
-    r.session.venue, r.student_number, r.full_name, r.qualification_code ?? '', METHOD[r.method]]),
+  ['Date', 'Time', 'Module', 'Type', 'Title', 'Topic', 'Run by', 'Venue', 'Student number', 'Name', 'Qualification', 'Checked in by'],
+  ...rows.map(r => [r.session.session_date, hhmmOf(r.checked_in_at), r.session.module_code, r.session.kind === 'lecture' ? 'Lecture' : 'Tutorial',
+    r.session.title ?? '', r.session.topic ?? '', runBy(r.session.tutor), r.session.venue,
+    r.student_number, r.full_name, r.qualification_code ?? '', METHOD[r.method]]),
 ]

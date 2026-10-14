@@ -57,9 +57,11 @@ export function CheckIn({ token }: { token?: string }) {
           <span className="done__tick"><Icon name="check" size={34} stroke={2.4} /></span>
           <h2 className="display display--sm" style={{ marginTop: 18 }}>{result.already ? 'Already checked in' : 'You’re checked in'}</h2>
           <p className="sub" style={{ marginTop: 8 }}>{result.module_name}</p>
+          {result.title || result.topic ? <p className="small" style={{ marginTop: 4, fontWeight: 600 }}>{[result.title, result.topic].filter(Boolean).join(' · ')}</p> : null}
           <div className="card card--pad" style={{ marginTop: 22, width: '100%', textAlign: 'left' }}>
             <div className="payrow"><span className="muted">Module</span><span className="mono">{result.module_code}</span></div>
-            <div className="payrow"><span className="muted">Tutor</span><span>{result.tutor}</span></div>
+            <div className="payrow"><span className="muted">{result.kind === 'lecture' ? 'Lecturer' : 'Tutor'}</span><span>{result.tutor}</span></div>
+            <div className="payrow"><span className="muted">Type</span><span>{result.kind === 'lecture' ? 'Lecture' : 'Tutorial'}</span></div>
             {result.venue ? <div className="payrow"><span className="muted">Venue</span><span>{result.venue}</span></div> : null}
             <div className="payrow"><span className="muted">Time</span><span>{hhmmOf(result.checked_in_at)}</span></div>
           </div>

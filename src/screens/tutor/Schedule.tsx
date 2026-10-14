@@ -38,7 +38,7 @@ export function TutorSchedule({ go, unread }: { go: (tab: string) => void; unrea
   const waiting = all.filter(s => s.status === 'logged')
   const first = profile!.full_name.split(' ')[0]
   const open = (id: string) => { haptic(8); push(<SessionScreen sessionId={id} />) }
-  const start = () => { haptic(10); openSheet(<StartCheckinSheet d={d} onStarted={open} />) }
+  const start = () => { haptic(10); openSheet(<StartCheckinSheet kind="tutorial" modules={d.tutor.tutor_modules.map(m => ({ code: m.module_code, name: m.modules?.name ?? m.module_code }))} sessions={d.sessions} onStarted={open} />) }
 
   return (
     <div className="pad stagger">

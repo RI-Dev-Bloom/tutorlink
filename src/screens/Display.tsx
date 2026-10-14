@@ -24,6 +24,12 @@ export function Display({ id }: { id: string }) {
         <span className="show__brand">TutorLink · check in</span>
         <span>{live.module_code} · {live.module_name}{live.venue ? ` · ${live.venue}` : ''}</span>
       </header>
+      {live.title || live.topic ? (
+        <div className="show__session">
+          <span className="show__kind">{live.kind === 'lecture' ? 'Lecture' : 'Tutorial'}</span>
+          <h1>{[live.title, live.topic].filter(Boolean).join(' · ')}</h1>
+        </div>
+      ) : null}
       <main className="show__main">
         {live.mode === 'online' ? (
           <div className="show__pin">{live.online_code}</div>
@@ -34,7 +40,7 @@ export function Display({ id }: { id: string }) {
           <p className="show__step">Open <b>TutorLink</b> on your phone, tap <b>Check in</b> and {live.mode === 'online' ? 'type this code.' : 'scan the code.'}</p>
           {live.mode !== 'online' ? <><p className="show__label">Or type</p><p className="show__code">{live.code}</p></> : null}
           <p className="show__count"><b>{live.count ?? 0}</b> checked in</p>
-          <p className="show__small">{live.tutor ? `${live.tutor}'s session · ` : ''}closes in {minsLeft(live.closes_at)}{live.mode === 'online' ? ' · the code changes every 30 seconds' : ' · the code changes every 15 seconds'}</p>
+          <p className="show__small">{live.tutor ? `${live.tutor}'s ${live.kind === 'lecture' ? 'lecture' : 'session'} · ` : ''}closes in {minsLeft(live.closes_at)}{live.mode === 'online' ? ' · the code changes every 30 seconds' : ' · the code changes every 15 seconds'}</p>
         </div>
       </main>
     </div>

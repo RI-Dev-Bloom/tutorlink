@@ -860,3 +860,11 @@ button.srow:active { background: var(--bg); }
 .rside--num span { font-size: 11px; color: var(--muted); }
 button.band__stats { width: 100%; background: none; border-left: 0; border-right: 0; border-bottom: 0; text-align: left; color: inherit; font: inherit; padding-left: 0; padding-right: 0; }
 .band__more { display: inline-flex; align-items: center; gap: 4px; margin-top: 12px; padding: 0; border: 0; background: none; font-size: 12px; font-weight: 600; color: var(--goldD); }
+
+/* ---------- session titles and lectures ---------------------- */
+
+.sess-title { display: inline-block; margin-bottom: 6px; padding: 3px 9px; border-radius: 4px; background: var(--goldBg); color: var(--goldD); font-size: 12px; font-weight: 600; }
+.att__kind { margin-left: 8px; padding: 1px 6px; border-radius: 3px; background: var(--bg); border: 1px solid var(--line); font-size: 10px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); vertical-align: 1px; }
+.show__session { padding: 22px 32px 0; text-align: center; }
+.show__kind { font-family: var(--fm); font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--goldD); }
+.show__session h1 { margin-top: 6px; font-family: var(--fh); font-size: clamp(28px, 4vw, 44px); color: var(--navy); line-height: 1.1; }

@@ -4,10 +4,10 @@
 
 import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../../lib/auth'
-import { METHOD, displayLink, checkinLink, hhmmOf, loadAttendance, minsLeft, useLive, type AttendanceRow } from '../../lib/attendance'
+import { METHOD, SESSION_TITLES, displayLink, checkinLink, hhmmOf, loadAttendance, minsLeft, useLive, type AttendanceRow } from '../../lib/attendance'
 import { invalidate, must, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
-import { SESSION_COLS, fDay, hhmm, type Session, type TutorData } from '../../lib/tutors'
+import { SESSION_COLS, fDay, hhmm, sessionLabel, type Session } from '../../lib/tutors'
 import { todayISO } from '../../lib/types'
 import { Icon } from '../../ui/icons'
 import { useOverlay } from '../../ui/Overlay'
@@ -16,7 +16,7 @@ import { QR } from '../../ui/QR'
 import { downloadRegister } from '../../lib/register-pdf'
 import { haptic } from '../../ui/haptic'
 
-type SessionRow = Session & { modules: { name: string } | null; tutor: { full_name: string } | null }
+type SessionRow = Session & { modules: { name: string } | null; tutor: { full_name: string; title: string } | null }
 
 const LENGTHS = [1, 1.5, 2, 2.5, 3, 4]
 const WINDOWS = [5, 10, 15, 20]   // how long students can check in, in minutes
@@ -31,14 +31,22 @@ const addDays = (iso: string, n: number) => { const d = new Date(iso + 'T00:00:0
 
 /* ---------- starting a check-in ---------------------------- */
 
-export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (sessionId: string) => void }) {
+/* For tutors (their tutorials: the week's planned session is used) and lecturers (a lecture,
+   any time, for a module they teach). Every check-in gets a title and a topic. */
+export function StartCheckinSheet({ kind, modules, sessions = [], onStarted }: {
+  kind: 'tutorial' | 'lecture'
+  modules: { code: string; name: string }[]
+  sessions?: Session[]   // the tutor's own sessions, to find this week's planned one
+  onStarted: (sessionId: string) => void
+}) {
   const { closeSheet, toast } = useOverlay()
   const today = todayISO()
-  const mods = d.tutor.tutor_modules.map(t => t.module_code)
+  const mods = modules.map(m => m.code)
   // The session planned for this week, for each module: the check-in uses it (moved to today if needed).
   const planned = (code: string) => {
+    if (kind === 'lecture') return undefined
     const mon = weekOf(today), sun = addDays(mon, 6)
-    return d.sessions.filter(s => s.module_code === code && s.status === 'scheduled' && s.session_date >= mon && s.session_date <= sun)
+    return sessions.filter(s => s.module_code === code && s.status === 'scheduled' && s.session_date >= mon && s.session_date <= sun)
       .sort((a, b) => Number(b.session_date === today) - Number(a.session_date === today)
         || Math.abs(+new Date(a.session_date) - +new Date(today)) - Math.abs(+new Date(b.session_date) - +new Date(today)))[0]
   }
@@ -46,7 +54,10 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
   const [module, setModule] = useState(firstMod)
   const p = planned(module)
   // Already ran one for this module today? Starting again reopens that session.
-  const again = d.sessions.find(s => s.module_code === module && s.session_date === today && s.status === 'logged')
+  const again = sessions.find(s => s.module_code === module && s.session_date === today && s.status === 'logged')
+  const [title, setTitle] = useState('')
+  const [custom, setCustom] = useState(false)
+  const [topic, setTopic] = useState('')
   const [mode, setMode] = useState<'class' | 'online'>('class')
   const [venue, setVenue] = useState(p?.venue ?? '')
   const [hours, setHours] = useState(p && Number(p.hours) && LENGTHS.includes(Number(p.hours)) ? Number(p.hours) : 1)
@@ -61,13 +72,19 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
     if (q && LENGTHS.includes(Number(q.hours))) setHours(Number(q.hours))
   }
   const pickMode = (m: 'class' | 'online') => { haptic(6); setMode(m); setVenue(m === 'online' ? 'Online (Teams)' : p?.venue ?? '') }
+  const pickTitle = (t: string | null) => { haptic(6); if (t === null) { setCustom(true); setTitle('') } else { setCustom(false); setTitle(t) } }
+  const valid = !!module && title.trim().length >= 2 && topic.trim().length >= 2
 
   const start = async (e: FormEvent) => {
     e.preventDefault()
+    if (!valid) return
     setBusy(true); setError('')
     try {
-      const id = await must(supabase.rpc('tutor_start_checkin', { p_module: module, p_venue: venue.trim(), p_hours: hours, p_mode: mode, p_minutes: minutes })) as string
-      haptic(18); invalidate('tutor', 'tutors', 'sessions', 'att-totals', 'att-summary', 'att-roster', 'att-held', 'open-checkin'); closeSheet(); onStarted(id); toast('Check-in is open')
+      const id = await must(supabase.rpc('start_checkin', {
+        p_module: module, p_title: title.trim(), p_topic: topic.trim(), p_venue: venue.trim(), p_hours: hours, p_mode: mode, p_minutes: minutes,
+      })) as string
+      haptic(18); invalidate('tutor', 'tutors', 'sessions', 'att-totals', 'att-summary', 'att-roster', 'att-held', 'open-checkin', 'my-lectures')
+      closeSheet(); onStarted(id); toast('Check-in is open')
     } catch (err) { haptic(24); setError(friendlyError(err)); setBusy(false) }
   }
 
@@ -77,7 +94,7 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
 
   return (
     <form onSubmit={start}>
-      <p className="sheet-sub">Today · {t(now)}–{t(ends)}</p>
+      <p className="sheet-sub">{kind === 'lecture' ? 'Lecture' : 'Tutorial'} · today · {t(now)}–{t(ends)}</p>
       <h3 className="sheet-title">Start a check-in</h3>
       <div className="sheet-form">
         {mods.length > 1 ? (
@@ -87,6 +104,17 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
             </div>
           </div>
         ) : null}
+        <div className="field"><label>Session title</label>
+          <div className="chips">
+            {SESSION_TITLES.map(s => <button type="button" key={s} className={'chip chip--sm' + (!custom && title === s ? ' on' : '')} onClick={() => pickTitle(s)}>{s}</button>)}
+            <button type="button" className={'chip chip--sm' + (custom ? ' on' : '')} onClick={() => pickTitle(null)}>Other…</button>
+          </div>
+          {custom ? <input style={{ marginTop: 8 }} type="text" maxLength={60} placeholder="e.g. Exam walkthrough" autoFocus value={title} onChange={e => setTitle(e.target.value)} aria-label="Session title" /> : null}
+        </div>
+        <div className="field">
+          <label htmlFor="f-tp">What it's about</label>
+          <input id="f-tp" type="text" maxLength={120} placeholder="e.g. Loops and arrays" value={topic} onChange={e => setTopic(e.target.value)} />
+        </div>
         <div className="field"><label>Where</label>
           <div className="seg">
             <button type="button" className={mode === 'class' ? 'on' : ''} onClick={() => pickMode('class')}>In class</button>
@@ -95,7 +123,7 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
         </div>
         <div className="field">
           <label htmlFor="f-cv">Venue</label>
-          <input id="f-cv" type="text" maxLength={60} placeholder={mode === 'class' ? 'e.g. Lab 2' : ''} value={venue} onChange={e => setVenue(e.target.value)} />
+          <input id="f-cv" type="text" maxLength={60} placeholder={mode === 'class' ? (kind === 'lecture' ? 'e.g. Hall A' : 'e.g. Lab 2') : ''} value={venue} onChange={e => setVenue(e.target.value)} />
         </div>
         <div className="field"><label>Session length</label>
           <div className="chips">
@@ -109,13 +137,14 @@ export function StartCheckinSheet({ d, onStarted }: { d: TutorData; onStarted: (
         </div>
         <p className="small muted" style={{ marginTop: 12 }}>
           {again ? `Reopens today's ${module} check-in (the names already there stay).`
+            : kind === 'lecture' ? `A lecture for ${module}. Lectures aren't paid or confirmed; the attendance is yours and admin's to see.`
             : p ? (p.session_date === today ? `Uses today's ${module} session.` : `Uses your ${module} session planned for ${fDay(p.session_date)}, moved to today.`)
             : `No ${module} session planned this week, so this adds one (it counts towards your limit).`}
           {mode === 'class' ? ' Students scan a QR code that changes every 15 seconds.' : ' You get a 4-digit code that changes every 30 seconds: share your screen in Teams so everyone sees it.'}
           {` Check-in closes after ${minutes} minutes.`}
         </p>
         {error ? <p className="err">{error}</p> : null}
-        <button className="btn" style={{ marginTop: 16 }} disabled={busy || !module}>{busy ? 'Starting…' : 'Start check-in'}</button>
+        <button className="btn" style={{ marginTop: 16 }} disabled={busy || !valid}>{busy ? 'Starting…' : 'Start check-in'}</button>
       </div>
     </form>
   )
@@ -128,7 +157,7 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
   const { openSheet, toast } = useOverlay()
   const isAdmin = profile?.role === 'admin'
   const key = `session:${sessionId}`
-  const s = useQuery(key, () => must(supabase.from('sessions').select(`${SESSION_COLS}, modules(name), tutor:profiles!sessions_tutor_id_fkey(full_name)`).eq('id', sessionId).single<SessionRow>()))
+  const s = useQuery(key, () => must(supabase.from('sessions').select(`${SESSION_COLS}, modules(name), tutor:profiles!sessions_tutor_id_fkey(full_name, title)`).eq('id', sessionId).single<SessionRow>()))
   const att = useQuery(`attendance:${sessionId}`, () => loadAttendance(sessionId))
   const canManage = isAdmin || (!!s.data && s.data.tutor_id === profile?.id)
   const { live } = useLive(() => supabase.rpc('tutor_checkin_live', { p_session: sessionId }), sessionId, canManage)
@@ -160,8 +189,10 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
       await downloadRegister({
         moduleCode: session.module_code, moduleName: session.modules?.name ?? session.module_code,
         date: session.session_date, from: session.starts_at ? hhmm(session.starts_at) : null, to: session.ends_at ? hhmm(session.ends_at) : null,
-        venue: session.venue, hours: Number(session.hours), tutor: session.tutor?.full_name ?? '',
-        status: session.status === 'confirmed' || session.status === 'paid' ? 'Confirmed by admin' : session.status === 'logged' ? 'Waiting for admin to confirm' : 'Not confirmed',
+        venue: session.venue, hours: Number(session.hours),
+        tutor: [session.tutor?.title, session.tutor?.full_name].filter(Boolean).join(' '),
+        kind: session.kind, title: session.title, topic: session.topic,
+        status: session.kind === 'lecture' ? 'Lecture' : session.status === 'confirmed' || session.status === 'paid' ? 'Confirmed by admin' : session.status === 'logged' ? 'Waiting for admin to confirm' : 'Not confirmed',
       }, rows)
       haptic(12); toast('Register downloaded')
     } catch (e) { toast(friendlyError(e)) }
@@ -182,6 +213,7 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
       <NavBar title={open ? 'Check-in open' : 'Attendance'} left={<BackButton />} />
       <div className="body"><div className="pad stagger">
         <div className="sess-head">
+          {sessionLabel(session) ? <span className="sess-title">{session.kind === 'lecture' ? 'Lecture · ' : ''}{sessionLabel(session)}</span> : null}
           <span className="rname">{session.modules?.name ?? session.module_code}</span>
           <span className="rmeta">
             <span className="mono">{session.module_code}</span> · {fDay(session.session_date)}
@@ -220,11 +252,13 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
           <div className="card card--pad" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className="rmain">
               <span className="rname">{rows.length} student{rows.length === 1 ? '' : 's'} checked in</span>
-              <span className="rmeta">{session.status === 'confirmed' || session.status === 'paid' ? `Confirmed · ${Number(session.hours)} h` : session.status === 'logged' ? 'Waiting for admin to confirm' : session.status === 'cancelled' ? 'Cancelled' : 'No check-in was run'}</span>
+              <span className="rmeta">{session.kind === 'lecture' ? `Lecture · ${Number(session.hours)} h` : session.status === 'confirmed' || session.status === 'paid' ? `Confirmed · ${Number(session.hours)} h` : session.status === 'logged' ? 'Waiting for admin to confirm' : session.status === 'cancelled' ? 'Cancelled' : 'No check-in was run'}</span>
             </span>
-            <Badge tone={session.status === 'confirmed' || session.status === 'paid' ? 'gold' : session.status === 'logged' ? 'amber' : 'plain'}>
-              {session.status === 'confirmed' || session.status === 'paid' ? 'Confirmed' : session.status === 'logged' ? 'Waiting' : session.status === 'cancelled' ? 'Cancelled' : 'Not run'}
-            </Badge>
+            {session.kind === 'lecture' ? <Badge tone="slate">Lecture</Badge> : (
+              <Badge tone={session.status === 'confirmed' || session.status === 'paid' ? 'gold' : session.status === 'logged' ? 'amber' : 'plain'}>
+                {session.status === 'confirmed' || session.status === 'paid' ? 'Confirmed' : session.status === 'logged' ? 'Waiting' : session.status === 'cancelled' ? 'Cancelled' : 'Not run'}
+              </Badge>
+            )}
           </div>
         )}
 

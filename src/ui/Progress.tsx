@@ -10,16 +10,16 @@ export function AttendanceLines({ rows }: { rows: MyAttendance[] }) {
       {rows.map(r => {
         const pct = r.held ? Math.round((r.attended / r.held) * 100) : 0
         return (
-          <div className="att" key={r.module_code}>
+          <div className="att" key={r.module_code + r.kind}>
             <div className="att__top">
-              <span className="att__name">{r.module_name}<span className="mono">{r.module_code}</span></span>
+              <span className="att__name">{r.module_name}<span className="mono">{r.module_code}</span>{r.kind === 'lecture' ? <span className="att__kind">Lectures</span> : null}</span>
               <span className="att__pct">{r.held ? `${pct}%` : '–'}</span>
             </div>
             <div className="att__track" role="img" aria-label={`${r.module_code}: ${r.attended} of ${r.held} sessions, ${pct}%`}>
               <span className={'att__fill' + (pct >= 75 ? ' high' : '')} style={{ width: `${pct}%` }} />
               <i style={{ left: '50%' }} /><i style={{ left: '75%' }} />
             </div>
-            <p className="att__meta">{r.held ? `${r.attended} of ${r.held} session${r.held === 1 ? '' : 's'} with your tutor this semester` : 'You haven’t checked in to a session yet'}</p>
+            <p className="att__meta">{r.held ? `${r.attended} of ${r.held} session${r.held === 1 ? '' : 's'} with your ${r.kind === 'lecture' ? 'lecturer' : 'tutor'} this semester` : (r.kind === 'lecture' ? 'You haven’t checked in to a lecture yet' : 'You haven’t checked in to a tutorial yet')}</p>
           </div>
         )
       })}
