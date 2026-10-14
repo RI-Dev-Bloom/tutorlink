@@ -15,7 +15,7 @@ status: v1
 We're not in the App Store (that costs money). On iPhone, web notifications **only** work once the app has been added to the home screen. Without this step, iPhone users would never get notified.
 
 ## Rules
-- Shown as step 1 of the **Get set up** card on the home screen until it's done or closed, and always available in **Profile → This phone**.
+- Shown as step 1 of the **Get set up** card on the home screen until it's done or closed, and always available in **Profile → Device**.
 - Never shown once the app is installed, and not shown on computers.
 
 Related: [[Push notifications]]

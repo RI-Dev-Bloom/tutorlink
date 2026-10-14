@@ -4,17 +4,22 @@ status: v1
 
 # Settings
 
-**In short:** the numbers that drive the whole programme.
+**In short:** the numbers that drive the whole programme, laid out like a phone's own Settings app.
 
 ## What it does
-- **Rate per session** (R150 to start). Changing it updates every money figure.
-- **Minimum mark** to be eligible (75% to start).
-- **Semesters:** name, start date, end date and session quota (24 to start). Changing the quota for all tutors shows a warning first. See [[Session quota]].
-- **Response templates** for approving and declining.
-- Links to [[Manage modules]] and [[Admin creates accounts]].
+Admin's Settings tab, in groups:
+- **Programme:** rate per session, and the minimum mark to tutor a module (75% to start).
+- **Tutor applications:** **High-risk modules** (the only ones students can apply to tutor, one switch each), response templates, and the **Auto-decline below the minimum** switch. See [[Apply to tutor]].
+- **Messages:** **Keep files for** 3, 4 or 5 days. See [[Messaging]].
+- **Semesters:** name, dates and session quota. Changing the quota for all tutors shows a warning first. See [[Session quota]].
+- **People and modules:** [[Admin creates accounts]] and [[Manage modules]].
+- **Device:** notifications on or off for this phone or computer, and adding the app to the home screen. Everyone has this in their Profile too.
+- **Sign out** at the bottom.
+
+Students, tutors and lecturers get the same look in **Profile**: account details, their modules, Device and Sign out.
 
 ## Why it's here
 These change between years. Admin shouldn't need a developer to change a number.
 
-## Open question
-If the rate changes mid-semester, should sessions that are already confirmed keep the old rate? The plan is yes: each session saves the rate at the moment it's confirmed.
+## Rate changes
+Each session saves the rate at the moment it's confirmed, so changing the rate mid-semester doesn't change sessions already confirmed.

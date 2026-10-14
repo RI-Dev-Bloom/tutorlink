@@ -1,107 +1,131 @@
-/* Admin → Settings: the numbers that drive the programme, semesters and their quota,
-   and the way into Lecturers, Modules and Response templates. */
+/* Admin → Settings, laid out like a phone's Settings app: the programme's numbers,
+   tutor applications, message files, semesters, people and modules, then this device. */
 
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../../lib/auth'
 import { invalidate, must, useQuery } from '../../lib/data'
+import { loadSettings } from '../../lib/student'
 import { friendlyError, supabase } from '../../lib/supabase'
-import { fDate, rand, todayISO, type Semester, type Settings } from '../../lib/types'
+import { fDate, rand, todayISO, type Semester } from '../../lib/types'
 import { useStack } from '../../nav/Stack'
 import { Icon } from '../../ui/icons'
 import { useOverlay } from '../../ui/Overlay'
-import { Badge, initials } from '../../ui/parts'
+import { Badge } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
-import { Modules } from './Modules'
+import { Group, SHead, SRow, Switch } from '../../ui/Settings'
+import { DeviceSettings } from '../../ui/Setup'
+import { HighRiskModules, Modules, loadModules } from './Modules'
 import { Lecturers } from './Lecturers'
 import { Templates } from './Templates'
-import { SetupRows } from '../../ui/Setup'
 
 export function AdminSettings() {
   const { profile, signOut } = useAuth()
   const { push } = useStack()
-  const { openSheet } = useOverlay()
-  const settings = useQuery('settings', () => must(supabase.from('settings').select('rate_per_session, min_mark').single<Settings>()))
+  const { openSheet, toast } = useOverlay()
+  const settings = useQuery('settings', loadSettings)
   const semesters = useQuery('semesters', () => must(supabase.from('semesters').select('*').order('starts_on', { ascending: false }).returns<Semester[]>()))
+  const modules = useQuery('modules', loadModules)
+  const [saving, setSaving] = useState(false)
 
   const today = todayISO()
   const s = settings.data
+  const highRisk = modules.data?.filter(m => m.high_risk && !m.hidden).length
+
+  const setAuto = async (on: boolean) => {
+    setSaving(true)
+    const { error } = await supabase.from('settings').update({ auto_decline: on, updated_at: new Date().toISOString() }).eq('id', true)
+    setSaving(false)
+    if (error) { haptic(24); toast(friendlyError(error)); return }
+    invalidate('settings'); toast(on ? 'Auto-decline is on' : 'Auto-decline is off')
+  }
 
   return (
     <div className="pad stagger">
-      <div className="card card--pad" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <span className="avatar avatar--lg">{initials(profile?.full_name || 'Admin')}</span>
-        <span style={{ minWidth: 0 }}>
-          <span className="rname" style={{ fontSize: 16 }}>{profile?.full_name || 'Admin'}</span>
-          <span className="rmeta">Administrator · {profile?.email}</span>
-        </span>
-      </div>
+      <SHead name={profile?.full_name || 'Admin'} line={`Administrator · ${profile?.email ?? ''}`} />
 
-      <div className="sect" style={{ marginTop: 26 }}>Programme</div>
-      <div className="card">
-        <button className="row" onClick={() => s && openSheet(<NumberSheet field="rate_per_session" label="Rate per session" prefix="R" value={s.rate_per_session}
-          lead="What a tutor earns for each confirmed session. Sessions already confirmed keep the rate they were confirmed at." />)}>
-          <span className="rmain"><span className="rname">Rate per session</span><span className="rmeta">Paid for each confirmed session</span></span>
-          <span className="rside"><span className="serif" style={{ fontSize: 20, fontWeight: 700, color: 'var(--goldD)' }}>{s ? rand(s.rate_per_session) : '…'}</span><Icon name="chev" size={17} stroke={2.1} /></span>
-        </button>
-        <button className="row" onClick={() => s && openSheet(<NumberSheet field="min_mark" label="Minimum mark" suffix="%" value={s.min_mark}
-          lead="Applicants need at least this mark in every module they apply to tutor." />)}>
-          <span className="rmain"><span className="rname">Minimum mark</span><span className="rmeta">To be eligible to tutor a module</span></span>
-          <span className="rside"><span className="mono" style={{ color: 'var(--text)' }}>{s ? `${s.min_mark}%` : '…'}</span><Icon name="chev" size={17} stroke={2.1} /></span>
-        </button>
-      </div>
+      <Group title="Programme">
+        <SRow icon="wallet" tone="gold" label="Rate per session" value={s ? rand(s.rate_per_session) : '…'}
+          onClick={() => s && openSheet(<NumberSheet field="rate_per_session" label="Rate per session" prefix="R" value={s.rate_per_session}
+            lead="What a tutor earns for each confirmed session. Sessions already confirmed keep the rate they were confirmed at." />)} />
+        <SRow icon="check" tone="green" label="Minimum mark" value={s ? `${s.min_mark}%` : '…'}
+          onClick={() => s && openSheet(<NumberSheet field="min_mark" label="Minimum mark" suffix="%" value={s.min_mark}
+            lead="The mark a student needs in a module to tutor it. Approving only adds the modules where they reach it." />)} />
+      </Group>
 
-      <div className="sect">
-        <span>Semesters</span>
-        <button className="link" onClick={() => openSheet(<SemesterSheet />)}>+ Add</button>
-      </div>
-      {semesters.data && semesters.data.length === 0 ? (
-        <div className="note note--amber"><Icon name="alert" size={15} />
-          <span>No semesters yet. Add the current one — sessions can't be scheduled or logged until a semester covers their date.</span></div>
-      ) : null}
-      {semesters.data?.length ? (
-        <div className="card">
-          {semesters.data.map(sem => {
-            const current = sem.starts_on <= today && today <= sem.ends_on
-            return (
-              <button className="row" key={sem.id} onClick={() => openSheet(<SemesterSheet semester={sem} />)}>
-                <span className="avatar avatar--code">{sem.session_quota}</span>
-                <span className="rmain">
-                  <span className="rname">{sem.name} {current ? <Badge tone="green">Current</Badge> : null}</span>
-                  <span className="rmeta">{fDate(sem.starts_on)} – {fDate(sem.ends_on)} · {sem.session_quota} sessions per tutor</span>
-                </span>
-                <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
-              </button>
-            )
-          })}
-        </div>
-      ) : null}
+      <Group title="Tutor applications"
+        foot={s?.auto_decline
+          ? `Applications where no module reaches ${s.min_mark}% are declined automatically a day after they’re sent, with a note saying why.`
+          : `Switch on to decline applications automatically when no module reaches ${s?.min_mark ?? 75}%.`}>
+        <SRow icon="alert" tone="red" label="High-risk modules" sub="The only modules students can apply to tutor"
+          value={highRisk ?? '…'} onClick={() => push(<HighRiskModules />)} />
+        <SRow icon="doc" tone="blue" label="Response templates" onClick={() => push(<Templates />)} />
+        <SRow icon="shield" tone="slate" label="Auto-decline below the minimum"
+          right={<Switch on={!!s?.auto_decline} disabled={!s || saving} onChange={setAuto} label="Auto-decline below the minimum" />} />
+      </Group>
 
-      <div className="sect">People and modules</div>
-      <div className="card">
-        <button className="row" onClick={() => push(<Lecturers />)}>
-          <span className="avatar avatar--gold"><Icon name="board" size={18} /></span>
-          <span className="rmain"><span className="rname">Lecturers</span><span className="rmeta">Add lecturers, set their modules, reset passwords</span></span>
-          <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
-        </button>
-        <button className="row" onClick={() => push(<Modules />)}>
-          <span className="avatar avatar--code"><Icon name="book" size={18} /></span>
-          <span className="rmain"><span className="rname">Modules</span><span className="rmeta">Add, rename, hide or merge modules</span></span>
-          <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
-        </button>
-        <button className="row" onClick={() => push(<Templates />)}>
-          <span className="avatar"><Icon name="doc" size={18} /></span>
-          <span className="rmain"><span className="rname">Response templates</span><span className="rmeta">Ready-made replies for approving or declining</span></span>
-          <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
-        </button>
-      </div>
+      <Group title="Messages" foot="Files sent in messages are removed after this many days, so storage stays free.">
+        <SRow icon="attach" tone="amber" label="Keep files for" value={s ? `${s.file_days} days` : '…'}
+          onClick={() => s && openSheet(<FileDaysSheet value={s.file_days} />)} />
+      </Group>
 
-      <SetupRows />
+      <Group title="Semesters" foot={semesters.data?.length === 0
+        ? 'No semesters yet. Add the current one: sessions can’t be scheduled or logged until a semester covers their date.'
+        : 'Every session belongs to the semester its date falls in.'}>
+        {(semesters.data ?? []).map(sem => {
+          const current = sem.starts_on <= today && today <= sem.ends_on
+          return (
+            <SRow key={sem.id} icon="cal" tone={current ? 'green' : 'slate'}
+              label={<>{sem.name} {current ? <Badge tone="green">Current</Badge> : null}</>}
+              sub={`${fDate(sem.starts_on)} – ${fDate(sem.ends_on)} · ${sem.session_quota} sessions per tutor`}
+              onClick={() => openSheet(<SemesterSheet semester={sem} />)} />
+          )
+        })}
+        <SRow icon="plus" tone="gold" label="Add a semester" onClick={() => openSheet(<SemesterSheet />)} />
+      </Group>
+
+      <Group title="People and modules">
+        <SRow icon="board" tone="gold" label="Lecturers" sub="Let lecturers in, set their modules" onClick={() => push(<Lecturers />)} />
+        <SRow icon="book" tone="navy" label="Modules" sub="Add, rename, hide or merge" onClick={() => push(<Modules />)} />
+      </Group>
+
+      <DeviceSettings />
 
       {settings.error || semesters.error ? <p className="err">{settings.error || semesters.error}</p> : null}
 
-      <button className="btn btn--outline" style={{ marginTop: 26 }} onClick={() => { haptic(10); signOut() }}>
-        <Icon name="out" size={18} /> Sign out
-      </button>
+      <Group>
+        <SRow label="Sign out" danger onClick={signOut} />
+      </Group>
+      <p className="app-foot">TutorLink · Rosebank International</p>
+    </div>
+  )
+}
+
+/* ---------- how long message files are kept --------------- */
+
+function FileDaysSheet({ value }: { value: number }) {
+  const { closeSheet, toast } = useOverlay()
+  const [days, setDays] = useState(value)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const save = async () => {
+    setBusy(true)
+    const { error: err } = await supabase.from('settings').update({ file_days: days, updated_at: new Date().toISOString() }).eq('id', true)
+    setBusy(false)
+    if (err) { haptic(24); setError(friendlyError(err)); return }
+    haptic(14); invalidate('settings'); closeSheet(); toast(`Files are kept for ${days} days`)
+  }
+
+  return (
+    <div>
+      <p className="sheet-sub">Settings · Messages</p>
+      <h3 className="sheet-title">Keep message files for</h3>
+      <p className="sheet-lead">Files people send in messages are removed after this, so the free storage never fills up. The message itself stays. A change applies to files already sent too.</p>
+      <div className="seg" style={{ marginTop: 18 }}>
+        {[3, 4, 5].map(d => <button key={d} className={days === d ? 'on' : ''} onClick={() => { haptic(6); setDays(d) }}>{d} days</button>)}
+      </div>
+      {error ? <p className="err">{error}</p> : null}
+      <button className="btn" style={{ marginTop: 18 }} disabled={busy || days === value} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
     </div>
   )
 }

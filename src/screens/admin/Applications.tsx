@@ -1,7 +1,8 @@
 /* Admin → Applications: the queue, one application in detail, and the decision.
-   Approving makes the student a tutor for the modules they asked for. */
+   Opening the results document (or marking it verified) moves an application to Under review.
+   Approving makes the student a tutor for the modules where their mark meets the minimum. */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { invalidate, must, useQuery } from '../../lib/data'
 import { isOpen, loadSettings, type ApplicationStatus } from '../../lib/student'
 import { friendlyError, supabase } from '../../lib/supabase'
@@ -56,12 +57,19 @@ const ago = (iso: string) => {
 const fWhen = (iso: string) => new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
 const applyingCodes = (a: AdminApp) => a.application_marks.filter(m => m.applying).map(m => m.module_code)
 const belowMin = (a: AdminApp, min: number) => a.application_marks.some(m => m.applying && m.mark < min)
+const noneMeet = (a: AdminApp, min: number) => !a.application_marks.some(m => m.applying && m.mark >= min)
+/* When the auto-filter will decline it: a day after it was sent, on the next hourly run. */
+const autoDeclineAt = (a: AdminApp) => {
+  const t = new Date(new Date(a.submitted_at).getTime() + 86_400_000)
+  return t.toLocaleString('en-ZA', { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+}
 
 export function AdminApplications() {
   const { push } = useStack()
   const apps = useQuery('applications', loadApplications)
   const settings = useQuery('settings', loadSettings)
   const min = settings.data?.min_mark ?? 75
+  const auto = !!settings.data?.auto_decline
   const [filter, setFilter] = useState<Filter>('open')
   const [q, setQ] = useState('')
 
@@ -107,7 +115,8 @@ export function AdminApplications() {
                 <span className="rmeta">{a.student?.student_number} · {isOpen(a.status) ? ago(a.submitted_at) : fWhen(a.processed_at ?? a.submitted_at)}</span>
               </span>
               <span className="rside">
-                {isOpen(a.status) && belowMin(a, min) ? <Badge tone="red">Below {min}%</Badge> : null}
+                {isOpen(a.status) && auto && noneMeet(a, min) ? <Badge tone="red">Auto-declines</Badge>
+                  : isOpen(a.status) && belowMin(a, min) ? <Badge tone="red">Below {min}%</Badge> : null}
                 <Badge tone={STATUS[a.status].tone}>{STATUS[a.status].label}</Badge>
                 <Icon name="chev" size={17} stroke={2.1} />
               </span>
@@ -135,17 +144,17 @@ function ApplicationDetail({ id }: { id: string }) {
     a ? (await must(supabase.storage.from('results').createSignedUrl(a.results_path, 3600)))?.signedUrl ?? '' : '')
   const [busy, setBusy] = useState(false)
 
-  // Opening a new application tells the student someone is looking at it.
-  const status = a?.status
-  useEffect(() => {
-    if (status !== 'pending') return
+  // Opening their results (or verifying them) tells the student someone is looking at it.
+  const reviewing = () => {
+    if (a?.status !== 'pending') return
     supabase.from('applications').update({ status: 'under_review' }).eq('id', id).eq('status', 'pending')
       .then(({ error }) => { if (!error) invalidate(key, 'applications') })
-  }, [status, id, key])
+  }
 
   const setChecked = async (v: boolean) => {
     setBusy(true)
-    const { error } = await supabase.from('applications').update({ background_checked: v }).eq('id', id)
+    const { error } = await supabase.from('applications')
+      .update(v && a?.status === 'pending' ? { background_checked: v, status: 'under_review' } : { background_checked: v }).eq('id', id)
     setBusy(false)
     if (error) { haptic(24); toast(friendlyError(error)); return }
     haptic(12); invalidate(key, 'applications')
@@ -180,12 +189,12 @@ function ApplicationDetail({ id }: { id: string }) {
           </div>
         </div>
 
-        <div className="sect">Wants to tutor</div>
+        <div className="sect">Wants to tutor · {min}% needed</div>
         <div className="chips">
           {applying.map(m => <span key={m.module_code} className="chip chip--static"><span className="code">{m.module_code}</span>{m.modules?.name}</span>)}
         </div>
 
-        <div className="sect">Marks they entered · {min}% needed</div>
+        <div className="sect">Marks they entered</div>
         <div className="card card--pad">
           {marks.map(m => {
             const col = markColour(m.mark, min)
@@ -204,11 +213,15 @@ function ApplicationDetail({ id }: { id: string }) {
           })}
         </div>
         {file.data ? (
-          <a className="btn btn--outline" style={{ marginTop: 12, textDecoration: 'none' }} href={file.data} target="_blank" rel="noreferrer">
+          <a className="btn btn--outline" style={{ marginTop: 12, textDecoration: 'none' }} href={file.data} target="_blank" rel="noreferrer" onClick={reviewing}>
             <Icon name="doc" size={17} /> Open their results document
           </a>
         ) : null}
-        <p className="small muted" style={{ marginTop: 8 }}>Check the marks above match the document.</p>
+        <p className="small muted" style={{ marginTop: 8 }}>Check the marks above match the document.{a.status === 'pending' ? ' Opening it moves the application to Under review.' : ''}</p>
+        {isOpen(a.status) && noneMeet(a, min) ? (
+          <div className="note note--amber" style={{ marginTop: 12 }}><Icon name="alert" size={15} />
+            <span>No module reaches {min}%.{settings.data?.auto_decline ? <> Auto-decline will decline it around <b>{autoDeclineAt(a)}</b> unless you decide first.</> : ' You can only decline this one.'}</span></div>
+        ) : null}
 
         <div className="sect">Background check</div>
         <div className="card">
@@ -254,8 +267,11 @@ function Decision({ app: a }: { app: AdminApp }) {
   const kind = approve ? 'approve' : 'decline'
   const options = (templates.data ?? []).filter(t => t.kind === kind)
   const first = a.student?.full_name.split(' ')[0] ?? 'the student'
-  const codes = applyingCodes(a).join(', ')
-  const blocked = approve && !a.background_checked
+  const min = useQuery('settings', loadSettings).data?.min_mark ?? 75
+  const meets = a.application_marks.filter(m => m.applying && m.mark >= min).map(m => m.module_code)
+  const left = applyingCodes(a).filter(c => !meets.includes(c))
+  const codes = meets.join(', ')
+  const blocked = approve && (!a.background_checked || !meets.length)
 
   const choose = (yes: boolean) => { haptic(6); setApprove(yes); setPicked(null); setMessage(''); setConfirm(false); setError('') }
 
@@ -292,9 +308,15 @@ function Decision({ app: a }: { app: AdminApp }) {
           value={message} onChange={e => { setMessage(e.target.value); setConfirm(false) }} />
       </div>
 
-      {blocked ? (
+      {approve && !meets.length ? (
         <div className="note note--amber" style={{ marginTop: 12 }}><Icon name="alert" size={15} />
-          <span>Mark the background check as done before approving.</span></div>
+          <span>None of their marks reach {min}%, so there's nothing to approve.</span></div>
+      ) : blocked ? (
+        <div className="note note--amber" style={{ marginTop: 12 }}><Icon name="alert" size={15} />
+          <span>Mark the results as verified before approving.</span></div>
+      ) : approve && left.length ? (
+        <div className="note note--plain" style={{ marginTop: 12 }}><Icon name="alert" size={15} />
+          <span>Approving adds <b>{codes}</b> only. {left.join(', ')} {left.length === 1 ? 'is' : 'are'} below {min}%.</span></div>
       ) : null}
       {confirm ? (
         <div className={'note ' + (approve ? 'note--green' : 'note--red')} style={{ marginTop: 12 }}><Icon name="alert" size={15} />

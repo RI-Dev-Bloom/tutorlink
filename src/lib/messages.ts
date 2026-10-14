@@ -21,7 +21,10 @@ export type InboxRow = {
 
 export type Person = { id: string; full_name: string; title: string; role: Role; is_tutor: boolean }
 
-export type Message = { id: string; sender_id: string; topic: string; body: string; created_at: string; read_at: string | null }
+export type Message = {
+  id: string; sender_id: string; topic: string; body: string; created_at: string; read_at: string | null
+  file_path: string | null; file_name: string | null; file_size: number | null; file_type: string | null; file_removed_at: string | null
+}
 
 export const loadInbox = async () => ((await must(supabase.rpc('my_inbox'))) ?? []) as InboxRow[]
 
@@ -39,7 +42,7 @@ export async function loadThread(me: string, other: string) {
     must(supabase.from('conversations').select('id').eq('user_a', a).eq('user_b', b).maybeSingle<{ id: string }>()),
   ])
   const messages = conv
-    ? (await must(supabase.from('messages').select('id, sender_id, topic, body, created_at, read_at')
+    ? (await must(supabase.from('messages').select('id, sender_id, topic, body, created_at, read_at, file_path, file_name, file_size, file_type, file_removed_at')
         .eq('conversation_id', conv.id).order('created_at', { ascending: false }).returns<Message[]>())) ?? []
     : []
   return { person, conversationId: conv?.id ?? null, messages }

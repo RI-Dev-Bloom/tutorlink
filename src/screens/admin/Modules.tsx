@@ -8,12 +8,13 @@ import type { Module } from '../../lib/types'
 import { Icon } from '../../ui/icons'
 import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Empty, Loading, NavBar } from '../../ui/parts'
+import { Group, SRow, Switch } from '../../ui/Settings'
 import { haptic } from '../../ui/haptic'
 
 const CODE = /^[A-Z]{4}\d{4}$/
 
 export const loadModules = () =>
-  must(supabase.from('modules').select('code, name, hidden').order('code').returns<Module[]>())
+  must(supabase.from('modules').select('code, name, hidden, high_risk').order('code').returns<Module[]>())
 
 export function Modules() {
   const { openSheet } = useOverlay()
@@ -47,7 +48,7 @@ export function Modules() {
                   <span className="rname" style={m.hidden ? { color: 'var(--muted)' } : undefined}>{m.name}</span>
                   <span className="rmeta mono">{m.code}</span>
                 </span>
-                <span className="rside">{m.hidden ? <Badge tone="plain">Hidden</Badge> : null}<Icon name="chev" size={17} stroke={2.1} /></span>
+                <span className="rside">{m.hidden ? <Badge tone="plain">Hidden</Badge> : m.high_risk ? <Badge tone="red">High-risk</Badge> : null}<Icon name="chev" size={17} stroke={2.1} /></span>
               </button>
             ))}
           </div>
@@ -140,6 +141,14 @@ function ModuleSheet({ module: m, all }: { module: Module; all: Module[] }) {
           {m.hidden ? 'Students can pick it again once it’s shown.' : 'Hidden modules stay on existing records but students can’t pick them.'}
         </p>
 
+        <button className="btn btn--outline" style={{ marginTop: 9 }} disabled={busy}
+          onClick={() => run(() => supabase.from('modules').update({ high_risk: !m.high_risk }).eq('code', m.code), m.high_risk ? `${m.code} closed for tutoring` : `${m.code} is open for tutoring`)}>
+          {m.high_risk ? 'Not high-risk any more' : 'Mark as high-risk'}
+        </button>
+        <p className="small muted" style={{ marginTop: 8 }}>
+          {m.high_risk ? 'Students can apply to tutor it. Tutors already approved keep it either way.' : 'Only high-risk modules are open for students to apply to tutor.'}
+        </p>
+
         <div className="sect" style={{ marginTop: 22 }}>Merge a duplicate</div>
         <p className="small muted">If this is a typo of another module, merge it in. Everyone and everything attached moves across, then this one is removed.</p>
         <div className="field" style={{ marginTop: 10 }}>
@@ -163,5 +172,52 @@ function ModuleSheet({ module: m, all }: { module: Module; all: Module[] }) {
         </button>
       </div>
     </div>
+  )
+}
+
+/* Settings → High-risk modules: the only ones students can apply to tutor. One switch each. */
+export function HighRiskModules() {
+  const { toast } = useOverlay()
+  const modules = useQuery('modules', loadModules)
+  const [q, setQ] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+
+  const all = (modules.data ?? []).filter(m => !m.hidden)
+  const on = all.filter(m => m.high_risk)
+  const shown = useMemo(() => {
+    const s = q.trim().toLowerCase()
+    return all.filter(m => !s || m.code.toLowerCase().includes(s) || m.name.toLowerCase().includes(s))
+      .sort((a, b) => Number(b.high_risk) - Number(a.high_risk) || a.code.localeCompare(b.code))
+  }, [all, q])
+
+  const flip = async (m: Module, v: boolean) => {
+    setBusy(m.code)
+    const { error } = await supabase.from('modules').update({ high_risk: v }).eq('code', m.code)
+    setBusy(null)
+    if (error) { haptic(24); toast(friendlyError(error)); return }
+    invalidate('modules')
+  }
+
+  return (
+    <>
+      <NavBar title="High-risk modules" left={<BackButton />} />
+      <div className="body"><div className="pad">
+        <p className="small muted">Students can only apply to tutor the modules switched on here. Turning one off doesn't affect tutors already approved for it.</p>
+        <div className="field" style={{ marginTop: 14 }}>
+          <input type="search" placeholder="Search by code or name" value={q} onChange={e => setQ(e.target.value)} aria-label="Search modules" />
+        </div>
+        {modules.loading ? <Loading /> : null}
+        {modules.error ? <p className="err">{modules.error}</p> : null}
+        {modules.data && !shown.length ? <Empty icon="book" title="No match" line="Nothing matches that search." /> : null}
+        {shown.length ? (
+          <Group title={`${on.length} open for tutoring`}>
+            {shown.map(m => (
+              <SRow key={m.code} label={m.name} sub={<span className="mono">{m.code}</span>}
+                right={<Switch on={m.high_risk} disabled={busy === m.code} onChange={v => flip(m, v)} label={`${m.code} high-risk`} />} />
+            ))}
+          </Group>
+        ) : null}
+      </div></div>
+    </>
   )
 }

@@ -628,3 +628,82 @@ button.row:active { background: var(--bg); }
   *, .screen { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+/* ---------- settings lists (like the phone's own Settings) ---- */
+
+.shead { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6px 0 2px; }
+.shead__av { width: 68px; height: 68px; font-size: 21px; border-radius: 50%; }
+.shead__name { margin-top: 12px; font-family: var(--fh); font-size: 24px; font-weight: 600; letter-spacing: -.01em; line-height: 1.15; }
+.shead__line { margin-top: 3px; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+
+.sgroup { margin-top: 26px; }
+.sgroup__t { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 4px 8px; }
+.sgroup__f { font-size: 12px; line-height: 1.55; color: var(--muted); padding: 8px 4px 0; }
+.sgroup .card { border-radius: var(--rl); }
+
+.srow {
+  position: relative; display: flex; align-items: center; gap: 12px;
+  width: 100%; min-height: 50px; padding: 10px 14px;
+  background: transparent; border: 0; text-align: left; color: var(--text);
+  transition: background .16s ease;
+}
+button.srow:active { background: var(--bg); }
+.srow + .srow::before { content: ""; position: absolute; top: 0; right: 0; left: 56px; border-top: 1px solid var(--lineS); }
+.srow--plain + .srow::before, .srow + .srow--plain::before { left: 14px; }
+.sico {
+  width: 30px; height: 30px; flex: 0 0 auto; display: grid; place-items: center;
+  border-radius: 7px; color: #fff; background: var(--navy);
+}
+.sico--gold  { background: var(--gold); color: var(--navy); }
+.sico--green { background: #2F855A; }
+.sico--blue  { background: #2B6CB0; }
+.sico--red   { background: #C53030; }
+.sico--slate { background: #64748B; }
+.sico--amber { background: #C27C0E; }
+.slabel { flex: 1; min-width: 0; font-size: 15px; font-weight: 500; letter-spacing: -.01em; }
+.slabel small { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); line-height: 1.45; }
+.sval { flex: 0 1 auto; min-width: 0; color: var(--muted); font-size: 14px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: lining-nums tabular-nums; }
+.schev { color: var(--muted2); display: grid; flex: 0 0 auto; margin-right: -4px; }
+.srow--danger { justify-content: center; }
+.srow--danger .slabel { flex: 0 0 auto; color: var(--red); font-weight: 600; }
+
+.switch {
+  position: relative; flex: 0 0 auto; width: 48px; height: 29px; border-radius: 999px;
+  border: 0; background: var(--line); transition: background .22s ease;
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; left: 3px; width: 23px; height: 23px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 3px rgba(10, 35, 66, .28); transition: transform .28s var(--spring);
+}
+.switch[aria-checked="true"] { background: #2F855A; }
+.switch[aria-checked="true"]::after { transform: translateX(19px); }
+.switch:disabled { opacity: .45; }
+
+.app-foot { margin: 26px 0 6px; text-align: center; font-size: 11.5px; color: var(--muted2); }
+
+/* ---------- a file on a message ---------------------------- */
+
+.file {
+  display: flex; align-items: center; gap: 11px; width: 100%; margin-top: 12px; padding: 10px 12px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: var(--r); text-align: left; color: var(--text);
+  text-decoration: none;
+}
+.file__ico { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center; border-radius: var(--r); background: var(--navy); color: var(--gold); }
+.file__main { flex: 1; min-width: 0; }
+.file__name { display: block; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file__meta { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); }
+.file--gone { opacity: .6; }
+.file--gone .file__ico { background: var(--line); color: var(--muted); }
+.tl-clip { display: inline-flex; color: var(--muted2); margin-left: 4px; vertical-align: -2px; }
+
+/* ---------- picking modules to tutor ----------------------- */
+
+.pick { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 15px; background: transparent; border: 0; text-align: left; }
+.pick + .pick, .pickin + .pick { border-top: 1px solid var(--lineS); }
+.pick__box {
+  width: 22px; height: 22px; flex: 0 0 auto; display: grid; place-items: center;
+  border: 1.5px solid var(--muted2); border-radius: 6px; color: #fff; transition: background .16s ease, border-color .16s ease;
+}
+.pick.on .pick__box { background: var(--navy); border-color: var(--navy); }
+.pickin { display: flex; align-items: center; gap: 10px; padding: 0 15px 13px 49px; }
+.pickin .markin { flex: 0 0 auto; }

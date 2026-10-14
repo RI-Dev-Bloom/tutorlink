@@ -18,7 +18,7 @@ Tapping the notification opens the right screen (e.g. a message opens Messages, 
 
 ## Turning them on
 - A **Get set up** card on the home screen: on a phone, step 1 is adding the app to the home screen, step 2 is **Turn on**. It can be closed with ✕.
-- **Profile → This phone → Notifications** can turn them on or off any time. If they were blocked, it says how to allow them again.
+- **Profile → Device → Notifications** (Settings → Device for admin) has a switch to turn them on or off any time. If they were blocked, it says how to allow them again.
 - Notifications belong to the phone and the person: signing out stops that phone getting that person's notifications.
 
 ## Why it's here

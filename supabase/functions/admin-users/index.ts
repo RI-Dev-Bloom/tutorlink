@@ -1,6 +1,6 @@
 // TutorLink — admin-users
-// Creates, resets and removes staff logins. Needs the secret key (which
-// bypasses every database rule), so it lives here on the server, never in the app.
+// Lets lecturers in (by email, for Google sign-in), gives passwords, removes logins.
+// Needs the secret key (which bypasses every database rule), so it lives here on the server, never in the app.
 // Every request is checked: the caller must be signed in, and (apart from
 // retire_temp_password, which only touches the caller's own login) be an admin.
 
@@ -65,28 +65,39 @@ Deno.serve(async req => {
     if (!EMAIL.test(email)) return json({ error: 'Enter a valid email address' }, 400)
     if (!modules.length) return json({ error: 'Pick at least one module' }, 400)
 
-    const password = makePassword()
+    // No password to send: admin just lets the email in, and the lecturer signs in with Google.
+    // (For an email that isn't a Google account, admin can give them a password afterwards.)
     const full_name = `${first} ${last}`
+    let id: string
+    let fresh = true
     const { data: created, error } = await admin.auth.admin.createUser({
-      email, password, email_confirm: true,
+      email, password: makePassword(32), email_confirm: true,
       app_metadata: { role: 'lecturer' },
       user_metadata: { full_name },
     })
-    if (error) {
-      const taken = /already|registered|exists/i.test(error.message)
-      return json({ error: taken ? 'An account already uses that email' : error.message }, 400)
+    if (!error) id = created.user.id
+    else {
+      if (!/already|registered|exists/i.test(error.message)) return json({ error: error.message }, 400)
+      // They signed in with Google before admin added them, so they got a student account.
+      // If it's an ordinary student account, turn it into the lecturer's.
+      const { data: existing } = await admin.from('profiles').select('id, role, is_tutor').eq('email', email).maybeSingle()
+      if (!existing || existing.role !== 'student' || existing.is_tutor) return json({ error: 'An account already uses that email' }, 400)
+      const { error: eu } = await admin.auth.admin.updateUserById(existing.id, { app_metadata: { role: 'lecturer' } })
+      if (eu) return json({ error: eu.message }, 400)
+      id = existing.id
+      fresh = false
     }
-    const id = created.user.id
     // Auth attaches app_metadata after the row is inserted, so the profile trigger
-    // sees a plain student. Set the role here.
+    // sees a plain student. Set the role here. "must_change_password" doubles as
+    // "hasn't signed in yet": their first Google sign-in clears it.
     const { error: e1 } = await admin.from('profiles')
-      .update({ role: 'lecturer', title, full_name, must_change_password: true }).eq('id', id)
+      .update({ role: 'lecturer', title, full_name, must_change_password: fresh }).eq('id', id)
     const { error: e2 } = await admin.from('lecturer_modules').insert(modules.map(m => ({ lecturer_id: id, module_code: m })))
     if (e1 || e2) {
-      await admin.auth.admin.deleteUser(id)   // don't leave a half-made account behind
+      if (fresh) await admin.auth.admin.deleteUser(id)   // don't leave a half-made account behind
       return json({ error: (e1 || e2)!.message }, 400)
     }
-    return json({ id, email, password })
+    return json({ id, email, existing: !fresh })
   }
 
   if (body.action === 'reset_password') {

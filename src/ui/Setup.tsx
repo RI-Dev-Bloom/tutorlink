@@ -1,5 +1,5 @@
 /* "Get set up": install the app, then turn on notifications.
-   SetupCard sits on each home screen until done or dismissed; SetupRows live in Profile/Settings for good. */
+   SetupCard sits on each home screen until done or dismissed; DeviceSettings lives in Profile/Settings for good. */
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { useAuth } from '../lib/auth'
@@ -9,6 +9,7 @@ import { Icon } from './icons'
 import { useOverlay } from './Overlay'
 import { Badge } from './parts'
 import { haptic } from './haptic'
+import { Group, SRow, Switch } from './Settings'
 
 const HIDE_KEY = 'tl.setup.hidden'
 const isPhone = () => isIOS() || /android/i.test(navigator.userAgent)
@@ -78,7 +79,8 @@ export function SetupCard() {
   )
 }
 
-export function SetupRows() {
+/* Settings → Device: notifications and installing, for the phone or computer in your hand. */
+export function DeviceSettings() {
   const { profile } = useAuth()
   const { openSheet, toast } = useOverlay()
   const [push, setPush] = usePush()
@@ -86,45 +88,34 @@ export function SetupRows() {
   const [busy, setBusy] = useState(false)
   if (!profile) return null
 
-  const toggle = async () => {
+  const toggle = async (on: boolean) => {
     setBusy(true)
     try {
-      if (push === 'on') { await turnOffPush(); setPush('off'); toast('Notifications are off on this phone') }
+      if (!on) { await turnOffPush(); setPush('off'); toast('Notifications are off on this device') }
       else { const s = await turnOnPush(profile.id); setPush(s); if (s === 'on') { haptic(16); toast('Notifications are on') } }
     } catch (e) { toast(friendlyError(e)) }
     setBusy(false)
   }
 
   const pushLine: Record<PushState, string> = {
-    on: 'On for this phone',
+    on: 'On for this device',
     off: why(profile.role, profile.is_tutor),
-    blocked: 'Blocked. Allow notifications for TutorLink in your phone’s settings.',
+    blocked: 'Blocked. Allow notifications for TutorLink in your device’s settings.',
     'install-first': 'Add TutorLink to your home screen first, then turn them on.',
     unsupported: 'This browser can’t show notifications.',
   }
 
   return (
-    <>
-      <div className="sect" style={{ marginTop: 26 }}>This phone</div>
-      <div className="card">
-        <div className="row">
-          <span className="avatar"><Icon name="bell" size={18} /></span>
-          <span className="rmain"><span className="rname">Notifications</span><span className="rmeta">{push ? pushLine[push] : ' '}</span></span>
-          <span className="rside">
-            {push === 'on' || push === 'off'
-              ? <button className={'btn btn--sm' + (push === 'on' ? ' btn--outline' : '')} disabled={busy} onClick={toggle}>{push === 'on' ? 'Turn off' : 'Turn on'}</button>
-              : push === 'blocked' ? <Badge tone="red">Blocked</Badge> : null}
-          </span>
-        </div>
-        {install.installed ? null : (
-          <button className="row" onClick={() => install.prompt ? promptInstall() : openSheet(<InstallGuide />)}>
-            <span className="avatar"><Icon name="addsq" size={18} /></span>
-            <span className="rmain"><span className="rname">Add to home screen</span><span className="rmeta">Opens like a normal app</span></span>
-            <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
-          </button>
-        )}
-      </div>
-    </>
+    <Group title="Device" foot="Notifications are set separately on each phone or computer you use.">
+      <SRow icon="bell" tone="red" label="Notifications" sub={push ? pushLine[push] : undefined}
+        right={push === 'on' || push === 'off'
+          ? <Switch on={push === 'on'} disabled={busy} onChange={toggle} label="Notifications" />
+          : push === 'blocked' ? <Badge tone="red">Blocked</Badge> : null} />
+      {install.installed ? null : (
+        <SRow icon="addsq" tone="blue" label="Add to home screen" sub="Opens like a normal app"
+          onClick={() => install.prompt ? promptInstall() : openSheet(<InstallGuide />)} />
+      )}
+    </Group>
   )
 }
 
@@ -134,7 +125,7 @@ function InstallGuide() {
     ? [
         ['share', <>Open TutorLink in <b>Safari</b> and tap the <b>Share</b> button (the square with an arrow, at the bottom or top of the screen).</>],
         ['addsq', <>Scroll down and tap <b>Add to Home Screen</b>, then <b>Add</b>.</>],
-        ['home', <>Open TutorLink from your home screen from now on, and turn on notifications in Profile.</>],
+        ['home', <>Open TutorLink from your home screen from now on, and turn on notifications under Device in Profile.</>],
       ]
     : [
         ['share', <>Open TutorLink in <b>Chrome</b> and tap the <b>⋮</b> menu at the top right.</>],

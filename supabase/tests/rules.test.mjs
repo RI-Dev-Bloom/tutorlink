@@ -103,13 +103,16 @@ await ok('student picks modules', () => as(ids.stu, `insert into public.student_
 await denied('student cannot pick for someone else', () => as(ids.stu, `insert into public.student_modules values ($1,'PROG1111')`, [ids.stu2]))
 
 console.log('\napplications')
+await denied('student cannot mark a module high-risk', async () => { const r = await as(ids.stu, `update public.modules set high_risk = true where code='PROG1111' returning code`); if (!r.length) throw new Error('0 rows (RLS)') })
+await ok('admin marks PROG1111 high-risk (open for tutoring)', () => as(ids.admin, `update public.modules set high_risk = true where code='PROG1111' returning code`))
 await denied('student without number cannot apply', () => as(ids.stu2, `insert into public.applications (student_id, results_path) values ($1, 'x')`, [ids.stu2]), 'student number')
 let appId
 await ok('student applies (status forced to pending)', async () => {
   const r = await as(ids.stu, `insert into public.applications (student_id, results_path, status) values ($1, 'results/x.pdf', 'approved') returning id, status`, [ids.stu])
   appId = r[0].id; return eq(r[0].status, 'pending', 'status')
 })
-await ok('student adds marks', () => as(ids.stu, `insert into public.application_marks values ($1,'PROG1111',82,true),($1,'NETW1111',79,false)`, [appId]))
+await ok('student adds a mark', () => as(ids.stu, `insert into public.application_marks values ($1,'PROG1111',82,true)`, [appId]))
+await denied('not for a module that isn\'t high-risk', () => as(ids.stu, `insert into public.application_marks values ($1,'NETW1111',79,true)`, [appId]), "isn't open for tutor applications")
 await denied('second open application blocked', () => as(ids.stu, `insert into public.applications (student_id, results_path) values ($1, 'y')`, [ids.stu]))
 await ok('other student cannot see it', async () => eq((await as(ids.stu2, `select id from public.applications`)).length, 0, 'rows'))
 await denied('student cannot decide', () => as(ids.stu, `select public.decide_application($1, true, 'yay')`, [appId]), 'Admin only')
@@ -227,19 +230,16 @@ console.log('\napply in one step')
 await db.query(`update public.profiles set student_number = 'ST20000002' where id = $1`, [ids.stu2])
 const path2 = ids.stu2 + '/results.pdf'
 await denied('results must be in your own folder', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":90,"applying":true}]')`, [ids.stu + '/x.pdf']), 'Upload your statement')
-await denied('needs marks', () => as(ids.stu2, `select public.submit_application($1, '[]')`, [path2]), 'Add the marks')
-await denied('needs a module to tutor', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":90}]')`, [path2]), 'at least one module')
-await denied('below the minimum mark cannot be tutored', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":74,"applying":true}]')`, [path2]), 'You need at least 75% in PROG1111')
+await denied('needs a module', () => as(ids.stu2, `select public.submit_application($1, '[]')`, [path2]), 'Choose at least one module')
+await denied('needs a mark for each module', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111"}]')`, [path2]), 'Enter your mark for PROG1111')
+await denied('marks over 100 rejected', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":120}]')`, [path2]), 'Enter your mark for PROG1111')
+await denied('only high-risk modules', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":90},{"module_code":"NETW1111","mark":90}]')`, [path2]), "NETW1111 isn't open")
+await denied('not a module you already tutor', () => as(ids.stu, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":90}]')`, [ids.stu + '/r.pdf']), 'You already tutor PROG1111')
 await ok('nothing half-saved after a refusal', async () => eq((await db.query(`select count(*)::int n from public.applications where student_id=$1`, [ids.stu2])).rows[0].n, 0, 'apps'))
-await denied('direct mark insert also checks the minimum', async () => {
-  const [{ id }] = await as(ids.stu2, `insert into public.applications (student_id, results_path) values ($1, $2) returning id`, [ids.stu2, path2])
-  try { await as(ids.stu2, `insert into public.application_marks values ($1,'PROG1111',60,true)`, [id]) }
-  finally { await db.query(`delete from public.applications where id=$1`, [id]) }
-}, 'You need at least')
 await ok('student submits marks in one step', async () => {
-  const [{ id }] = await as(ids.stu2, `select public.submit_application($1, '[{"module_code":" prog1111 ","mark":91,"applying":true},{"module_code":"NETW1111","mark":60}]') id`, [path2])
+  const [{ id }] = await as(ids.stu2, `select public.submit_application($1, '[{"module_code":" prog1111 ","mark":91}]') id`, [path2])
   return eq((await db.query(`select module_code, mark, applying from public.application_marks where application_id=$1 order by module_code`, [id])).rows,
-    [{ module_code: 'NETW1111', mark: 60, applying: false }, { module_code: 'PROG1111', mark: 91, applying: true }], 'marks')
+    [{ module_code: 'PROG1111', mark: 91, applying: true }], 'marks')
 })
 await denied('only one open application', () => as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":91,"applying":true}]')`, [path2]), 'applications_one_open')
 await denied('signed-out users cannot submit', async () => {
@@ -336,6 +336,72 @@ await ok('other student cannot read it', async () => eq((await as(ids.stu, `sele
 await ok('admin can read it', async () => eq((await as(ids.admin, `select name from storage.objects where bucket_id='results'`)).length, 1, 'visible'))
 await denied('non-tutor cannot upload a register', () => as(ids.stu2, `insert into storage.objects (bucket_id, name) values ('registers', $1)`, [ids.stu2 + '/r.pdf']))
 await ok('tutor uploads a register', () => as(ids.stu, `insert into storage.objects (bucket_id, name) values ('registers', $1)`, [ids.stu + '/r.jpg']))
+
+console.log('\nfiles on messages')
+const f1 = ids.stu + '/notes.pdf'
+const fileJson = p => JSON.stringify({ path: p, name: 'Week 8 notes.pdf', size: 12345, type: 'application/pdf' })
+await denied('plain students cannot upload message files', () => as(ids.stu2, `insert into storage.objects (bucket_id, name) values ('attachments', $1)`, [ids.stu2 + '/x.pdf']))
+await denied("not into someone else's folder", () => as(ids.stu, `insert into storage.objects (bucket_id, name) values ('attachments', $1)`, [ids.lect + '/x.pdf']))
+await ok('tutor uploads a file and sends it with no text', async () => {
+  await as(ids.stu, `insert into storage.objects (bucket_id, name) values ('attachments', $1)`, [f1])
+  await db.query(`truncate net.sent`)
+  await as(ids.stu, `select public.send_message($1, 'Notes', '', $2::jsonb)`, [ids.lect, fileJson(f1)])
+  eq((await lastPush()).body, 'Notes · 📎 Week 8 notes.pdf', 'push body')
+  return eq((await as(ids.lect, `select file_name, file_size from public.messages where file_path = $1`, [f1]))[0], { file_name: 'Week 8 notes.pdf', file_size: 12345 }, 'message')
+})
+await ok('the recipient can open the file', async () => eq((await as(ids.lect, `select name from storage.objects where bucket_id='attachments'`)).length, 1, 'visible'))
+await ok('nobody else can', async () => {
+  eq((await as(ids.lect2, `select name from storage.objects where bucket_id='attachments'`)).length, 0, 'lect2')
+  return eq((await as(ids.stu2, `select name from storage.objects where bucket_id='attachments'`)).length, 0, 'stu2')
+})
+await denied("cannot attach someone else's file", () => as(ids.lect, `select public.send_message($1, 'Mine now', 'x', $2::jsonb)`, [ids.stu, fileJson(f1)]), 'Attach the file again')
+await denied('cannot attach a file that was never uploaded', () => as(ids.stu, `select public.send_message($1, 'Ghost', 'x', $2::jsonb)`, [ids.lect, fileJson(ids.stu + '/ghost.pdf')]), 'Attach the file again')
+await denied('a message needs text or a file', () => as(ids.stu, `select public.send_message($1, 'Empty', '  ')`, [ids.lect]), 'messages_body_check')
+await denied('file days: 3 to 5 only', () => as(ids.admin, `update public.settings set file_days = 6`), 'check')
+await ok('admin keeps files for 5 days', () => as(ids.admin, `update public.settings set file_days = 5 returning file_days`))
+await denied('students cannot change it', async () => { const r = await as(ids.stu, `update public.settings set file_days = 3 returning file_days`); if (!r.length) throw new Error('0 rows (RLS)') })
+await ok('the hourly tidy-up calls tidy-files with the secret', async () => {
+  await db.query(`truncate net.sent`)
+  await db.query(`select public.tidy_message_files()`)
+  const r = (await db.query(`select url, headers from net.sent`)).rows[0]
+  return eq([r.url, r.headers['x-push-secret']], ['https://example.test/tidy-files', 's3cret'], 'request')
+})
+await denied('signed-in users cannot list orphan files', () => as(ids.admin, `select public.orphan_attachments(now())`), 'permission denied')
+
+console.log('\nauto-decline')
+const openApp = async () => (await db.query(`select id from public.applications where student_id=$1 and status in ('pending','under_review')`, [ids.stu2])).rows[0]?.id
+const backdate = id => db.query(`update public.applications set submitted_at = now() - interval '2 days' where id=$1`, [id])
+await ok('below the minimum is let in now', async () => {
+  await as(ids.admin, `select public.decide_application($1, false, 'Closing this one')`, [await openApp()])
+  return as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":60}]') is not null ok`, [path2])
+})
+await denied('admin cannot approve when no mark meets the minimum', async () => as(ids.admin, `select public.decide_application($1, true, 'Yes')`, [await openApp()]), 'None of their marks meet the 75% minimum')
+await ok('switched off: nothing is declined', async () => { await backdate(await openApp()); return eq((await db.query(`select public.auto_decline_applications() n`)).rows[0].n, 0, 'declined') })
+await denied('students cannot switch the filter on', async () => { const r = await as(ids.stu, `update public.settings set auto_decline = true returning auto_decline`); if (!r.length) throw new Error('0 rows (RLS)') })
+await ok('switched on: declined after a day, with a note and a notification', async () => {
+  await as(ids.admin, `update public.settings set auto_decline = true`)
+  await db.query(`truncate net.sent`)
+  const id = await openApp()
+  eq((await db.query(`select public.auto_decline_applications() n`)).rows[0].n, 1, 'declined')
+  const r = (await as(ids.stu2, `select status::text, response_message from public.applications where id=$1`, [id]))[0]
+  eq(r.status, 'rejected', 'status')
+  if (!r.response_message.includes('at least 75%')) throw new Error('note: ' + r.response_message)
+  return eq((await lastPush()).title, 'Your tutoring application', 'push')
+})
+await ok('a new one is left alone for the first day', async () => {
+  await as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":60}]')`, [path2])
+  return eq((await db.query(`select public.auto_decline_applications() n`)).rows[0].n, 0, 'declined')
+})
+await ok('one module over the minimum keeps it in; approving adds only that module', async () => {
+  await db.query(`update public.modules set high_risk = true where code='MATH1111'`)
+  await as(ids.admin, `select public.decide_application($1, false, 'Closing')`, [await openApp()])
+  await as(ids.stu2, `select public.submit_application($1, '[{"module_code":"PROG1111","mark":60},{"module_code":"MATH1111","mark":80}]')`, [path2])
+  const id = await openApp(); await backdate(id)
+  eq((await db.query(`select public.auto_decline_applications() n`)).rows[0].n, 0, 'declined')
+  await as(ids.admin, `select public.decide_application($1, true, 'Welcome')`, [id])
+  return eq((await db.query(`select module_code from public.tutor_modules where tutor_id=$1`, [ids.stu2])).rows.map(r => r.module_code), ['MATH1111'], 'tutor modules')
+})
+await denied('signed-in users cannot run the filter', () => as(ids.admin, `select public.auto_decline_applications()`), 'permission denied')
 
 console.log('\nsigned-out users')
 await ok('anon sees nothing', async () => {

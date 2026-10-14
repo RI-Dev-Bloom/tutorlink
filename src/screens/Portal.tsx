@@ -1,10 +1,9 @@
 /* The four portals. Tabs not built yet show a placeholder; Phase 1 fills them in
    slice by slice (see Docs-TLink/Tech/Build plan.md). */
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth, type Profile } from '../lib/auth'
-import { Icon } from '../ui/icons'
-import { Empty, NavBar, TabBar, initials, type Tab } from '../ui/parts'
+import { Empty, NavBar, TabBar, type Tab } from '../ui/parts'
 import { haptic } from '../ui/haptic'
 import { must, useQuery } from '../lib/data'
 import { supabase } from '../lib/supabase'
@@ -12,7 +11,8 @@ import { displayName } from '../lib/types'
 import { AdminApplications, loadOpenCount } from './admin/Applications'
 import { AdminOverview } from './admin/Overview'
 import { AdminSettings } from './admin/AdminSettings'
-import { SetupRows } from '../ui/Setup'
+import { DeviceSettings } from '../ui/Setup'
+import { Group, SHead, SRow } from '../ui/Settings'
 import { resyncPush } from '../lib/push'
 import { AdminTutors } from './admin/Tutors'
 import { ApplyTab } from './student/Apply'
@@ -141,73 +141,50 @@ const ROLE_LINE: Record<View, string> = {
 
 function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
   const { signOut } = useAuth()
-  const rows: [string, ReactNode][] = [
-    ['Email', profile.email],
-    ...(profile.student_number ? [['Student number', <span key="sn" className="mono">{profile.student_number}</span>] as [string, ReactNode]] : []),
-    ['Role', profile.is_tutor ? 'Student and tutor' : ROLE_LINE[view]],
-  ]
   return (
     <div className="pad stagger">
-      <div className="card card--pad" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <span className={'avatar avatar--lg' + (view === 'lecturer' ? ' avatar--gold' : '')}>{initials(profile.full_name || profile.email)}</span>
-        <span style={{ minWidth: 0 }}>
-          <span className="rname" style={{ fontSize: 16 }}>{displayName(profile) || 'No name yet'}</span>
-          <span className="rmeta">{ROLE_LINE[view]} · Rosebank International</span>
-        </span>
-      </div>
+      <SHead name={displayName(profile) || profile.email} line={`${ROLE_LINE[view]} · Rosebank International`} gold={view === 'lecturer'} />
 
-      <div className="sect" style={{ marginTop: 26 }}>Account</div>
-      <div className="card">
-        {rows.map(([k, v]) => (
-          <div className="row" key={k}>
-            <span className="rmain"><span className="rmeta" style={{ marginTop: 0 }}>{k}</span></span>
-            <span className="rside" style={{ color: 'var(--text)', fontSize: 13.5 }}>{v}</span>
-          </div>
-        ))}
-      </div>
+      <Group title="Account">
+        <SRow icon="mail" tone="blue" label="Email" value={profile.email} />
+        {profile.student_number ? <SRow icon="cap" tone="navy" label="Student number" value={<span className="mono">{profile.student_number}</span>} /> : null}
+        <SRow icon="user" tone="slate" label="Role" value={profile.is_tutor ? 'Student and tutor' : ROLE_LINE[view]} />
+      </Group>
 
       {view === 'lecturer' ? <MyModules id={profile.id} /> : null}
       {view === 'tutor' ? <TutorModules id={profile.id} /> : null}
 
-      <SetupRows />
+      <DeviceSettings />
 
-      <button className="btn btn--outline" style={{ marginTop: 26 }} onClick={() => { haptic(10); signOut() }}>
-        <Icon name="out" size={18} /> Sign out
-      </button>
+      <Group>
+        <SRow label="Sign out" danger onClick={signOut} />
+      </Group>
+      <p className="app-foot">TutorLink · Rosebank International</p>
     </div>
+  )
+}
+
+type ModRow = { module_code: string; modules: { name: string } | null }
+
+function ModuleRows({ title, foot, mods }: { title: string; foot: string; mods: ModRow[] | undefined }) {
+  return (
+    <Group title={title} foot={foot}>
+      {mods === undefined ? <SRow label="…" /> : mods.length ? mods.map(m => (
+        <SRow key={m.module_code} icon="book" tone="gold" label={m.modules?.name ?? m.module_code} value={<span className="mono">{m.module_code}</span>} />
+      )) : <SRow label="None yet" />}
+    </Group>
   )
 }
 
 /* Tutors see the modules they were approved for. More can be added by applying again. */
 function TutorModules({ id }: { id: string }) {
   const mods = useQuery(`my-tutor-modules:${id}`, () => loadMyTutorModules(id))
-  return (
-    <>
-      <div className="sect" style={{ marginTop: 26 }}>Modules you tutor</div>
-      <div className="chips">
-        {(mods.data ?? []).map(m => (
-          <span key={m.module_code} className="chip chip--static"><span className="code">{m.module_code}</span>{m.modules?.name}</span>
-        ))}
-      </div>
-      <p className="small muted" style={{ marginTop: 10 }}>Want to tutor another module? Switch to Student and apply again.</p>
-    </>
-  )
+  return <ModuleRows title="Modules you tutor" mods={mods.data} foot="Want to tutor another module? Switch to Student and apply again." />
 }
 
 /* Lecturers see what they teach; only admin can change it. */
 function MyModules({ id }: { id: string }) {
   const mods = useQuery(`lecturer-modules:${id}`, () =>
-    must(supabase.from('lecturer_modules').select('module_code, modules(name)').eq('lecturer_id', id)
-      .returns<{ module_code: string; modules: { name: string } | null }[]>()))
-  return (
-    <>
-      <div className="sect" style={{ marginTop: 26 }}>Modules you teach</div>
-      <div className="chips">
-        {(mods.data ?? []).map(m => (
-          <span key={m.module_code} className="chip chip--static"><span className="code">{m.module_code}</span>{m.modules?.name}</span>
-        ))}
-      </div>
-      <p className="small muted" style={{ marginTop: 10 }}>Teaching something different this semester? Ask admin to update your modules.</p>
-    </>
-  )
+    must(supabase.from('lecturer_modules').select('module_code, modules(name)').eq('lecturer_id', id).returns<ModRow[]>()))
+  return <ModuleRows title="Modules you teach" mods={mods.data ?? undefined} foot="Teaching something different this semester? Ask admin to update your modules." />
 }

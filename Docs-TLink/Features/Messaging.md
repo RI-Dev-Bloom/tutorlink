@@ -22,6 +22,8 @@ Students don't use messaging.
 - It looks like a timeline, not chat bubbles: a line down the left, a dot per message, the topic and how long ago. Tap a message to open the full text.
 - Each message is tagged **Lecturer**, **Admin**, **Tutor** or **You**.
 - Both sides can reply. **Reply** fills in "Re: <topic>". New messages offer quick topics: Venue change, This week, Documents needed, Question.
+- **Attach a file** (PDF, photo, Word, Excel, PowerPoint, up to 10 MB). A message can be just a file. The file shows as a card you tap to open, with how long it has left.
+- **Files expire.** They're removed 3 days after they're sent, so the free storage never fills up. Admin can make it 4 or 5 days in [[Settings]]. The message itself stays, with "Removed after 3 days" where the file was.
 - Messages arrive **live**: no refreshing. If the phone was offline or the app was in the background, it catches up as soon as it reconnects.
 
 ## Why it's here
@@ -30,5 +32,6 @@ These are short briefings (venue changes, what to focus on, missing documents), 
 ## Rules
 - The "who can message whom" table is enforced by the database. A lecturer can't even *see* a tutor from another module.
 - If a lecturer stops teaching a module, they lose access to those tutors' threads.
+- Only the sender and the recipient can open a file.
 
 Related: [[Unread and delivered]], [[Push notifications]]
