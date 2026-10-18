@@ -875,3 +875,24 @@ button.band__stats { width: 100%; background: none; border-left: 0; border-right
 .reach__track { height: 6px; margin-top: 6px; border-radius: 4px; background: var(--lineS); overflow: hidden; }
 .reach__track span { display: block; height: 100%; min-width: 4px; border-radius: 4px; background: var(--navy); }
 .reach__meta { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
+
+/* Tutors and lecturers: a small frosted-glass message button, top left, while something is unread. */
+.glassmsg {
+  position: relative; width: 34px; height: 34px; margin-left: -2px;
+  display: grid; place-items: center;
+  border-radius: 50%; color: #2f6fd6;
+  background: rgba(120, 170, 255, .16);
+  border: 1px solid rgba(110, 160, 245, .38);
+  -webkit-backdrop-filter: blur(14px) saturate(170%); backdrop-filter: blur(14px) saturate(170%);
+  animation: glassIn .35s var(--spring) both;
+  transition: transform .2s var(--spring), background .2s ease;
+}
+.glassmsg:active { transform: scale(.9); background: rgba(120, 170, 255, .26); }
+.glassmsg__n {
+  position: absolute; top: -4px; right: -5px; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 8px; display: grid; place-items: center;
+  background: #2f6fd6; color: #fff; font-size: 9.5px; font-weight: 700; line-height: 1;
+  border: 1.5px solid rgba(250, 250, 248, .95);
+}
+@keyframes glassIn { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .glassmsg { animation: none; } }

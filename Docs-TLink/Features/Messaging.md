@@ -35,3 +35,6 @@ These are short briefings (venue changes, what to focus on, missing documents), 
 - Only the sender and the recipient can open a file.
 
 Related: [[Unread and delivered]], [[Push notifications]]
+
+## Unread nudge
+Tutors and lecturers see a small frosted-glass message button, light blue, at the top left whenever they have unread messages (with the count). Tap it to jump to Messages. It hides once everything is read, and on the Messages tab itself.

@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { useAuth, type Profile } from '../lib/auth'
 import { Badge, Empty, NavBar, TabBar, type Tab } from '../ui/parts'
 import { haptic } from '../ui/haptic'
+import { Icon } from '../ui/icons'
 import { must, useQuery } from '../lib/data'
 import { supabase } from '../lib/supabase'
 import { displayName } from '../lib/types'
@@ -127,9 +128,19 @@ export function Portal() {
     ? <button className="chip chip--sm" onClick={flip} style={{ marginRight: -4 }}>{tutorView === 'tutor' ? 'Student' : 'Tutor'}</button>
     : null
 
+  // Tutors and lecturers: a small glass message button while something is unread (not on Messages itself).
+  const nudge = (view === 'tutor' || view === 'lecturer') && unread > 0 && tab !== 'inbox'
+    ? (
+      <button className="glassmsg" onClick={() => { haptic(8); setTab('inbox') }} aria-label={`${unread} unread message${unread === 1 ? '' : 's'}`}>
+        <Icon name="mail" size={17} stroke={1.9} />
+        <span className="glassmsg__n">{unread > 9 ? '9+' : unread}</span>
+      </button>
+    )
+    : null
+
   return (
     <>
-      <NavBar title={titles[tab]} right={switcher} />
+      <NavBar title={titles[tab]} left={nudge} right={switcher} />
       <div className="body">
         {tab === 'profile' ? (view === 'admin' ? <AdminSettings /> : <ProfileTab profile={profile} view={view} />)
           : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />
