@@ -41,9 +41,10 @@ const PORTALS: Record<View, { tabs: Tab<string>[]; titles: Record<string, string
     tabs: [
       { id: 'home', icon: 'home', label: 'Home' },
       { id: 'modules', icon: 'book', label: 'Modules' },
+      { id: 'checkin', icon: 'qr', label: 'Check in' },
       { id: 'profile', icon: 'user', label: 'Profile' },
     ],
-    titles: { home: 'TutorLink', modules: 'My modules', profile: 'Profile' },
+    titles: { home: 'TutorLink', modules: 'My modules', checkin: 'Check in', profile: 'Profile' },
   },
   tutor: {
     tabs: [
@@ -133,6 +134,7 @@ export function Portal() {
         {tab === 'profile' ? (view === 'admin' ? <AdminSettings /> : <ProfileTab profile={profile} view={view} />)
           : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />
           : view === 'student' && tab === 'modules' ? <MyModulesTab />
+          : view === 'student' && tab === 'checkin' ? <CheckIn inTab />
           : tab === 'inbox' ? <Inbox />
           : view === 'lecturer' && tab === 'home' ? <LecturerHome />
           : view === 'lecturer' && tab === 'attendance' ? <AttendanceIndex />

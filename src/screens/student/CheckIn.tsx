@@ -1,6 +1,7 @@
 /* Student → Check in. Point the camera at the tutor's QR, or type the code on the screen
    (6 letters in class, 4 digits online). Name, student number and qualification come from
-   your account. Also opened straight from a scanned link (?checkin=…). */
+   your account. Lives in its own tab for students; also opened straight from a scanned
+   link (?checkin=…), as a screen of its own. */
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CheckInResult } from '../../lib/attendance'
@@ -16,7 +17,7 @@ import { haptic } from '../../ui/haptic'
 
 type Attempt = { kind: 'token' | 'code'; value: string }
 
-export function CheckIn({ token }: { token?: string }) {
+export function CheckIn({ token, inTab = false }: { token?: string; inTab?: boolean }) {
   const { back } = useStack()
   const { openSheet } = useOverlay()
   const [result, setResult] = useState<CheckInResult | null>(null)
@@ -46,13 +47,20 @@ export function CheckIn({ token }: { token?: string }) {
     sent.current = true; haptic(10); submit({ kind: 'token', value: text })
   }, [submit])
 
+  // In the tab there's no screen to go back from: "Done" just readies the next check-in.
+  const done = () => {
+    haptic(8)
+    if (!inTab) { back(); return }
+    sent.current = false; setResult(null); setCode(''); setError('')
+  }
+  const frame = (title: string, body: React.ReactNode) => inTab
+    ? <div className="pad">{body}</div>
+    : <><NavBar title={title} left={<BackButton />} /><div className="body"><div className="pad">{body}</div></div></>
+
   const typed = (e: FormEvent) => { e.preventDefault(); sent.current = true; submit({ kind: 'code', value: code }) }
   const clean = code.replace(/[^a-z0-9]/gi, '')
 
-  if (result) return (
-    <>
-      <NavBar title="Checked in" left={<BackButton />} />
-      <div className="body"><div className="pad">
+  if (result) return frame('Checked in', (
         <div className="done">
           <span className="done__tick"><Icon name="check" size={34} stroke={2.4} /></span>
           <h2 className="display display--sm" style={{ marginTop: 18 }}>{result.already ? 'Already checked in' : 'You’re checked in'}</h2>
@@ -65,16 +73,12 @@ export function CheckIn({ token }: { token?: string }) {
             {result.venue ? <div className="payrow"><span className="muted">Venue</span><span>{result.venue}</span></div> : null}
             <div className="payrow"><span className="muted">Time</span><span>{hhmmOf(result.checked_in_at)}</span></div>
           </div>
-          <button className="btn" style={{ marginTop: 18 }} onClick={() => { haptic(8); back() }}>Done</button>
+          <button className="btn" style={{ marginTop: 18 }} onClick={done}>Done</button>
         </div>
-      </div></div>
-    </>
-  )
+  ))
 
-  return (
-    <>
-      <NavBar title="Check in" left={<BackButton />} />
-      <div className="body"><div className="pad">
+  return frame('Check in', (
+      <>
         {token ? (busy ? <Loading /> : null) : <Scanner onScan={onScan} paused={busy} />}
         {error ? (
           <div className="note note--red" style={{ marginTop: 14 }}><Icon name="alert" size={15} /><span>{error}</span></div>
@@ -89,9 +93,8 @@ export function CheckIn({ token }: { token?: string }) {
           </div>
         </form>
         <p className="small muted" style={{ marginTop: 8 }}>6 letters under the QR in class, or the 4-digit code on your tutor's shared screen online.</p>
-      </div></div>
-    </>
-  )
+      </>
+  ))
 }
 
 /* The camera. Uses the phone's own QR reader where there is one (Android), else a small library. */

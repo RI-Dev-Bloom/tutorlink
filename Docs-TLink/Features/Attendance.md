@@ -37,7 +37,7 @@ The date and start time are captured automatically.
 - Why it changes: a code forwarded to a friend who isn't in the session is dead by the time they type it. A short check-in window (e.g. 5 minutes) narrows it further.
 
 ## Checking in (student)
-- **Check in to a session** on the student home screen. Point the camera at the QR, or type the code.
+- The **Check in** tab in the bottom bar (next to Profile). Point the camera at the QR, or type the code.
 - Scanning the QR with the phone's normal camera also works: it opens TutorLink and checks them in (after signing in, if needed).
 - Their **name and surname, student number, qualification** (e.g. DISD) and the **time** come from their account. Nobody types a name, so nobody can check in a friend.
 - First check-in without a qualification? They pick it on the spot (it's also asked when they first sign up).

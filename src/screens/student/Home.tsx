@@ -1,4 +1,4 @@
-/* Student → Home. Check in to a session, your attendance per module (private to you),
+/* Student → Home. Your attendance per module (private to you),
    your modules and where your application stands. */
 
 import { useAuth } from '../../lib/auth'
@@ -13,7 +13,6 @@ import { SetupCard } from '../../ui/Setup'
 import { loadMyAttendance } from '../../lib/attendance'
 import { useStack } from '../../nav/Stack'
 import { AttendanceLines } from '../../ui/Progress'
-import { CheckIn } from './CheckIn'
 
 export function StudentHome({ go }: { go: (tab: string) => void }) {
   const { profile } = useAuth()
@@ -37,9 +36,6 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
       <p className="eyebrow">Rosebank International</p>
       <h2 className="display display--sm">Hi {first}</h2>
       <p className="sub">Your tutoring programme, in one place.</p>
-      <button className="btn" style={{ marginTop: 18 }} onClick={() => { haptic(10); push(<CheckIn />) }}>
-        <Icon name="calChk" size={18} /> Check in to a session
-      </button>
       <SetupCard />
 
       {att.data?.length ? (

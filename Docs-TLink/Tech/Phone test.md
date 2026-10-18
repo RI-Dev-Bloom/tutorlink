@@ -16,7 +16,7 @@ Test logins (tap the matching door: Admin, Tutor, Lecturer, Student): admin1@rbi
 
 ## 2. Check-in in class (tutor on phone A, student on phone B)
 - [ ] Tutor: **Start check-in** → In class, length 1 h, open for 10 min → Start. A QR code shows, with 6 letters underneath, both changing every 15 seconds.
-- [ ] Student (phone B): Home → **Check in to a session** → allow the camera → point at the QR. "You're checked in" with the module, tutor and time.
+- [ ] Student (phone B): the **Check in** tab → allow the camera → point at the QR. "You're checked in" with the module, tutor and time.
 - [ ] Tutor: the student's name appears within a few seconds, labelled **QR**.
 - [ ] Student: Home → **My attendance** shows the module line moving.
 - [ ] Scan the QR with the phone's **normal camera app** instead: it opens TutorLink and checks in (or says "Already checked in").

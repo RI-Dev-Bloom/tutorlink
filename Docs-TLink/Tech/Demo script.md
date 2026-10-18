@@ -22,7 +22,7 @@ The semester is in week 14 of 20, with real-looking history: about 30 sessions, 
 ## The flow
 1. **Admin overview** (admin1). The semester tracker, students reached, the to-do list, the payout building up to the semester end, the weekly chart, high-risk modules (how many students take each), reach by faculty.
 2. **Applications** (admin1). Naledi (Maths, 81%) is under review: open her results document, then **Approve**. Liam (62%) shows "Below 75%". Thabo is new.
-3. **Live check-in** (student3 on one phone, student4 on another). Megan: **Start check-in** → In class → 1 h → 10 min. Thabo: **Check in to a session** → scan the QR. His name appears on Megan's phone within seconds. Optionally **Show on a laptop** for the projector, and try an online code.
+3. **Live check-in** (student3 on one phone, student4 on another). Megan: **Start check-in** → In class → 1 h → 10 min. Thabo: the **Check in** tab → scan the QR. His name appears on Megan's phone within seconds. Optionally **Show on a laptop** for the projector, and try an online code.
 4. **Close and download** (student3). Close check-in → **Download register (PDF)**.
 5. **Confirm and pay** (admin1). To do → Megan's session → Confirm. Pay this semester → **Pay sheet** → download the CSV.
 6. **Lecturer** (lecturer1). Attendance tab: **Start a lecture check-in** (title Revision, topic of your choice) and let a student scan it. Below: recent lectures. Switch **Tutorials / Lectures** → Programming 1A: each student's rate, who has **never checked in**, the sessions, the CSV. Messages: the worksheet sent to Ayanda.
