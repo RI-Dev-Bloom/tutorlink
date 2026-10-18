@@ -6,6 +6,7 @@
    ============================================================ */
 
 :root {
+  --msg: #2f6fd6;   /* unread messages: the glass button, counts and dots */
   /* brand — carried over from the web app */
   --navy:    #0A2342;
   --mid:     #0E2A4D;
@@ -270,7 +271,7 @@ button.row:active { background: var(--bg); }
 .unread-count {
   min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px;
   display: inline-grid; place-items: center;
-  background: var(--gold); color: var(--navy); font-size: 11px; font-weight: 700;
+  background: var(--msg); color: #fff; font-size: 11px; font-weight: 700;
 }
 
 /* ---------- chips ---------------------------------------- */
@@ -333,7 +334,7 @@ button.row:active { background: var(--bg); }
   transition: border-color .3s var(--ease), background .3s var(--ease), transform .34s var(--spring);
 }
 .tl.mine::before   { border-color: var(--navy); background: var(--navy); }
-.tl.unread::before { border-color: var(--gold); background: var(--gold); transform: scale(1.22); }
+.tl.unread::before { border-color: var(--msg); background: var(--msg); transform: scale(1.22); }
 .tl.open::before   { transform: scale(1.3); }
 .tl-head { display: block; width: 100%; padding: 0; border: 0; background: none; color: inherit; text-align: left; }
 .tl-top { display: flex; align-items: baseline; gap: 10px; }
@@ -876,11 +877,12 @@ button.band__stats { width: 100%; background: none; border-left: 0; border-right
 .reach__track span { display: block; height: 100%; min-width: 4px; border-radius: 4px; background: var(--navy); }
 .reach__meta { display: block; margin-top: 4px; font-size: 11px; color: var(--muted); }
 
-/* Tutors and lecturers: a small frosted-glass message button, top left, while something is unread. */
+/* Tutors and lecturers: a small frosted-glass message button, top right just under the bar,
+   while something is unread. Floats over the page. */
 .glassmsg {
-  position: relative; width: 34px; height: 34px; margin-left: -2px;
+  position: absolute; z-index: 6; top: calc(var(--sat) + 76px); right: 14px; width: 36px; height: 36px;
   display: grid; place-items: center;
-  border-radius: 50%; color: #2f6fd6;
+  border-radius: 50%; color: var(--msg);
   background: rgba(120, 170, 255, .16);
   border: 1px solid rgba(110, 160, 245, .38);
   -webkit-backdrop-filter: blur(14px) saturate(170%); backdrop-filter: blur(14px) saturate(170%);
@@ -891,8 +893,10 @@ button.band__stats { width: 100%; background: none; border-left: 0; border-right
 .glassmsg__n {
   position: absolute; top: -4px; right: -5px; min-width: 16px; height: 16px; padding: 0 4px;
   border-radius: 8px; display: grid; place-items: center;
-  background: #2f6fd6; color: #fff; font-size: 9.5px; font-weight: 700; line-height: 1;
+  background: var(--msg); color: #fff; font-size: 9.5px; font-weight: 700; line-height: 1;
   border: 1.5px solid rgba(250, 250, 248, .95);
 }
 @keyframes glassIn { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .glassmsg { animation: none; } }
+
+.count.count--msg { background: var(--msg); color: #fff; }

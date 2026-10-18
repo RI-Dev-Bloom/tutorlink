@@ -1,5 +1,5 @@
 /* One thread with one person: a timeline, newest first. Tap a message to read it in full.
-   Gold dot: unread. Hollow ring: read. Navy: you sent it ("delivered" until they open it).
+   Blue dot: unread. Hollow ring: read. Navy: you sent it ("delivered" until they open it).
    A message can carry one file; files are removed after admin's setting (3–5 days). */
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'

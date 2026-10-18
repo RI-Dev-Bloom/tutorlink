@@ -128,7 +128,7 @@ export function Portal() {
     ? <button className="chip chip--sm" onClick={flip} style={{ marginRight: -4 }}>{tutorView === 'tutor' ? 'Student' : 'Tutor'}</button>
     : null
 
-  // Tutors and lecturers: a small glass message button while something is unread (not on Messages itself).
+  // Tutors and lecturers: a small glass message button, top right under the bar, while something is unread.
   const nudge = (view === 'tutor' || view === 'lecturer') && unread > 0 && tab !== 'inbox'
     ? (
       <button className="glassmsg" onClick={() => { haptic(8); setTab('inbox') }} aria-label={`${unread} unread message${unread === 1 ? '' : 's'}`}>
@@ -140,7 +140,8 @@ export function Portal() {
 
   return (
     <>
-      <NavBar title={titles[tab]} left={nudge} right={switcher} />
+      <NavBar title={titles[tab]} right={switcher} />
+      {nudge}
       <div className="body">
         {tab === 'profile' ? (view === 'admin' ? <AdminSettings /> : <ProfileTab profile={profile} view={view} />)
           : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />

@@ -1,5 +1,5 @@
 /* Messages tab (tutors, lecturers, admin): one row per person, newest first,
-   with a gold count for unread. "New message" picks from the people you're allowed to reach. */
+   with a blue count for unread. "New message" picks from the people you're allowed to reach. */
 
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../lib/auth'

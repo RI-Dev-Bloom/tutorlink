@@ -16,7 +16,7 @@ status: v1
 Students don't use messaging.
 
 ## What it does
-- The **Messages** tab lists one row per person, newest first: their name, a role tag, the latest topic and a gold count of unread messages.
+- The **Messages** tab lists one row per person, newest first: their name, a role tag, the latest topic and a blue count of unread messages.
 - **New message** lists only the people you're allowed to reach, with a search box.
 - One thread per pair of people. Admin can also open a thread straight from a tutor's or lecturer's page (the mail icon).
 - It looks like a timeline, not chat bubbles: a line down the left, a dot per message, the topic and how long ago. Tap a message to open the full text.
@@ -37,4 +37,4 @@ These are short briefings (venue changes, what to focus on, missing documents), 
 Related: [[Unread and delivered]], [[Push notifications]]
 
 ## Unread nudge
-Tutors and lecturers see a small frosted-glass message button, light blue, at the top left whenever they have unread messages (with the count). Tap it to jump to Messages. It hides once everything is read, and on the Messages tab itself.
+Tutors and lecturers see a small frosted-glass message button, light blue, at the top right just under the title bar, whenever they have unread messages (with the count). Tap it to jump to Messages. It hides once everything is read, and on the Messages tab itself.

@@ -35,7 +35,7 @@ export function TabBar<T extends string>({ tabs, current, onChange }: { tabs: Ta
           onClick={() => { haptic(6); onChange(t.id) }}>
           <span className="wrap">
             <Icon name={t.icon} size={21} />
-            {t.count ? <span className="count">{t.count}</span> : null}
+            {t.count ? <span className={'count' + (t.id === 'inbox' ? ' count--msg' : '')}>{t.count}</span> : null}
           </span>
           <span>{t.label}</span>
         </button>
