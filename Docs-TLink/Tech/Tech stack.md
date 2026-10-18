@@ -10,9 +10,9 @@ status: v1
 | Look | The demo's `styles.css`, carried over | The design is already done and approved. |
 | Installable / offline | PWA (`vite-plugin-pwa`) | Installs from the browser with no app store, so it costs R0. |
 | Hosting | GitHub Pages | Free. Every push to `main` deploys automatically through GitHub Actions. |
-| Database, logins, files | Supabase (free tier) | Postgres, Google sign-in, file storage and server functions in one place. |
+| Database, logins, files | Supabase (free tier) | Postgres, email-and-password sign-in, file storage and server functions in one place. |
 | Notifications | Web Push, sent from a Supabase Edge Function | Free and standard, with no Firebase needed. |
-| Emails | Gmail (tutorlink.ri@gmail.com) as the sender | Free, about 500 a day. Only used for staff invites and password resets. |
+| Emails | Gmail (tutorlink.ri@gmail.com) as the sender | Free, about 500 a day. Used for confirming new student accounts and password-reset links. |
 
 ## Notes
 - The app uses `#/` links (hash routing) because GitHub Pages can't handle app-style URLs otherwise.

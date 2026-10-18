@@ -1,8 +1,8 @@
-/* Admin → Lecturers: list and search, let a lecturer in by email (they sign in with Google,
-   no password), edit modules, give a password to someone without a Google email, remove. */
+/* Admin → Lecturers: list and search, add a lecturer by their @rbi.ac.za email (they get a
+   temporary word password to sign in with), edit modules, give a new password, remove. */
 
 import { useMemo, useState, type FormEvent } from 'react'
-import { adminUsers, appLink, invalidate, must, useQuery } from '../../lib/data'
+import { adminUsers, invalidate, must, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
 import { displayName, type Lecturer } from '../../lib/types'
 import { useStack } from '../../nav/Stack'
@@ -11,6 +11,8 @@ import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Empty, Loading, NavBar, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { ModulePicker } from '../../ui/ModulePicker'
+import { Credentials } from '../../ui/Credentials'
+import { STAFF_EMAIL } from '../../lib/auth'
 import { loadModules } from './Modules'
 import { Thread } from '../messages/Thread'
 
@@ -77,7 +79,7 @@ export function Lecturers() {
 
 /* ---------- add ------------------------------------------- */
 
-type Created = { email: string; password?: string; existing?: boolean }
+type Created = { email: string; password: string }
 
 function AddLecturer() {
   const modules = useQuery('modules', loadModules)
@@ -90,7 +92,7 @@ function AddLecturer() {
   const [error, setError] = useState('')
   const [created, setCreated] = useState<Created | null>(null)
 
-  const valid = first.trim() && last.trim() && /\S+@\S+\.\S+/.test(email) && picked.length > 0
+  const valid = first.trim() && last.trim() && STAFF_EMAIL.test(email.trim()) && picked.length > 0
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -113,8 +115,7 @@ function AddLecturer() {
       <>
         <NavBar title="Lecturer added" left={<BackButton />} />
         <div className="body"><div className="pad">
-          <Credentials heading={`${name} can sign in`} name={name} email={created.email} modules={moduleNames}
-            note={created.existing ? 'They had already signed in with this email, so that account is now their lecturer account.' : undefined} />
+          <Credentials heading={`${name} can sign in`} name={name} email={created.email} password={created.password} door="Lecturer" modules={moduleNames} />
         </div></div>
       </>
     )
@@ -159,7 +160,7 @@ function AddLecturer() {
         <button className="btn" style={{ marginTop: 20 }} disabled={busy || !valid}>
           {busy ? 'Letting them in…' : 'Let them in'}
         </button>
-        <p className="small muted" style={{ marginTop: 10 }}>No password needed. They sign in with Google using this email, and only this email gets lecturer access. You'll get a message to send them.</p>
+        <p className="small muted" style={{ marginTop: 10 }}>Use their Rosebank staff email (ending in @rbi.ac.za). You'll get a temporary password and a message to send them; they choose their own password the first time they sign in.</p>
       </form></div>
     </>
   )
@@ -224,9 +225,9 @@ function LecturerDetail({ id }: { id: string }) {
         <p className="small muted" style={{ marginTop: 10 }}>Removing a module hides its tutors from this lecturer and closes those message threads.</p>
 
         <div className="sect" style={{ marginTop: 26 }}>Sign-in</div>
-        <p className="small muted" style={{ marginBottom: 10 }}>Signs in with Google using <b>{l.email}</b>. If that email isn't a Google account, give them a password instead.</p>
+        <p className="small muted" style={{ marginBottom: 10 }}>Signs in with <b>{l.email}</b>. Forgot their password? They can tap "Forgot password?" on the sign-in screen, or you can give them a new one here.</p>
         <button className="btn btn--outline" onClick={() => openSheet(<ResetSheet lecturer={l} />)}>
-          <Icon name="shield" size={17} /> Give them a password
+          <Icon name="shield" size={17} /> Give them a new password
         </button>
 
         <div className="sect" style={{ marginTop: 26 }}>Leaving Rosebank?</div>
@@ -250,13 +251,13 @@ function ResetSheet({ lecturer: l }: { lecturer: Lecturer }) {
     setBusy(false)
   }
 
-  if (created) return <Credentials heading="Password ready" name={displayName(l)} email={created.email} password={created.password} />
+  if (created) return <Credentials heading="Password ready" name={displayName(l)} email={created.email} password={created.password} door="Lecturer" />
 
   return (
     <div>
       <p className="sheet-sub">Lecturer</p>
-      <h3 className="sheet-title">Give them a password?</h3>
-      <p className="sheet-lead">Only needed if {l.email} isn't a Google account. You'll get a password to send {displayName(l)}, and they choose their own when they sign in. Any password they had before stops working. Google sign-in keeps working either way.</p>
+      <h3 className="sheet-title">Give them a new password?</h3>
+      <p className="sheet-lead">You'll get a temporary password to send {displayName(l)}, and they choose their own when they sign in. The password they have now stops working.</p>
       {error ? <p className="err">{error}</p> : null}
       <button className="btn" style={{ marginTop: 18 }} onClick={reset} disabled={busy}>{busy ? 'Making one…' : 'Yes, make a password'}</button>
     </div>
@@ -284,59 +285,6 @@ function RemoveSheet({ lecturer: l, onRemoved }: { lecturer: Lecturer; onRemoved
       <p className="sheet-lead">They're signed out and can't sign in again. Their messages with tutors are deleted too. Tutors and sessions aren't affected. This can't be undone, but you can add them again later with the same email.</p>
       {error ? <p className="err">{error}</p> : null}
       <button className="btn btn--danger" style={{ marginTop: 18 }} onClick={remove} disabled={busy}>{busy ? 'Removing…' : 'Yes, remove them'}</button>
-    </div>
-  )
-}
-
-/* ---------- the message admin sends ----------------------- */
-
-function Credentials({ heading, name, email, password, modules, note }: {
-  heading: string; name: string; email: string; password?: string; modules?: string[]; note?: string
-}) {
-  const { toast } = useOverlay()
-  const steps = password
-    ? [
-        `Hi ${name}, here's how to sign in to TutorLink.`,
-        '',
-        `1. Open ${appLink()}`,
-        '2. Tap "Email and password"',
-        `Email: ${email}`,
-        `Password: ${password}`,
-        "(you'll choose your own password straight after)",
-      ]
-    : [
-        `Hi ${name}, you now have access to TutorLink, Rosebank's tutoring app.`,
-        '',
-        `1. Open ${appLink()}`,
-        `2. Tap "Sign in with Google" and choose ${email}`,
-        '',
-        'No password needed.',
-      ]
-  const message = [...steps, ...(modules?.length ? ['', `Your modules: ${modules.join(', ')}`] : [])].join('\n')
-
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(message); haptic(14); toast('Copied — paste it into WhatsApp or an email') }
-    catch { toast('Couldn’t copy — select the text instead') }
-  }
-  const share = async () => {
-    try { await navigator.share({ title: 'TutorLink sign-in', text: message }) } catch { /* cancelled */ }
-  }
-
-  return (
-    <div className="stagger">
-      <div className="note note--green"><Icon name="check" size={15} /><span><b>{heading}.</b> {password ? 'Send them this message. The password is only shown now.' : 'Send them this message so they know how to get in.'}</span></div>
-      <div className="card card--pad card--gold" style={{ marginTop: 14 }}>
-        <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--fb)', fontSize: 13.5, lineHeight: 1.65, userSelect: 'text', WebkitUserSelect: 'text' }}>{message}</pre>
-      </div>
-      {note ? <p className="small muted" style={{ marginTop: 10 }}>{note}</p> : null}
-      {password ? (
-        <div className="card card--pad" style={{ marginTop: 10 }}>
-          <span className="rmeta" style={{ marginTop: 0 }}>Password</span>
-          <span className="mono" style={{ fontSize: 22, letterSpacing: '.06em', userSelect: 'text', WebkitUserSelect: 'text' }}>{password}</span>
-        </div>
-      ) : null}
-      <button className="btn" style={{ marginTop: 16 }} onClick={copy}><Icon name="clip" size={18} /> Copy message</button>
-      {'share' in navigator ? <button className="btn btn--navy" onClick={share}>Share to WhatsApp…</button> : null}
     </div>
   )
 }

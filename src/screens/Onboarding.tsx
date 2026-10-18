@@ -1,5 +1,6 @@
-/* First sign-in for a student: confirm their name, add their student number (once),
-   and pick their qualification and year: that year's modules are added for them. */
+/* First sign-in for a student: confirm their name and pick their qualification and year
+   (that year's modules are added for them). The student number comes from their Rosebank
+   email; only an older account without one is asked for it. */
 
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
@@ -13,7 +14,8 @@ const STUDENT_NO = /^ST\d{8}$/
 export function Onboarding() {
   const { profile, reloadProfile, signOut } = useAuth()
   const [name, setName] = useState(profile?.full_name ?? '')
-  const [number, setNumber] = useState('')
+  const known = profile?.student_number ?? null
+  const [number, setNumber] = useState(known ?? '')
   const [study, setStudy] = useState<Study>({ qualification: profile?.qualification_code ?? null, year: profile?.study_year ?? null })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -26,7 +28,7 @@ export function Onboarding() {
     if (!profile || !valid) return
     setBusy(true); setError('')
     const { error: err } = await supabase.from('profiles')
-      .update({ full_name: name.trim(), student_number: clean })
+      .update(known ? { full_name: name.trim() } : { full_name: name.trim(), student_number: clean })
       .eq('id', profile.id)
     if (err) { haptic(24); setError(friendlyError(err)); setBusy(false); return }
     try { await saveStudy(study) } catch (e) { haptic(24); setError(friendlyError(e)); setBusy(false); return }
@@ -40,7 +42,7 @@ export function Onboarding() {
       <div className="body"><form className="pad" onSubmit={submit}>
         <p className="eyebrow">One-time setup</p>
         <h2 className="display display--sm">Tell us<br />who you are</h2>
-        <p className="sub">Your student number is how the programme office finds you. You can only set it once, so check it.</p>
+        <p className="sub">{known ? 'Check your name, then pick what you study. Your modules are added for you.' : 'Your student number is how the programme office finds you. You can only set it once, so check it.'}</p>
 
         <div style={{ marginTop: 24 }}>
           <div className="field">
@@ -49,10 +51,15 @@ export function Onboarding() {
           </div>
           <div className="field">
             <label htmlFor="f-num">Student number</label>
-            <input id="f-num" type="text" autoCapitalize="characters" autoComplete="off" placeholder="ST12345678"
-              className="mono" maxLength={10} value={number} onChange={e => setNumber(e.target.value)} required />
+            {known ? (
+              <input id="f-num" type="text" className="mono" value={known} readOnly aria-readonly />
+            ) : (
+              <input id="f-num" type="text" autoCapitalize="characters" autoComplete="off" placeholder="ST12345678"
+                className="mono" maxLength={10} value={number} onChange={e => setNumber(e.target.value)} required />
+            )}
           </div>
-          {number && !STUDENT_NO.test(clean) ? <p className="err">ST followed by 8 digits, e.g. ST12345678</p> : null}
+          {known ? <p className="small muted" style={{ marginTop: 6 }}>From your Rosebank email.</p> : null}
+          {!known && number && !STUDENT_NO.test(clean) ? <p className="err">ST followed by 8 digits, e.g. ST12345678</p> : null}
           <div className="field">
             <label>Your qualification</label>
             <StudyPicker value={study} onChange={setStudy} />

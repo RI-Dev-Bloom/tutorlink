@@ -7,7 +7,7 @@ status: v1
 **In short:** the last check before handover. Two people, one **iPhone** and one **Android** phone, about 45 minutes. Tick each line on both phones. Anything odd: screenshot it and send it to the developer.
 
 App: https://ri-dev-bloom.github.io/tutorlink/
-Test logins (tap **Email and password**): admin@gmail.com, tutor@gmail.com, lecturer@gmail.com, student@gmail.com. The password is shared privately; these accounts are removed at handover.
+Test logins (tap the matching door: Admin, Tutor, Lecturer, Student): admin1@rbi.ac.za, st10000001@rcconnect.edu.za (a tutor), lecturer1@rbi.ac.za, st10000004@rcconnect.edu.za. The password is shared privately; these accounts are removed at handover.
 
 ## 1. Install and notifications (each phone)
 - [ ] Open the link. iPhone: **Safari → Share → Add to Home Screen**. Android: **Install app** (or ⋮ → Add to Home screen).

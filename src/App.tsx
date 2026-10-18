@@ -29,7 +29,7 @@ export default function App() {
 
 /* Picks the root screen from who is signed in; a change cross-fades to the new root. */
 function Router() {
-  const { ready, session, profile, profileError } = useAuth()
+  const { ready, session, profile, profileError, recovering } = useAuth()
   const { reset } = useStack()
 
   const route =
@@ -37,8 +37,9 @@ function Router() {
     : !session ? 'welcome'
     : profileError ? 'error'
     : !profile ? 'loading'
+    : recovering ? 'recovery'
     : profile.must_change_password ? 'change-password'
-    : profile.role === 'student' && !profile.student_number ? 'onboarding'
+    : profile.role === 'student' && (!profile.student_number || !profile.qualification_code) ? 'onboarding'
     : `portal:${profile.id}`
 
   useEffect(() => {
@@ -46,6 +47,7 @@ function Router() {
     else if (route === 'welcome') reset(<Welcome />)
     else if (route === 'onboarding') reset(<Onboarding />)
     else if (route === 'change-password') reset(<ChangePassword />)
+    else if (route === 'recovery') reset(<ChangePassword why="recovery" />)
     else if (route === 'error') reset(<AccountError />)
     else reset(<Portal />)
   }, [route, reset])

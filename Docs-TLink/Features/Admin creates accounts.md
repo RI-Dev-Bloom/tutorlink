@@ -1,27 +1,27 @@
 ---
-status: v1
+status: v2
 ---
 
 # Admin creates accounts
 
-**In short:** nobody signs up as staff. Admin lets a lecturer's email in, and the lecturer signs in with Google. No password needed.
+**In short:** nobody signs up as staff. Admin adds a lecturer by their Rosebank email and sends them a temporary password.
 
 ## What it does
-- Admin taps **Add lecturer**, fills in title, name, surname, email and the modules they teach, and taps **Let them in**. Only admin can change those modules later.
-- The app shows a short message with a **Copy** button: open the app, tap **Sign in with Google**, pick that email. Admin pastes it into WhatsApp or an email.
-- Only that email gets lecturer access. Anyone else who signs in with Google is just a student.
-- Until they sign in for the first time, the lecturer shows **Not signed in yet**.
-- If the lecturer had already signed in with that email before admin added them (so they got a student account), adding them turns that account into their lecturer account.
-- **Email isn't a Google account?** Some school emails aren't. Admin opens the lecturer and taps **Give them a password**. The app makes one up to send them; they sign in with **Email and password** and choose their own straight away. The same button works if they forget it.
-- The lecturer list has a search box. Type any mix of title, name, surname, email or module code, e.g. "dr smith" or "PROG6221".
-- When a lecturer leaves, admin opens them and taps **Remove lecturer**. Their login and their message threads go. Tutors, sessions and pay aren't touched. They can be added again later with the same email.
-- The first admin account is created when the database is set up.
-- Tutors aren't created here. They come from approved applications ([[Approve and decline]]).
+- Admin taps **Add lecturer**, fills in title, name, surname, their `@rbi.ac.za` email and the modules they teach, and taps **Let them in**.
+- The app makes a temporary password from words, e.g. `BraveMango47`, `SunnyLemon12`: easy to read out or type from WhatsApp. It shows a ready message with **Copy** and **Share to WhatsApp**: open the app, tap **Lecturer**, the email and the password.
+- The first time they sign in, they choose their own password, and the temporary one stops working.
+- Until then, the lecturer shows **Not signed in yet**.
+- **Forgot their password?** They can use **Forgot password?** on the sign-in screen. Or admin opens the lecturer and taps **Give them a new password**.
+- **Anyone else locked out** (a student or tutor whose reset email didn't come): **Settings → Reset a password**, type their Rosebank email, and send them the new temporary password.
+- The lecturer list has a search box: any mix of title, name, surname, email or module code.
+- When a lecturer leaves, admin opens them and taps **Remove lecturer**. Their login and message threads go; tutors, sessions and pay aren't touched.
+- Tutors aren't created here. They're students whose applications were approved ([[Approve and decline]]).
 
-## Why it's here
-Letting anyone register as a lecturer or admin would let anyone read student records. Google sign-in means no passwords to send around or forget.
+## About the word passwords
+- Adjective + fruit + two digits, from about 140 adjectives and 60 fruits: roughly 750,000 possible passwords, picked truly at random.
+- That's enough because they're temporary and Supabase limits sign-in attempts.
 
 ## How it works
-Creating a login needs a "master key" that must never be in the app itself. So the app asks a small server function (a Supabase Edge Function) to do it, and that function checks that the person asking really is an admin. The account gets a long random password nobody knows, so Google is the only way in until admin gives them a password.
+Creating a login needs a "master key" that must never be in the app. So the app asks a small server function (a Supabase Edge Function) to do it, and that function checks the person asking really is an admin. It also puts the email on the staff list, because the database refuses any new account that isn't a Rosebank student email or on that list.
 
-Related: [[Roles]], [[Tech stack]]
+Related: [[Roles]], [[Student sign-in]], [[Tech stack]]

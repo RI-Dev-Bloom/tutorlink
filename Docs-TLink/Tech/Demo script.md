@@ -9,13 +9,13 @@ status: v1
 ## The cast
 | Login | Who |
 |---|---|
-| admin1@gmail.com | Nomsa Dlamini, programme admin (admin2, admin3 also exist) |
-| lecturer1@gmail.com | Dr Thandi Mokoena: Programming 1, Programming 2A |
-| lecturer2–4@gmail.com | Mr Johan Venter (Maths), Ms Lerato Khumalo (HCI, Databases), Prof Sipho Nkosi (Networking) |
-| student1@gmail.com | Ayanda Zulu, **tutor** for Programming 1A (Mondays 14:00, Lab 2) |
-| student2@gmail.com | Kagiso Molefe, **tutor** for Maths for IT (Tuesdays 13:00, Room 12) |
-| student3@gmail.com | Megan Botha, **tutor** for HCI (Thursdays 15:00, Lab 4) |
-| student4–7@gmail.com | Thabo, Naledi, Liam, Precious: students who attend sessions |
+| admin1@rbi.ac.za | Nomsa Dlamini, programme admin (admin2, admin3 also exist) |
+| lecturer1@rbi.ac.za | Dr Thandi Mokoena: Programming 1, Programming 2A |
+| lecturer2–4@rbi.ac.za | Mr Johan Venter (Maths), Ms Lerato Khumalo (HCI, Databases), Prof Sipho Nkosi (Networking) |
+| st10000001@rcconnect.edu.za | Ayanda Zulu, **tutor** for Programming 1A (Mondays 14:00, Lab 2) |
+| st10000002@rcconnect.edu.za | Kagiso Molefe, **tutor** for Maths for IT (Tuesdays 13:00, Room 12) |
+| st10000003@rcconnect.edu.za | Megan Botha, **tutor** for HCI (Thursdays 15:00, Lab 4) |
+| st10000004–7@rcconnect.edu.za | Thabo, Naledi, Liam, Precious: students who attend sessions |
 
 The semester is in week 14 of 20, with real-looking history: about 30 sessions, two public holidays cancelled, one session Kagiso forgot to check in, one online (Teams) session, and a walk-in added by hand.
 

@@ -18,6 +18,12 @@ export function friendlyError(e: unknown): string {
   if (msg.includes('profiles_student_number_key')) return 'That student number is already registered'
   if (msg.includes('profiles_student_number_check')) return 'Student numbers look like ST12345678'
   if (msg.includes('Invalid login credentials')) return 'That email and password don’t match'
+  if (msg.includes('Email not confirmed')) return 'Confirm your email first: open the link we sent to your Rosebank inbox'
+  if (msg.includes('User already registered')) return 'That email already has an account. Sign in instead, or reset your password'
+  if (msg.includes('Database error saving new user') || msg.includes('Rosebank student email'))
+    return 'Use your Rosebank student email, like st12345678@rcconnect.edu.za. If it’s right, it may already have an account: sign in instead'
+  if (msg.includes('Password should be at least')) return 'Use at least 8 characters'
+  if (msg.includes('rate limit') || msg.includes('over_email_send_rate_limit')) return 'Too many emails just now. Wait a few minutes, or ask admin for a new password'
   if (msg.includes('semesters_no_overlap')) return 'Those dates overlap another semester'
   if (msg.includes('semesters_check')) return 'The end date must be after the start date'
   if (msg.includes('modules_pkey')) return 'A module with that code already exists'

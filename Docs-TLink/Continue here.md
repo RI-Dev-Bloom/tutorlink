@@ -7,6 +7,18 @@ We're in **Phase 1**, building the real app in 8 small slices. **Slices 1–7 ar
 
 App: https://ri-dev-bloom.github.io/tutorlink/
 
+## Done: Rosebank sign-in (18 Oct)
+Sign-in now matches Rosebank: everyone uses their Rosebank email and a password (no Microsoft check, no Google).
+- **Staff** (lecturers and admin): `name@rbi.ac.za`, e.g. katshabalala@rbi.ac.za
+- **Students** (and tutors, who are students): `st########@rcconnect.edu.za`, e.g. st10398445@rcconnect.edu.za. The student number comes from the email, so they no longer type it.
+- **Google sign-in is gone.** No other emails are accepted; the database refuses them.
+- **Passwords:** students choose their own when they make their account. Staff get a temporary word password from admin (e.g. BraveMango47) and choose their own on first sign-in. **Forgot password?** emails a reset link; admin can also make a new temporary one (Settings → Reset a password).
+- **The first screen** has four buttons: **Student**, **Tutor**, **Lecturer**, **Admin**.
+- **Lecturers (and admin) can't sign up themselves.** Admin lets their email in first, as now; anyone else gets a polite "ask the programme office".
+- **Demo accounts** moved to Rosebank-style emails (see [[Demo script]]), same password, all data kept.
+- [ ] **You:** in Supabase, check the Gmail sender (SMTP) is set up so confirm and reset emails arrive, then switch off the Google provider. See the steps in the chat of 18 Oct.
+- [ ] **You:** decide what to do with the real Gmail accounts (yours, Chuma, Refiloe, Mosa, Dr Gorrah): they can't sign in any more until moved to Rosebank emails.
+
 ## What we've done lately
 - [x] **Rosebank's official list (15 Oct):** 32 qualifications and about 600 modules, by faculty. Students pick their qualification and year and that year's modules are added. Only admin adds modules. Lecturers see who never checked in, admin sees demand on high-risk modules and reach by faculty, and module lists have search and faculty filters
 - [x] **Lecture check-ins (15 Oct):** lecturers run their own, and every check-in has a title and topic

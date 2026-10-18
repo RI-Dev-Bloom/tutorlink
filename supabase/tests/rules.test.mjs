@@ -72,8 +72,8 @@ await db.query(`insert into auth.users (id, email, raw_app_meta_data, raw_user_m
   ($1, 'admin@x', '{"role":"admin"}', '{"full_name":"Admin"}'),
   ($2, 'lect@x', '{"role":"lecturer"}', '{"full_name":"Lecturer One"}'),
   ($5, 'lect2@x', '{"role":"lecturer"}', '{"full_name":"Lecturer Two"}'),
-  ($3, 'stu@gmail.com', '{}', '{"name":"Stu Dent"}'),
-  ($4, 'stu2@gmail.com', '{}', '{"name":"Other Student"}')`,
+  ($3, 'stu@x', '{"role":"student"}', '{"name":"Stu Dent"}'),
+  ($4, 'stu2@x', '{"role":"student"}', '{"name":"Other Student"}')`,
   [ids.admin, ids.lect, ids.stu, ids.stu2, ids.lect2])
 
 console.log('\nprofiles')
@@ -421,7 +421,7 @@ await denied('signed-in users cannot run the filter', () => as(ids.admin, `selec
 console.log('\nattendance')
 const S3 = '00000000-0000-0000-0000-000000000031', S4 = '00000000-0000-0000-0000-000000000032', S5 = '00000000-0000-0000-0000-000000000033'
 await db.query(`insert into auth.users (id, email, raw_user_meta_data) values
-  ($1, 's3@x', '{"name":"Thandi Three"}'), ($2, 's4@x', '{"name":"Four Student"}'), ($3, 's5@x', '{"name":"Five Student"}')`, [S3, S4, S5])
+  ($1, 'st30000031@rcconnect.edu.za', '{"name":"Thandi Three"}'), ($2, 'st30000032@rcconnect.edu.za', '{"name":"Four Student"}'), ($3, 'st30000033@rcconnect.edu.za', '{"name":"Five Student"}')`, [S3, S4, S5])
 await db.query(`update public.profiles set student_number = 'ST300000' || right(id::text, 2) where id in ($1, $2, $3)`, [S3, S4, S5])
 await db.query(`update public.profiles set qualification_code = 'DISD' where id in ($1, $2)`, [S4, S5])
 const today = (await db.query(`select (now() at time zone 'Africa/Johannesburg')::date::text d`)).rows[0].d
@@ -626,7 +626,7 @@ await ok('tutors title their check-ins too', async () => {
 
 console.log('\nqualifications and modules')
 const S6 = '00000000-0000-0000-0000-000000000041'
-await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 's6@x', '{"name":"Nandi New"}')`, [S6])
+await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 'ST40000041@RCconnect.edu.za', '{"name":"Nandi New"}')`, [S6])
 await db.query(`update public.profiles set student_number = 'ST40000041' where id = $1`, [S6])
 await ok("a student picks qualification and year: that year's modules are added", async () => {
   eq((await as(S6, `select public.set_my_study('DISD0601', 2) n`))[0].n, 8, 'added')
@@ -663,6 +663,24 @@ await ok('reach by faculty, from the qualification on each check-in', async () =
   if (!rows.some(r => r.faculty === 'Information and Communications Technology' && r.students >= 1)) throw new Error(JSON.stringify(rows))
   return rows
 })
+
+console.log('\nRosebank emails')
+await denied('a Gmail account cannot sign up', () => db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'someone@gmail.com')`), 'Rosebank student email')
+await denied('a staff email cannot sign itself up', () => db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'katshabalala@rbi.ac.za')`), 'Rosebank student email')
+await denied('a student-looking email on another domain is refused', () => db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'st10398445@gmail.com')`))
+await ok('a student email signs up, and the number comes from it', async () => {
+  const [{ id }] = (await db.query(`insert into auth.users (id, email, raw_user_meta_data) values (gen_random_uuid(), 'St10398445@rcconnect.edu.za', '{"full_name":"Kat Student"}') returning id`)).rows
+  return eq((await db.query(`select role::text, student_number, email from public.profiles where id = $1`, [id])).rows[0],
+    { role: 'student', student_number: 'ST10398445', email: 'st10398445@rcconnect.edu.za' }, 'profile')
+})
+await ok('the earlier students got their numbers from their emails too', async () => eq((await db.query(`select student_number from public.profiles where id = $1`, [S6])).rows[0].student_number, 'ST40000041', 'number'))
+await denied('the same student number cannot sign up twice', () => db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'st10398445@rcconnect.edu.za')`))
+await ok('a staff email admin let in can be created', async () => {
+  await db.query(`insert into public.staff_invites (email) values ('katshabalala@rbi.ac.za')`)
+  const [{ id }] = (await db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'katshabalala@rbi.ac.za') returning id`)).rows
+  return eq((await db.query(`select student_number from public.profiles where id = $1`, [id])).rows[0].student_number, null, 'no student number')
+})
+await denied('nobody in the app can read the invite list', () => as(ids.admin, `select * from public.staff_invites`))
 
 console.log('\nsigned-out users')
 await ok('anon sees nothing', async () => {

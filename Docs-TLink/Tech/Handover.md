@@ -15,7 +15,7 @@ One Google account owns everything: **tutorlink.ri@gmail.com**. Hand over its pa
 | The code, and the daily/weekly jobs | GitHub, organisation **RI-Dev-Bloom** (repo `tutorlink`) | tutorlink.ri@gmail.com |
 | Weekly backups | GitHub, **private** repo `RI-Dev-Bloom/tutorlink-backups` | same |
 | Database, logins, files | Supabase project **pdxupuheclywmtkrbykt** | same |
-| Google sign-in | Google Cloud project for TutorLink | same |
+| Google sign-in (switched off: everyone uses Rosebank emails now) | Google Cloud project for TutorLink | same |
 | These notes | the `Docs-TLink` folder in the repo (open it in Obsidian) | — |
 
 ## What runs by itself
@@ -34,7 +34,9 @@ One Google account owns everything: **tutorlink.ri@gmail.com**. Hand over its pa
 
 **Open modules for tutor applications.** Settings → **High-risk modules**: switch on the modules that need tutors.
 
-**A lecturer joins.** Settings → Lecturers → **Add lecturer** → copy the message and send it. They sign in with Google. If their email isn't a Google account: open them → **Give them a password**.
+**A lecturer joins.** Settings → Lecturers → **Add lecturer** with their @rbi.ac.za email → copy the message (it has a temporary password) and send it. They tap **Lecturer**, sign in, and choose their own password.
+
+**Someone forgot their password.** They tap **Forgot password?** for an email link. If it doesn't come: Settings → **Reset a password** → send them the new temporary one.
 
 **A lecturer leaves.** Settings → Lecturers → open them → **Remove lecturer**.
 
@@ -58,11 +60,11 @@ The backup holds all records (people, sessions, attendance, messages). Uploaded 
 - The database decides who sees what (lecturers only their modules, tutors only their sessions, students only themselves). It's tested automatically on every change.
 - Secret keys live only in Supabase and in GitHub secrets, never in the app.
 - The backup repo holds student records: **keep it private**.
-- Supabase's "leaked password protection" is a paid feature. It only matters for the few staff email-and-password logins; everyone else uses Google.
+- Supabase's "leaked password protection" is a paid feature. Everyone now signs in with a password, so ask people to pick one they don't use elsewhere.
 
 ## Before handing over (checklist)
 - [x] Old test accounts and test data removed (15 Oct 2026).
-- [ ] Remove the **demo** accounts `admin1–3@`, `lecturer1–4@`, `student1–7@gmail.com` (see [[Demo script]]) and everything they made: sessions, check-ins, messages, applications, uploaded results files and the HCIT qualification if Rosebank doesn't use it.
+- [ ] Remove the **demo** accounts `admin1–3@rbi.ac.za`, `lecturer1–4@rbi.ac.za`, `st10000001–7@rcconnect.edu.za` (see [[Demo script]]) and everything they made: sessions, check-ins, messages, applications, uploaded results files and the HCIT qualification if Rosebank doesn't use it.
 - [ ] Check the real settings: semester dates, **rate per hour**, minimum mark, minimum attendance, high-risk modules.
 - [ ] Change the **database password** (Supabase → Database → Settings), then update the `SUPABASE_DB_URL` secret on GitHub so backups keep working. Run the Backup job once by hand (GitHub → Actions → Backup → Run workflow) to check.
 - [ ] Change the tutorlink.ri@gmail.com password and hand it over.

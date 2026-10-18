@@ -32,6 +32,7 @@ import { TutorSessions } from './tutor/Sessions'
 import { loadMyTutorModules } from '../lib/student'
 import { StudentHome } from './student/Home'
 import { MyModulesTab } from './student/Modules'
+import { ChangePassword } from './ChangePassword'
 
 type View = 'student' | 'tutor' | 'lecturer' | 'admin'
 
@@ -159,6 +160,7 @@ const ROLE_LINE: Record<View, string> = {
 function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
   const { signOut } = useAuth()
   const { openSheet } = useOverlay()
+  const { push } = useStack()
   return (
     <div className="pad stagger">
       <SHead name={displayName(profile) || profile.email} line={`${ROLE_LINE[view]} · Rosebank International`} gold={view === 'lecturer'} />
@@ -180,6 +182,7 @@ function ProfileTab({ profile, view }: { profile: Profile; view: View }) {
       <DeviceSettings />
 
       <Group>
+        <SRow label="Change my password" onClick={() => push(<ChangePassword why="change" />)} />
         <SRow label="Sign out" danger onClick={signOut} />
       </Group>
       <p className="app-foot">TutorLink · Rosebank International</p>

@@ -18,6 +18,8 @@ import { HighRiskModules, Modules, loadModules } from './Modules'
 import { Lecturers } from './Lecturers'
 import { Templates } from './Templates'
 import { Qualifications } from './Qualifications'
+import { ResetPasswordSheet } from './ResetPassword'
+import { ChangePassword } from '../ChangePassword'
 
 export function AdminSettings() {
   const { profile, signOut } = useAuth()
@@ -90,6 +92,7 @@ export function AdminSettings() {
         <SRow icon="board" tone="gold" label="Lecturers" sub="Let lecturers in, set their modules" onClick={() => push(<Lecturers />)} />
         <SRow icon="book" tone="navy" label="Modules" sub="The official list, by faculty" onClick={() => push(<Modules />)} />
         <SRow icon="cap" tone="slate" label="Qualifications" sub="By faculty, e.g. DISD0601" onClick={() => push(<Qualifications />)} />
+        <SRow icon="shield" tone="red" label="Reset a password" sub="For anyone who can't get in" onClick={() => openSheet(<ResetPasswordSheet />)} />
       </Group>
 
       <DeviceSettings />
@@ -97,6 +100,7 @@ export function AdminSettings() {
       {settings.error || semesters.error ? <p className="err">{settings.error || semesters.error}</p> : null}
 
       <Group>
+        <SRow label="Change my password" onClick={() => push(<ChangePassword why="change" />)} />
         <SRow label="Sign out" danger onClick={signOut} />
       </Group>
       <p className="app-foot">TutorLink · Rosebank International</p>

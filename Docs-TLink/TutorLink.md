@@ -20,12 +20,12 @@ It's a web app you install on your phone (a PWA). It runs on free services only:
 
 ## Getting in
 
-### Students sign in with Google
-**What —** Students tap "Sign in with Google" using their normal Gmail. First time in, they enter their student number (ST12345678).
-**Why —** No passwords for us to manage, and the student number makes them easy for admin to look up. → [[Student sign-in]]
+### Everyone signs in with their Rosebank email
+**What —** Four doors on the first screen: Student, Tutor, Lecturer, Admin. Students make their own account with st########@rcconnect.edu.za (the student number comes from it); staff use @rbi.ac.za.
+**Why —** It matches the emails Rosebank already gives everyone, and only Rosebank people can get in. → [[Student sign-in]]
 
 ### Staff accounts are created by admin
-**What —** Admin is set up in the database. Admin creates lecturer accounts. Nobody can sign up as staff.
+**What —** Admin is set up in the database. Admin creates lecturer accounts and sends a temporary word password (e.g. BraveMango47). Nobody can sign up as staff.
 **Why —** Letting anyone register as a lecturer or admin would be an obvious security hole. → [[Admin creates accounts]]
 
 ### Install the app
