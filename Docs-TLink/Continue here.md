@@ -17,7 +17,7 @@ Sign-in now matches Rosebank: everyone uses their Rosebank email and a password 
 - **Lecturers (and admin) can't sign up themselves.** Admin lets their email in first, as now; anyone else gets a polite "ask the programme office".
 - **Demo accounts** moved to Rosebank-style emails (see [[Demo script]]), same password, all data kept.
 - [ ] **You:** in Supabase, check the Gmail sender (SMTP) is set up so confirm and reset emails arrive, then switch off the Google provider. See the steps in the chat of 18 Oct.
-- [ ] **You:** decide what to do with the real Gmail accounts (yours, Chuma, Refiloe, Mosa, Dr Gorrah): they can't sign in any more until moved to Rosebank emails.
+- [x] Real accounts: Dylan and Chuma moved to their Rosebank student emails (all data kept); the two test accounts (Refiloe, Mosa) removed. Dr Gorrah's lecturer account still uses Gmail until we have his @rbi.ac.za email.
 
 ## What we've done lately
 - [x] **Rosebank's official list (15 Oct):** 32 qualifications and about 600 modules, by faculty. Students pick their qualification and year and that year's modules are added. Only admin adds modules. Lecturers see who never checked in, admin sees demand on high-risk modules and reach by faculty, and module lists have search and faculty filters
