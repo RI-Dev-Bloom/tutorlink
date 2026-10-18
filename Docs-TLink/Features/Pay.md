@@ -18,7 +18,7 @@ There's no "mark as paid" in the app. The app keeps the count; Rosebank does the
 - **Confirmed so far** this semester, as a big figure.
 - A bar showing the three parts: confirmed, waiting for admin to confirm, and still scheduled. Plus what it **could reach** if every scheduled session runs.
 - When the semester ends, so they know when the money comes.
-- A list of this semester's confirmed sessions, and **Download statement (CSV)**.
+- A list of this semester's confirmed sessions, and **Download statement (PDF)**: an A4 page in navy and gold with the confirmed total, sessions and hours, what's still waiting, and every confirmed session (date, module, session title and topic, students, hours, amount).
 - Earlier semesters, one line each with what they earned.
 
 ## What admin sees

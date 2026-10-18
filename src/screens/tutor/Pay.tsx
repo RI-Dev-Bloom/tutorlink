@@ -1,6 +1,7 @@
 /* Tutor → Pay. Pay works per semester: each session admin confirms counts towards the total,
    and Rosebank pays it all once the semester has ended. Plus a statement and earlier semesters. */
 
+import { useState } from 'react'
 import { useAuth } from '../../lib/auth'
 import { useQuery } from '../../lib/data'
 import { earned, estimate, fDay, isEarned, loadSemesters, totalHours } from '../../lib/tutors'
@@ -10,6 +11,8 @@ import { Ledger } from '../../ui/Ledger'
 import { useOverlay } from '../../ui/Overlay'
 import { Badge, Loading } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
+import { friendlyError } from '../../lib/supabase'
+import { loadModules } from '../admin/Modules'
 import { useMine } from './mine'
 
 export function TutorPay() {
@@ -17,6 +20,8 @@ export function TutorPay() {
   const { toast } = useOverlay()
   const m = useMine()
   const semesters = useQuery('semesters', loadSemesters)
+  const modules = useQuery('modules', loadModules)
+  const [busy, setBusy] = useState(false)
 
   if (m.loading) return <Loading />
   if (m.error || !m.d) return <p className="err pad">{m.error}</p>
@@ -36,18 +41,20 @@ export function TutorPay() {
     .map(s => ({ s, total: earned(m.d!.sessions, s.id), n: m.d!.sessions.filter(x => x.semester_id === s.id && isEarned(x)).length }))
     .filter(x => x.n)
 
-  const exportCsv = () => {
-    const rows = [['Date', 'Module', 'Students', 'Hours', 'Rate per hour (R)', 'Amount (R)']]
-    for (const s of [...statement].reverse()) rows.push([s.session_date, s.module_code, String(s.students_attended ?? ''), String(Number(s.hours)), String(Number(s.rate ?? 0)), String(Number(s.amount ?? 0))])
-    rows.push([], ['Total', '', '', String(totalHours(statement)), '', String(earned(mine, semId))])
-    const csv = rows.map(r => r.map(c => /[",\n]/.test(c) ? `"${c.replace(/"/g, '""')}"` : c).join(',')).join('\r\n')
-    const url = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv' }))   // BOM so Excel reads it right
-    const a = Object.assign(document.createElement('a'), {
-      href: url, download: `TutorLink statement - ${profile!.full_name} - ${m.sem?.name ?? today}.csv`,
-    })
-    document.body.append(a); a.click(); a.remove()
-    setTimeout(() => URL.revokeObjectURL(url), 10_000)
-    haptic(12); toast('Statement downloaded')
+  const download = async () => {
+    setBusy(true)
+    try {
+      const { downloadStatement } = await import('../../lib/statement-pdf')
+      const names = new Map((modules.data ?? []).map(x => [x.code, x.name]))
+      await downloadStatement({
+        tutor: profile!.full_name, studentNumber: profile!.student_number,
+        semester: m.sem?.name ?? 'This semester', startsOn: m.sem?.starts_on ?? null, endsOn: m.sem?.ends_on ?? null,
+        ratePerHour: m.rate, waiting: { n: waiting.length, amount: estimate(waiting, m.rate) },
+        moduleName: code => names.get(code) ?? '',
+      }, statement)
+      haptic(12); toast('Statement downloaded')
+    } catch (e) { haptic(24); toast(friendlyError(e)) }
+    setBusy(false)
   }
 
   return (
@@ -85,8 +92,8 @@ export function TutorPay() {
         </div>
       ) : <p className="small muted">Nothing confirmed yet. Sessions show up here once admin confirms them.</p>}
 
-      <button className="btn btn--outline" style={{ marginTop: 16 }} disabled={!statement.length} onClick={exportCsv}>
-        <Icon name="down" size={16} /> Download statement (CSV)
+      <button className="btn btn--outline" style={{ marginTop: 16 }} disabled={busy || !statement.length} onClick={download}>
+        <Icon name="down" size={16} /> {busy ? 'Preparing…' : 'Download statement (PDF)'}
       </button>
 
       {earlier.length ? (
