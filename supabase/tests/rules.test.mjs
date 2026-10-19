@@ -3,6 +3,12 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const MIG = process.argv[2]
+
+// The tests are written around mid-October 2026 (a session on 19 Oct is "in the future").
+// Run the database's clock as if it were 14 Oct 2026, 10:00 SAST, whatever today is.
+const realNow = Date.now.bind(Date)
+const shift = Date.parse('2026-10-14T08:00:00Z') - realNow()
+Date.now = () => realNow() + shift
 const db = new PGlite()
 
 // --- stand-ins for what Supabase provides -------------------------------
