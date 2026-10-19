@@ -7,6 +7,10 @@ We're in **Phase 1**, building the real app in 8 small slices. **Slices 1–7 ar
 
 App: https://ri-dev-bloom.github.io/tutorlink/
 
+## Emails are paused (19 Oct)
+For testing, the app sends **no emails**. Students make an account (Rosebank email + password) and go straight in: a small server function (student-signup) makes the account already confirmed. **Forgot password?** tells people to ask admin, who uses Settings → Reset a password.
+- [ ] Later, to turn Outlook emails back on: set up the Gmail sender (SMTP) in Supabase, switch sign-up back to email confirmation, and use a **6-digit code** instead of a link. Rosebank's Outlook scans links before people open them, which uses up one-time links ("link expired").
+
 ## Done: Rosebank sign-in (18 Oct)
 Sign-in now matches Rosebank: everyone uses their Rosebank email and a password (no Microsoft check, no Google).
 - **Staff** (lecturers and admin): `name@rbi.ac.za`, e.g. katshabalala@rbi.ac.za

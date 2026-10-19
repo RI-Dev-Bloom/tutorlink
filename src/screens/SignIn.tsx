@@ -152,7 +152,25 @@ function CheckInbox({ email }: { email: string }) {
   )
 }
 
-function ForgotPassword({ email: start }: { email: string }) {
+/* Emails are paused for now, so a forgotten password goes through the programme office.
+   (The email version is kept below as ForgotPasswordByEmail for when emails are back.) */
+function ForgotPassword(_: { email: string }) {
+  return (
+    <>
+      <NavBar title="Forgot password" left={<BackButton />} />
+      <div className="body"><div className="pad">
+        <h2 className="display display--sm">Forgot your<br />password?</h2>
+        <p className="sub">Ask the programme office. They'll give you a new temporary password straight away, and you choose your own when you sign in.</p>
+        <div className="note note--plain" style={{ marginTop: 18 }}>
+          <Icon name="shield" size={15} />
+          <span>Admin: Settings → <b>Reset a password</b>, then type their Rosebank email.</span>
+        </div>
+      </div></div>
+    </>
+  )
+}
+
+export function ForgotPasswordByEmail({ email: start }: { email: string }) {
   const { sendPasswordReset } = useAuth()
   const [email, setEmail] = useState(start)
   const [busy, setBusy] = useState(false)

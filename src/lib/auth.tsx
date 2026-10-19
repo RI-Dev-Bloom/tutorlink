@@ -106,15 +106,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
       if (error) throw error
     },
+    // Emails are paused: the server makes the account already confirmed, then we sign in.
     signUpStudent: async (email, password, fullName) => {
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(), password,
-        options: { emailRedirectTo: appUrl(), data: { full_name: fullName.trim() } },
-      })
-      if (error) throw error
-      // With "confirm email" on, an address that already has an account comes back with no identities.
-      if (data.user && !data.user.identities?.length) throw new Error('User already registered')
-      return !data.session
+      const addr = email.trim().toLowerCase()
+      const { error } = await supabase.functions.invoke('student-signup', { body: { email: addr, password, full_name: fullName.trim() } })
+      if (error) {
+        const ctx = (error as { context?: Response }).context
+        const msg = ctx ? await ctx.json().then(j => j.error).catch(() => null) : null
+        throw new Error(msg || error.message)
+      }
+      const { error: e2 } = await supabase.auth.signInWithPassword({ email: addr, password })
+      if (e2) throw e2
+      return false
     },
     sendPasswordReset: async email => {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: appUrl() })
