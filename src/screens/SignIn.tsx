@@ -145,7 +145,7 @@ function CheckInbox({ email }: { email: string }) {
       <NavBar title="Check your email" left={<BackButton />} />
       <div className="body"><div className="pad">
         <div className="note note--green"><Icon name="mail" size={15} /><span><b>Nearly there.</b> We sent a link to {email}.</span></div>
-        <p className="sub" style={{ marginTop: 16 }}>Open your Rosebank inbox (Outlook) and tap the link to confirm your email. It brings you straight back here, signed in. You only do this once.</p>
+        <p className="sub" style={{ marginTop: 16 }}>Open your Rosebank inbox (Outlook) and tap the link to confirm your email. Then come back here and sign in with your email and password. You only do this once.</p>
         <p className="small muted" style={{ marginTop: 14 }}>Nothing after a few minutes? Check Junk, then try again or ask the programme office.</p>
       </div></div>
     </>
