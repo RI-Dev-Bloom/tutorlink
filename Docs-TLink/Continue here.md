@@ -72,6 +72,7 @@ Sign-in now matches Rosebank: everyone uses their Rosebank email and a password 
 ## Later phases
 - [ ] Phase 2: student module page and announcements from tutors
 - [ ] Phase 3: quizzes (self-paced and live)
+- [ ] Better PC look and feel: wider layouts on a laptop or desktop screen, not just the phone view stretched
 - [x] Phase 4: attendance (brought forward and done: slices 9 and 10)
 
 ## How far along (15 Oct)
