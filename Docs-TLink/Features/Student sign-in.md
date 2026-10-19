@@ -8,7 +8,7 @@ status: v2
 
 ## Students and tutors
 1. Tap **Student** (or **Tutor**: the same account, it just opens the tutor view first).
-2. **Create account** is already selected: name, surname, Rosebank student email () and a password (6+ characters, with a Show button to check it).
+2. **Create account** is already selected: name, surname, Rosebank student email (st12345678@rcconnect.edu.za) and a password (6+ characters, with a Show button to check it).
 3. Tap **Create account** and you're on your dashboard. No email, no extra screens.
 4. Everything else comes later: your qualification and modules (Modules tab), and the qualification is also asked the first time you check in.
 5. Next time: **Sign in** with the same email and password. Tapping Create account again with the right password just signs you in.
