@@ -7,13 +7,13 @@ status: v2
 **In short:** everyone signs in with their Rosebank email and a password. The first screen has four doors: **Student**, **Tutor**, **Lecturer**, **Admin**.
 
 ## Students and tutors
-1. Tap **Student** (or **Tutor**, which is the same account and just opens the tutor view first).
-2. First time: tap **Create account**, then enter your name, your Rosebank student email (`st12345678@rcconnect.edu.za`) and a password (8+ characters).
-3. You're signed in straight away. (No email for now: emails are paused while we test.)
-4. Pick your qualification and year ([[Module picker]]). Your student number comes from your email, so you don't type it.
-5. After that: **Sign in** with the same email and password.
+1. Tap **Student** (or **Tutor**: the same account, it just opens the tutor view first).
+2. **Create account** is already selected: name, surname, Rosebank student email () and a password (6+ characters, with a Show button to check it).
+3. Tap **Create account** and you're on your dashboard. No email, no extra screens.
+4. Everything else comes later: your qualification and modules (Modules tab), and the qualification is also asked the first time you check in.
+5. Next time: **Sign in** with the same email and password. Tapping Create account again with the right password just signs you in.
 
-A student who taps **Tutor** but isn't a tutor yet just sees the student view, with **Apply to become a tutor** in Profile.
+Your student number comes from your email, so you never type it.
 
 ## Lecturers and admin
 - Can't make their own account. Admin adds them first ([[Admin creates accounts]]) and sends them a temporary password like `BraveMango47`.

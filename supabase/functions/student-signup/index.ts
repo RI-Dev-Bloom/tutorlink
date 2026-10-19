@@ -30,7 +30,7 @@ Deno.serve(async req => {
   const full_name = String(body.full_name ?? '').trim().slice(0, 120)
 
   if (!STUDENT.test(email)) return json({ error: 'Use your Rosebank student email, like st12345678@rcconnect.edu.za' }, 400)
-  if (password.length < 8) return json({ error: 'Use at least 8 characters' }, 400)
+  if (password.length < 6) return json({ error: 'Use at least 6 characters' }, 400)
   if (full_name.length < 2) return json({ error: 'Enter your full name' }, 400)
 
   const admin = createClient(URL, SECRET, { auth: { persistSession: false, autoRefreshToken: false } })

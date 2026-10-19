@@ -39,7 +39,7 @@ function Router() {
     : !profile ? 'loading'
     : recovering ? 'recovery'
     : profile.must_change_password ? 'change-password'
-    : profile.role === 'student' && (!profile.student_number || !profile.qualification_code) ? 'onboarding'
+    : profile.role === 'student' && !profile.student_number ? 'onboarding'
     : `portal:${profile.id}`
 
   useEffect(() => {

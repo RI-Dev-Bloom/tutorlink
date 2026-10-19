@@ -900,3 +900,9 @@ button.band__stats { width: 100%; background: none; border-left: 0; border-right
 @media (prefers-reduced-motion: reduce) { .glassmsg { animation: none; } }
 
 .count.count--msg { background: var(--msg); color: #fff; }
+
+/* Password field with a Show/Hide button inside it. */
+.passin { position: relative; }
+.passin input { padding-right: 64px; }
+.passin__show { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--goldD); font-size: 12.5px; font-weight: 600; }
+.passin__show:active { background: var(--goldBg); }

@@ -25,11 +25,13 @@ export function SignIn({ door }: { door: Door }) {
   const { signInWithPassword, signUpStudent } = useAuth()
   const { push } = useStack()
   const canCreate = isStudentDoor(door)
-  const [mode, setMode] = useState<'in' | 'new'>('in')
-  const [name, setName] = useState('')
+  // Students start on Create account: most people opening it today are new.
+  const [mode, setMode] = useState<'in' | 'new'>(canCreate ? 'new' : 'in')
+  const [first, setFirst] = useState('')
+  const [last, setLast] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [password2, setPassword2] = useState('')
+  const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
 
@@ -41,12 +43,9 @@ export function SignIn({ door }: { door: Door }) {
     : !canCreate && STUDENT_EMAIL.test(addr) ? 'That’s a student email: go back and tap Student'
     : canCreate && STAFF_EMAIL.test(addr) ? 'That’s a staff email: go back and tap Lecturer or Admin'
     : ''
-  const passHint =
-    creating && password && password.length < 8 ? 'At least 8 characters'
-    : creating && password2 && password !== password2 ? 'The two passwords don’t match'
-    : ''
+  const passHint = creating && password && password.length < 6 ? 'At least 6 characters' : ''
   const valid = creating
-    ? name.trim().length > 1 && STUDENT_EMAIL.test(addr) && password.length >= 8 && password === password2
+    ? first.trim().length > 0 && last.trim().length > 0 && STUDENT_EMAIL.test(addr) && password.length >= 6
     : !!addr && !!password
 
   const submit = async (e: FormEvent) => {
@@ -56,14 +55,18 @@ export function SignIn({ door }: { door: Door }) {
     rememberView(door)
     try {
       if (creating) {
-        const mustConfirm = await signUpStudent(addr, password, name)
-        haptic(14)
-        if (mustConfirm) { setBusy(false); push(<CheckInbox email={addr.toLowerCase()} />) }
-        // Otherwise they're signed in, and the app moves on by itself.
+        try {
+          await signUpStudent(addr, password, `${first.trim()} ${last.trim()}`)
+        } catch (err) {
+          // Already made an account earlier? Just sign them in with what they typed.
+          if (!/already registered/i.test(String((err as Error)?.message))) throw err
+          try { await signInWithPassword(addr, password) }
+          catch { throw new Error('That email already has an account, and the password doesn’t match. Tap Sign in and try again') }
+        }
       } else {
         await signInWithPassword(addr, password)
-        haptic(14)   // the app swaps to the right portal by itself
       }
+      haptic(14)   // signed in: the app moves to the dashboard by itself
     } catch (err) {
       haptic(24); setError(friendlyError(err)); setBusy(false)
     }
@@ -77,23 +80,29 @@ export function SignIn({ door }: { door: Door }) {
       <div className="body"><form className="pad" onSubmit={submit}>
         <h2 className="display display--sm">{creating ? <>Make your<br />account</> : <>Welcome<br />back</>}</h2>
         <p className="sub">
-          {creating ? 'Use your Rosebank student email. Your student number comes from it.'
+          {creating ? 'Takes a few seconds. Use your Rosebank student email.'
             : canCreate ? 'Sign in with your Rosebank student email.'
             : 'Sign in with your Rosebank staff email and the password admin sent you.'}
         </p>
 
         {canCreate ? (
           <div className="seg" style={{ marginTop: 20 }}>
-            <button type="button" className={mode === 'in' ? 'on' : ''} onClick={() => switchMode('in')}>Sign in</button>
             <button type="button" className={mode === 'new' ? 'on' : ''} onClick={() => switchMode('new')}>Create account</button>
+            <button type="button" className={mode === 'in' ? 'on' : ''} onClick={() => switchMode('in')}>Sign in</button>
           </div>
         ) : null}
 
         <div style={{ marginTop: 16 }}>
           {creating ? (
-            <div className="field">
-              <label htmlFor="f-name">Full name</label>
-              <input id="f-name" type="text" autoComplete="name" value={name} onChange={e => setName(e.target.value)} />
+            <div className="btnrow" style={{ gap: 10 }}>
+              <div className="field" style={{ flex: 1, marginTop: 0 }}>
+                <label htmlFor="f-first">Name</label>
+                <input id="f-first" type="text" autoComplete="given-name" autoCapitalize="words" value={first} onChange={e => setFirst(e.target.value)} />
+              </div>
+              <div className="field" style={{ flex: 1, marginTop: 0 }}>
+                <label htmlFor="f-last">Surname</label>
+                <input id="f-last" type="text" autoComplete="family-name" autoCapitalize="words" value={last} onChange={e => setLast(e.target.value)} />
+              </div>
             </div>
           ) : null}
           <div className="field">
@@ -105,15 +114,12 @@ export function SignIn({ door }: { door: Door }) {
           {emailHint ? <p className="small muted" style={{ marginTop: 6 }}>{emailHint}</p> : null}
           <div className="field">
             <label htmlFor="f-pass">{creating ? 'Choose a password' : 'Password'}</label>
-            <input id="f-pass" type="password" autoComplete={creating ? 'new-password' : 'current-password'}
-              value={password} onChange={e => setPassword(e.target.value)} />
-          </div>
-          {creating ? (
-            <div className="field">
-              <label htmlFor="f-pass2">Type it again</label>
-              <input id="f-pass2" type="password" autoComplete="new-password" value={password2} onChange={e => setPassword2(e.target.value)} />
+            <div className="passin">
+              <input id="f-pass" type={show ? 'text' : 'password'} autoComplete={creating ? 'new-password' : 'current-password'}
+                value={password} onChange={e => setPassword(e.target.value)} />
+              <button type="button" className="passin__show" onClick={() => { haptic(4); setShow(s => !s) }} aria-pressed={show}>{show ? 'Hide' : 'Show'}</button>
             </div>
-          ) : null}
+          </div>
           {passHint ? <p className="err">{passHint}</p> : null}
           {error ? <p className="err">{error}</p> : null}
         </div>
@@ -121,17 +127,17 @@ export function SignIn({ door }: { door: Door }) {
         <button className="btn" style={{ marginTop: 18 }} disabled={busy || !valid}>
           {busy ? (creating ? 'Making your account…' : 'Signing in…') : creating ? 'Create account' : 'Sign in'}
         </button>
-        {!creating ? (
-          <button type="button" className="btn btn--outline" style={{ marginTop: 9 }} onClick={() => { haptic(6); push(<ForgotPassword email={addr} />) }}>
-            Forgot password?
-          </button>
-        ) : null}
 
         {!canCreate ? (
-          <div className="note note--plain" style={{ marginTop: 16 }}>
-            <Icon name="alert" size={15} />
-            <span>Staff accounts are made by the programme office. New here? Ask admin to add you, and they'll send you a password.</span>
-          </div>
+          <>
+            <button type="button" className="btn btn--outline" style={{ marginTop: 9 }} onClick={() => { haptic(6); push(<ForgotPassword email={addr} />) }}>
+              Forgot password?
+            </button>
+            <div className="note note--plain" style={{ marginTop: 16 }}>
+              <Icon name="alert" size={15} />
+              <span>Staff accounts are made by the programme office. New here? Ask admin to add you, and they'll send you a password.</span>
+            </div>
+          </>
         ) : null}
       </form></div>
     </>
@@ -139,7 +145,7 @@ export function SignIn({ door }: { door: Door }) {
 }
 
 /* After making an account, when Rosebank email confirmation is on. */
-function CheckInbox({ email }: { email: string }) {
+export function CheckInbox({ email }: { email: string }) {
   return (
     <>
       <NavBar title="Check your email" left={<BackButton />} />
