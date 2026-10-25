@@ -848,26 +848,24 @@ button.srow:active { background: var(--bg); }
 .att__track i { position: absolute; top: -3px; width: 1px; height: 12px; background: var(--muted2); }
 .att__meta { margin-top: 7px; font-size: 11.5px; color: var(--muted); }
 
-/* the student's stamp card */
-.stamps__head { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--lineS); }
-.stamps__big { font-family: var(--fh); font-size: 46px; font-weight: 700; line-height: .9; color: var(--navy); font-variant-numeric: lining-nums tabular-nums; }
-.stamps__sub { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.stamps__sub b { font-size: 14px; }
-.stamps__sub span { font-size: 12px; color: var(--muted); }
-.stamp-row + .stamp-row { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--lineS); }
-.stamp-row__top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
-.stamp-row__stamps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
-.stamp { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; border: 1.5px dashed var(--muted2); color: var(--navy); }
-.stamp--on { border: 0; background: var(--gold); animation: stampin .4s var(--ease) both; }
-.stamp--empty { opacity: .5; }
-.stamp-row__more { font-size: 12px; font-weight: 600; color: var(--muted); }
-@keyframes stampin { from { transform: scale(.4) rotate(-20deg); opacity: 0; } }
-.seal { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
-.seal--mid { background: var(--amberBg); color: var(--amber); }
-.seal--good { background: var(--greenBg); color: var(--green); }
-.seal--star { background: var(--navy); color: var(--gold); }
-.seal--star svg { fill: currentColor; }
-@media (prefers-reduced-motion: reduce) { .stamp--on { animation: none; } }
+/* the student's attendance: one line per module, dots that fill in gold */
+.attl { padding: 4px 16px; }
+.attl__row { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+.attl__row + .attl__row { border-top: 1px solid var(--lineS); }
+.attl__label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
+.attl__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 600; }
+.attl__kind { flex: 0 0 auto; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); font-size: 9.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.attl__dots { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; }
+.attl__dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--lineS); box-shadow: inset 0 0 0 1px var(--line); }
+.attl__dots i.on { background: var(--gold); box-shadow: none; animation: dotin .5s var(--ease) both; }
+.attl__more { margin-left: 2px; font-size: 10.5px; color: var(--muted); }
+@keyframes dotin { 0% { background: var(--lineS); transform: scale(.4); } 60% { transform: scale(1.5); } 100% { transform: scale(1); } }
+.attl__n { flex: 0 0 auto; min-width: 42px; display: inline-flex; align-items: center; justify-content: flex-end; gap: 3px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
+.attl__n b { font-weight: inherit; }
+.attl__n span { font-weight: 500; color: var(--muted); }
+.attl__row.good .attl__n { color: var(--goldD); }
+.attl__n svg { color: var(--gold); fill: currentColor; animation: dotin .6s var(--ease) .9s both; }
+@media (prefers-reduced-motion: reduce) { .attl__dots i.on, .attl__n svg { animation: none; } }
 
 /* ---------- the projector screen (?show=…) ------------------- */
 
