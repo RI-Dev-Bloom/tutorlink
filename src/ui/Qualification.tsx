@@ -1,10 +1,10 @@
-/* A student's qualification and year of study. Picking them adds that year's modules
+/* A student's qualification and year of study. Picking them adds that year's modules for this semester
    (electives, like a home language, they tick themselves under Modules).
    Used when they first sign up, in Profile, and at a first check-in. */
 
 import { useMemo, useState } from 'react'
 import { useAuth } from '../lib/auth'
-import { facultiesOf, loadQualificationModules, loadQualifications, shortQual, yearsIn } from '../lib/catalogue'
+import { facultiesOf, inTerm, loadQualificationModules, loadQualifications, shortQual, useTerm, yearsIn } from '../lib/catalogue'
 import { invalidate, must, useQuery } from '../lib/data'
 import { friendlyError, supabase } from '../lib/supabase'
 import { Icon } from './icons'
@@ -20,9 +20,10 @@ export function StudyPicker({ value, onChange }: { value: Study; onChange: (s: S
   const [browsing, setBrowsing] = useState(!value.qualification)
   const chosen = (all.data ?? []).find(x => x.code === value.qualification)
   const mods = useQuery(`qual-modules:${value.qualification ?? ''}`, () => value.qualification ? loadQualificationModules(value.qualification) : Promise.resolve([]))
+  const term = useTerm()
   const years = yearsIn(mods.data ?? [])
-  const adds = (mods.data ?? []).filter(m => m.year === value.year && !m.elective)
-  const electives = (mods.data ?? []).filter(m => m.year === value.year && m.elective).length
+  const adds = (mods.data ?? []).filter(m => m.year === value.year && !m.elective && inTerm(m.module_code, term))
+  const electives = (mods.data ?? []).filter(m => m.year === value.year && m.elective && inTerm(m.module_code, term)).length
 
   const groups = useMemo(() => {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean)
@@ -47,7 +48,7 @@ export function StudyPicker({ value, onChange }: { value: Study; onChange: (s: S
       {value.year ? (
         mods.loading ? <Loading /> : (
           <div className="adds">
-            <p className="small muted">These {adds.length} modules are added for you:</p>
+            <p className="small muted">This semester's {adds.length} modules are added for you:</p>
             <div className="chips" style={{ marginTop: 8 }}>
               {adds.map(m => <span key={m.module_code} className="chip chip--static chip--sm"><span className="code">{m.module_code}</span>{m.modules?.name}</span>)}
             </div>

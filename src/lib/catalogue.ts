@@ -1,9 +1,11 @@
 /* Rosebank's official catalogue: qualifications (by faculty), the modules in each with
    their year of study, plus the counts built on it (demand, who's missing, reach by faculty). */
 
-import { must } from './data'
+import { must, useQuery } from './data'
 import { supabase } from './supabase'
 import type { Kind } from './attendance'
+import { currentSemester, loadSemesters } from './tutors'
+import { todayISO } from './types'
 
 export type Qualification = { code: string; name: string; hidden: boolean; faculty: string | null }
 export type QualModule = { module_code: string; year: number | null; elective: boolean; modules: { name: string } | null }
@@ -37,6 +39,23 @@ export const shortQual = (name: string) => name.replace(/^IIE /, '').replace(/In
 /* Faculties in a steady order, from the qualifications list. */
 export const facultiesOf = (qs: Qualification[]) =>
   [...new Set(qs.filter(q => !q.hidden && q.faculty).map(q => q.faculty!))].sort()
+
+/* Rosebank module codes end in their semester: ...1 or ...3 is semester 1, ...2 or ...4 semester 2,
+   anything else (...0, ...9) runs the whole year. Same rule as public.module_term in the database. */
+export type Term = 1 | 2
+export const termOf = (code: string): Term | null => {
+  const d = code.slice(-1)
+  return d === '1' || d === '3' ? 1 : d === '2' || d === '4' ? 2 : null
+}
+export const inTerm = (code: string, term: Term) => (termOf(code) ?? term) === term
+export const termLabel = (code: string) => { const t = termOf(code); return t ? `Semester ${t}` : 'Whole year' }
+
+/* The semester we're in (or the next one), from its start date: Jan–Jun is 1, Jul–Dec is 2. */
+export function useTerm(): Term {
+  const sems = useQuery('semesters', loadSemesters)
+  const start = currentSemester(sems.data ?? [])?.starts_on ?? todayISO()
+  return Number(start.slice(5, 7)) <= 6 ? 1 : 2
+}
 
 /* How many years a qualification runs, from the years its modules are in. */
 export const yearsIn = (mods: QualModule[]) => Math.max(1, ...mods.map(m => m.year ?? 1))

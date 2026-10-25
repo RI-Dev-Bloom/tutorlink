@@ -4,7 +4,7 @@
 
 import { useEffect, useState, type FormEvent } from 'react'
 import { useAuth } from '../../lib/auth'
-import { METHOD, SESSION_TITLES, displayLink, checkinLink, hhmmOf, loadAttendance, minsLeft, useLive, type AttendanceRow } from '../../lib/attendance'
+import { METHOD, SESSION_TITLES, displayLink, checkinLink, hhmmOf, loadAttendance, useLive, type AttendanceRow } from '../../lib/attendance'
 import { invalidate, must, useQuery } from '../../lib/data'
 import { friendlyError, supabase } from '../../lib/supabase'
 import { SESSION_COLS, fDay, hhmm, sessionLabel, type Session } from '../../lib/tutors'
@@ -15,6 +15,7 @@ import { BackButton, Badge, Loading, NavBar, initials } from '../../ui/parts'
 import { QR } from '../../ui/QR'
 import { downloadRegister } from '../../lib/register-pdf'
 import { haptic } from '../../ui/haptic'
+import { HiddenCode, LiveCounter } from '../../ui/LiveCount'
 
 type SessionRow = Session & { modules: { name: string } | null; tutor: { full_name: string; title: string } | null }
 
@@ -224,8 +225,8 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
         {open && live?.mode === 'class' && live.token ? (
           <div className="checkin">
             <QR value={checkinLink(live.token)} label={`Check-in QR code for ${session.module_code}`} />
-            <div className="checkin__code" aria-label="Or type this code">{live.code}</div>
-            <p className="checkin__hint">Students: <b>Check in</b> in TutorLink and scan, or type the code. It changes every 15 seconds.</p>
+            <HiddenCode code={live.code} className="checkin__code" />
+            <p className="checkin__hint">Students: <b>Check in</b> in TutorLink and scan. The typed code stays hidden so it can't be sent to someone who isn't here: tap it to show it for someone whose camera won't scan. It changes every 15 seconds.</p>
             <div className="btnrow" style={{ marginTop: 12 }}>
               <button className="btn btn--outline btn--sm" onClick={shareScreen}><Icon name="share" size={15} /> Show on a laptop</button>
             </div>
@@ -244,10 +245,9 @@ export function SessionScreen({ sessionId }: { sessionId: string }) {
         ) : null}
 
         {open ? (
-          <div className="checkin__bar">
-            <span><b>{rows.length}</b> checked in · closes in {minsLeft(live?.closes_at)}</span>
+          <LiveCounter count={Math.max(rows.length, live?.count ?? 0)} closesAt={live?.closes_at} names={rows.map(r => r.full_name)}>
             <button className={'btn btn--sm ' + (closing ? 'btn--danger' : 'btn--outline')} onClick={close}>{closing ? 'Yes, close it' : 'Close check-in'}</button>
-          </div>
+          </LiveCounter>
         ) : (
           <div className="card card--pad" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className="rmain">

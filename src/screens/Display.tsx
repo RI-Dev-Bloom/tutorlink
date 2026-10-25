@@ -4,6 +4,7 @@
 import { checkinLink, minsLeft, useLive } from '../lib/attendance'
 import { supabase } from '../lib/supabase'
 import { QR } from '../ui/QR'
+import { HiddenCode } from '../ui/LiveCount'
 
 export function Display({ id }: { id: string }) {
   const { live, error } = useLive(() => supabase.rpc('checkin_display', { p_display: id }), id)
@@ -38,7 +39,7 @@ export function Display({ id }: { id: string }) {
         ) : null}
         <div className="show__side">
           <p className="show__step">Open <b>TutorLink</b> on your phone, tap <b>Check in</b> and {live.mode === 'online' ? 'type this code.' : 'scan the code.'}</p>
-          {live.mode !== 'online' ? <><p className="show__label">Or type</p><p className="show__code">{live.code}</p></> : null}
+          {live.mode !== 'online' ? <><p className="show__label">Or type</p><HiddenCode code={live.code} className="show__code" /></> : null}
           <p className="show__count"><b>{live.count ?? 0}</b> checked in</p>
           <p className="show__small">{live.tutor ? `${live.tutor}'s ${live.kind === 'lecture' ? 'lecture' : 'session'} · ` : ''}closes in {minsLeft(live.closes_at)}{live.mode === 'online' ? ' · the code changes every 30 seconds' : ' · the code changes every 15 seconds'}</p>
         </div>

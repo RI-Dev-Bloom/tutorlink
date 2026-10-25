@@ -787,6 +787,34 @@ button.srow:active { background: var(--bg); }
 .checkin__hint { margin-top: 10px; font-size: 12.5px; line-height: 1.55; color: var(--muted); max-width: 300px; }
 .checkin__bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding: 12px 14px; background: var(--card); border: 1px solid var(--line); border-radius: var(--rl); font-size: 13px; color: var(--muted); }
 .checkin__bar b { font-size: 16px; color: var(--text); }
+
+/* the typed code, blurred until tapped */
+.hidecode { display: flex; flex-direction: column; align-items: center; gap: 2px; background: none; border: 0; cursor: pointer; font: inherit; color: inherit; }
+.hidecode__text { font: inherit; letter-spacing: inherit; transition: filter .25s ease; user-select: none; -webkit-user-select: none; }
+.hidecode--off .hidecode__text { filter: blur(9px); }
+.hidecode__tag { font-family: var(--fb, inherit); font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--goldD); }
+
+/* the live counter: a ring that runs down until check-in closes, the count inside */
+.counter { display: flex; align-items: center; gap: 18px; margin-top: 12px; padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--rl); }
+.counter__ring { position: relative; flex: 0 0 auto; width: 118px; height: 118px; display: grid; place-items: center; align-content: center; }
+.counter__ring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.counter__track { fill: none; stroke: var(--line); stroke-width: 7; }
+.counter__time { fill: none; stroke: var(--gold); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke .3s; }
+.counter__ring--late .counter__time { stroke: var(--red); }
+.counter__num { position: relative; font-family: var(--fh); font-size: 40px; font-weight: 700; line-height: 1; color: var(--text); font-variant-numeric: lining-nums tabular-nums; animation: bump .45s ease-out; }
+.counter__label { position: relative; margin-top: 3px; font-size: 11px; color: var(--muted); }
+@keyframes bump { 0% { transform: scale(1.35); color: var(--goldD); } 100% { transform: scale(1); } }
+.counter__side { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.counter__eyebrow { font-family: var(--fm); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.counter__clock { font-family: var(--fm); font-size: 24px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+.counter__ring--late + .counter__side .counter__clock { color: var(--red); }
+.counter__faces { display: flex; align-items: center; margin: 10px 0 12px; min-height: 30px; }
+.counter__face { width: 30px; height: 30px; margin-left: -7px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--card); background: var(--navy); color: #fff; font-size: 10.5px; font-weight: 700; animation: facein .35s ease-out; }
+.counter__face:first-child { margin-left: 0; background: var(--gold); color: var(--navy); }
+.counter__more { margin-left: 6px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.counter__wait { font-size: 12px; color: var(--muted); }
+@keyframes facein { from { transform: translateX(-8px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .counter__num, .counter__face { animation: none; } .counter__time { transition: none; } }
 .iconbtn--danger { color: var(--red); background: var(--redBg); }
 
 /* ---------- check-in (student) ------------------------------- */

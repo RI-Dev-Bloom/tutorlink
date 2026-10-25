@@ -97,6 +97,26 @@ export function CheckIn({ token, inTab = false }: { token?: string; inTab?: bool
   ))
 }
 
+/* The camera is kept while the app is open, so the phone asks for it once rather than every
+   time the Check in tab opens (home-screen apps on iPhone ask again for every new camera
+   request). It's let go a minute after leaving the tab, or as soon as the app goes into the
+   background, so the camera light doesn't stay on. */
+let held: MediaStream | null = null
+let release = 0
+const live = (m: MediaStream | null) => !!m && m.getVideoTracks().some(t => t.readyState === 'live')
+const dropCamera = () => { clearTimeout(release); held?.getTracks().forEach(t => t.stop()); held = null }
+async function getCamera() {
+  clearTimeout(release)
+  if (live(held)) { held!.getVideoTracks().forEach(t => { t.enabled = true }); return held! }
+  held = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+  return held
+}
+function letGoOfCamera() {
+  held?.getVideoTracks().forEach(t => { t.enabled = false })
+  clearTimeout(release); release = window.setTimeout(dropCamera, 60_000)
+}
+if (typeof document !== 'undefined') document.addEventListener('visibilitychange', () => { if (document.hidden) dropCamera() })
+
 /* The camera. Uses the phone's own QR reader where there is one (Android), else a small library. */
 function Scanner({ onScan, paused }: { onScan: (text: string) => void; paused: boolean }) {
   const video = useRef<HTMLVideoElement>(null)
@@ -110,9 +130,9 @@ function Scanner({ onScan, paused }: { onScan: (text: string) => void; paused: b
     const start = async () => {
       if (!navigator.mediaDevices?.getUserMedia) { setState('none'); return }
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+        stream = await getCamera()
       } catch { setState('blocked'); return }
-      if (stopped) { stream.getTracks().forEach(t => t.stop()); return }
+      if (stopped) { letGoOfCamera(); return }
       const v = video.current!
       v.srcObject = stream; await v.play().catch(() => {}); setState('on')
 
@@ -142,7 +162,7 @@ function Scanner({ onScan, paused }: { onScan: (text: string) => void; paused: b
       tick()
     }
     if (!paused) start()
-    return () => { stopped = true; clearTimeout(timer); stream?.getTracks().forEach(t => t.stop()) }
+    return () => { stopped = true; clearTimeout(timer); if (stream) { if (video.current) video.current.srcObject = null; letGoOfCamera() } }
   }, [onScan, paused])
 
   return (

@@ -66,8 +66,10 @@ Sign-in now matches Rosebank: everyone uses their Rosebank email and a password 
 - [x] Slice 8 so far: every tab checked on the live site for every role, Supabase security/speed review done, [[Phone test]] script and [[Handover]] runbook written
 - [ ] **You and the team:** run the [[Phone test]] on a real iPhone and Android
 - [x] Old test data removed; **demo data** set up for the stakeholder demo (16 Oct): see [[Demo script]]
-- [ ] Clear demo activity (sessions, attendance, messages, open applications), keep accounts and subjects. SQL ready; not run yet (19 Oct)
-- [ ] After the demo: remove the demo accounts and data
+- [x] Demo accounts and all activity removed (25 Oct). Real students, Dr Gorrah and the main admin kept, with their modules
+- [x] Modules per semester, blurred check-in code, live counter ring, camera asked once (25 Oct)
+- [ ] Apply the database part of modules per semester (migration 26): needs your OK for Claude to run it
+- [ ] Old files in storage from the demo (16 result uploads, 1 register): delete in Supabase → Storage if wanted
 - [ ] Handover: change the database password and the tutorlink.ri@gmail.com password
 
 ## Later phases

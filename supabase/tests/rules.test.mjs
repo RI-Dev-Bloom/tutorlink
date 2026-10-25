@@ -634,11 +634,18 @@ console.log('\nqualifications and modules')
 const S6 = '00000000-0000-0000-0000-000000000041'
 await db.query(`insert into auth.users (id, email, raw_user_meta_data) values ($1, 'ST40000041@RCconnect.edu.za', '{"name":"Nandi New"}')`, [S6])
 await db.query(`update public.profiles set student_number = 'ST40000041' where id = $1`, [S6])
-await ok("a student picks qualification and year: that year's modules are added", async () => {
-  eq((await as(S6, `select public.set_my_study('DISD0601', 2) n`))[0].n, 8, 'added')
+await ok('module codes give the semester: ...1 first, ...2 second, ...9 the whole year', async () => {
+  const r = (await db.query(`select public.module_term('PROG5121') a, public.module_term('PROG6112') b, public.module_term('XISD5319') c, public.module_term('PSYC7324') d`)).rows[0]
+  return eq(r, { a: 1, b: 2, c: null, d: 2 }, 'terms')
+})
+await ok("a student picks qualification and year: that year's modules for this semester are added", async () => {
+  const term = (await db.query(`select public.current_term() t`)).rows[0].t
+  // DISD0601 year 2: four semester-1 modules, four semester-2 ones.
+  eq((await as(S6, `select public.set_my_study('DISD0601', 2) n`))[0].n, 4, 'added')
   const p = (await db.query(`select qualification_code, study_year from public.profiles where id = $1`, [S6])).rows[0]
   eq(p, { qualification_code: 'DISD0601', study_year: 2 }, 'profile')
-  return eq((await db.query(`select count(*)::int n from public.student_modules where student_id = $1 and module_code = 'HCIN6222'`, [S6])).rows[0].n, 1, 'HCIN6222')
+  eq((await db.query(`select count(*)::int n from public.student_modules where student_id = $1 and public.module_term(module_code) <> $2`, [S6, term])).rows[0].n, 0, 'none from the other semester')
+  return eq((await db.query(`select count(*)::int n from public.student_modules where student_id = $1 and module_code = $2`, [S6, term === 2 ? 'HCIN6222' : 'DATA6211'])).rows[0].n, 1, 'this semester')
 })
 await ok('electives are not added for them', async () => {
   await as(S6, `select public.set_my_study('HCEC0501', 1)`)

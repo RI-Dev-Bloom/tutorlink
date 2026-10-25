@@ -1,10 +1,10 @@
-/* Student → My modules. They come from the student's qualification and year (added when
-   they signed up); here they tick or untick, pick electives, or find a module from another
-   qualification (e.g. one they're repeating). The list itself is admin's. */
+/* Student → My modules. They come from the student's qualification and year, for this
+   semester (added when they signed up); here they tick or untick, pick electives, or find a
+   module from another qualification (e.g. one they're repeating). The list itself is admin's. */
 
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../lib/auth'
-import { loadQualificationModules, loadQualifications, shortQual } from '../../lib/catalogue'
+import { inTerm, loadQualificationModules, loadQualifications, shortQual, termLabel, useTerm } from '../../lib/catalogue'
 import { invalidate, must, useQuery } from '../../lib/data'
 import { loadMyModules } from '../../lib/student'
 import { friendlyError, supabase } from '../../lib/supabase'
@@ -23,6 +23,18 @@ export function MyModulesTab() {
   const mine = useQuery(`my-modules:${profile!.id}`, () => loadMyModules(profile!.id))
   const quals = useQuery('qualifications', loadQualifications)
   const qual = (quals.data ?? []).find(q => q.code === profile!.qualification_code)
+  const term = useTerm()
+  const now = (mine.data ?? []).filter(m => inTerm(m.module_code, term))
+  const other = (mine.data ?? []).filter(m => !inTerm(m.module_code, term))
+  const Item = ({ m }: { m: (typeof now)[number] }) => (
+    <div className="row">
+      <span className="avatar avatar--code">{m.module_code.slice(0, 4)}</span>
+      <span className="rmain">
+        <span className="rname">{m.modules?.name}</span>
+        <span className="rmeta"><span className="mono">{m.module_code}</span> · {termLabel(m.module_code)}</span>
+      </span>
+    </div>
+  )
 
   return (
     <div className="pad">
@@ -38,23 +50,20 @@ export function MyModulesTab() {
       {mine.loading ? <Loading /> : null}
       {mine.error ? <p className="err">{mine.error}</p> : null}
       {mine.data && !mine.data.length ? (
-        <Empty icon="book" title="No modules yet" line="Pick the modules you're taking this year."
+        <Empty icon="book" title="No modules yet" line="Pick the modules you're taking this semester."
           action={<button className="btn" onClick={() => push(<PickModules />)}>Pick my modules</button>} />
       ) : null}
       {mine.data?.length ? (
         <>
-          <p className="small muted" style={{ marginBottom: 12 }}>{mine.data.length} module{mine.data.length === 1 ? '' : 's'} this year</p>
-          <div className="card stagger">
-            {mine.data.map(m => (
-              <div className="row" key={m.module_code}>
-                <span className="avatar avatar--code">{m.module_code.slice(0, 4)}</span>
-                <span className="rmain">
-                  <span className="rname">{m.modules?.name}</span>
-                  <span className="rmeta mono">{m.module_code}</span>
-                </span>
-              </div>
-            ))}
-          </div>
+          <p className="small muted" style={{ marginBottom: 12 }}>{now.length} module{now.length === 1 ? '' : 's'} this semester (semester {term})</p>
+          {now.length ? <div className="card stagger">{now.map(m => <Item key={m.module_code} m={m} />)}</div> : null}
+          {other.length ? (
+            <>
+              <div className="sect">Not this semester</div>
+              <div className="card">{other.map(m => <Item key={m.module_code} m={m} />)}</div>
+              <p className="small muted" style={{ marginTop: 8 }}>Not taking these now? Remove them under Change my modules.</p>
+            </>
+          ) : null}
           <button className="btn btn--outline" style={{ marginTop: 16 }} onClick={() => push(<PickModules />)}>Change my modules</button>
         </>
       ) : null}
@@ -67,6 +76,7 @@ function PickModules() {
   const { profile } = useAuth()
   const { toast } = useOverlay()
   const uid = profile!.id
+  const term = useTerm()
   const qcode = profile!.qualification_code
   const all = useQuery('modules', loadModules)
   const theirs = useQuery(`qual-modules:${qcode ?? ''}`, () => qcode ? loadQualificationModules(qcode) : Promise.resolve([]))
@@ -77,8 +87,9 @@ function PickModules() {
   const picked = useMemo(() => new Set((mine.data ?? []).map(m => m.module_code)), [mine.data])
   const byYear = useMemo(() => {
     const years = [...new Set((theirs.data ?? []).map(m => m.year ?? 1))].sort()
-    return years.map(y => ({ year: y, items: (theirs.data ?? []).filter(m => (m.year ?? 1) === y) }))
-  }, [theirs.data])
+    return years.map(y => ({ year: y, items: (theirs.data ?? []).filter(m => (m.year ?? 1) === y)
+      .sort((a, b) => Number(inTerm(b.module_code, term)) - Number(inTerm(a.module_code, term))) }))
+  }, [theirs.data, term])
   const search = useMemo(() => {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean)
     if (!words.length) return []
@@ -98,11 +109,12 @@ function PickModules() {
 
   const Row = ({ code, name, elective }: { code: string; name: string; elective?: boolean }) => {
     const on = picked.has(code)
+    const later = !inTerm(code, term)
     return (
       <button className={'pick' + (on ? ' on' : '')} onClick={() => toggle(code)} aria-pressed={on} disabled={busy === code}>
         <span className="pick__box">{on ? <Icon name="check" size={14} stroke={2.6} /> : null}</span>
-        <span className="rmain"><span className="rname">{name}</span><span className="rmeta mono">{code}</span></span>
-        {elective ? <span className="rside"><Badge tone="plain">Elective</Badge></span> : null}
+        <span className="rmain"><span className="rname">{name}</span><span className="rmeta"><span className="mono">{code}</span> · {termLabel(code)}</span></span>
+        {elective || later ? <span className="rside">{later ? <Badge tone="slate">Other semester</Badge> : <Badge tone="plain">Elective</Badge>}</span> : null}
       </button>
     )
   }
@@ -114,7 +126,7 @@ function PickModules() {
         <div className="field" style={{ marginTop: 0 }}>
           <input type="search" placeholder="Find any module by code or name" value={q} onChange={e => setQ(e.target.value)} aria-label="Search modules" />
         </div>
-        <p className="small muted" style={{ margin: '10px 0 4px' }}>{picked.size} picked · tap to add or remove</p>
+        <p className="small muted" style={{ margin: '10px 0 4px' }}>{(mine.data ?? []).filter(m => inTerm(m.module_code, term)).length} picked for semester {term} · tap to add or remove</p>
         {all.loading || mine.loading || theirs.loading ? <Loading /> : null}
 
         {q.trim() ? (

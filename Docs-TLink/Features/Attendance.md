@@ -27,7 +27,8 @@ The date and start time are captured automatically.
 - Their recent lectures are listed under the button, with how many checked in.
 
 ## In class
-- The tutor's phone shows a big **QR code that changes every 15 seconds**, with a **6-letter code** underneath for anyone whose camera won't scan.
+- The tutor's phone shows a big **QR code that changes every 15 seconds**, with a **6-letter code** underneath for anyone whose camera won't scan. The code is **blurred** until the tutor or lecturer taps it (and blurs again after 30 seconds), so a student can't copy it off the screen and send it to a friend. Same on the laptop screen.
+- Below it, the **live counter**: a ring that runs down until check-in closes (red in the last minute), the count in the middle, and the latest arrivals' initials beside it.
 - **Show on a laptop** shares a link (e.g. to the tutor's own WhatsApp). Opened on a laptop or projector, it shows the same changing QR full-screen, with no sign-in. The link stops working when the check-in closes.
 - A photo of the QR sent to friends at home stops working within about a minute.
 
@@ -38,6 +39,7 @@ The date and start time are captured automatically.
 
 ## Checking in (student)
 - The **Check in** tab in the bottom bar (next to Profile). Point the camera at the QR, or type the code.
+- The camera is kept while the app is open, so the phone asks for it once, not every time the tab opens. It's let go a minute after leaving the tab or when the app goes to the background. (On iPhone a home-screen app may still ask again after it's been fully closed: that's Apple's rule.)
 - Scanning the QR with the phone's normal camera also works: it opens TutorLink and checks them in (after signing in, if needed).
 - Their **name and surname, student number, qualification** (e.g. DISD) and the **time** come from their account. Nobody types a name, so nobody can check in a friend.
 - First check-in without a qualification? They pick it on the spot (it's also asked when they first sign up).
