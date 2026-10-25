@@ -126,7 +126,7 @@ function StudentSheet({ s, onChanged }: { s: Student; onChanged: () => void }) {
     e.preventDefault()
     if (!okEmail) return
     setBusy(true); setError('')
-    try { await adminUsers({ action: 'change_email', user_id: s.id, email: addr }); haptic(16); toast('Email changed. Their password stays the same'); onChanged(); s.email = addr; setMode('view') }
+    try { await adminUsers({ action: 'change_email', user_id: s.id, email: addr }); haptic(16); toast('Email changed. Their password stays the same'); onChanged(); s.email = addr; s.student_number = addr.slice(0, 10).toUpperCase(); setMode('view') }
     catch (err) { haptic(24); setError(friendlyError(err)) }
     setBusy(false)
   }
