@@ -52,7 +52,7 @@ function Line({ r }: { r: MyAttendance }) {
   return (
     <div className={'attl__row' + (pct >= 0.75 ? ' good' : '')}>
       <span className="attl__label">
-        <span className="attl__name">{r.module_name}</span>
+        <span className="attl__name attl__code" title={r.module_name}>{r.module_code}</span>
       </span>
       <span className="attl__dots" role="img" aria-label={`${r.module_code}: ${r.attended} of ${r.held} sessions`}>
         {Array.from({ length: shown }, (_, i) => (

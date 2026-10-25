@@ -656,7 +656,14 @@ await ok('electives are not added for them', async () => {
   await as(S6, `select public.set_my_study('HCEC0501', 1)`)
   return eq((await db.query(`select count(*)::int n from public.student_modules where student_id = $1 and module_code = 'COZU5112'`, [S6])).rows[0].n, 0, 'isiZulu')
 })
-await denied('only from the official list', () => as(S6, `select public.set_my_study('NOPE01', 1)`), 'from the list')
+await ok('tutorials only list modules with tutoring; lectures list them all', async () => {
+  const r = await as(S6, `select module_code, kind from public.my_attendance()`)
+  if (r.some(x => x.kind === 'tutorial') || !r.some(x => x.kind === 'lecture')) throw new Error(JSON.stringify(r))
+  await db.query(`insert into public.tutor_modules values ($1, $2) on conflict do nothing`, [ids.stu2, r[0].module_code])
+  const after = await as(S6, `select module_code from public.my_attendance() where kind = 'tutorial'`)
+  return eq(after.map(x => x.module_code), [r[0].module_code], 'tutored module')
+})
+await denied('only from the official list',() => as(S6, `select public.set_my_study('NOPE01', 1)`), 'from the list')
 await denied('lecturers do not have a qualification', () => as(ids.lect, `select public.set_my_study('DISD0601', 1)`), 'Only students')
 await ok("who's missing: enrolled students with no check-in, for the module's lecturer", async () => {
   await db.query(`insert into public.student_modules values ($1, 'PROG1111') on conflict do nothing`, [S6])

@@ -865,7 +865,8 @@ button.srow:active { background: var(--bg); }
 .attl__row + .attl__row { border-top: 1px solid var(--lineS); }
 .attl__label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
 .attl__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 600; }
-.attl__kind { flex: 0 0 auto; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); font-size: 9.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.attl__code { font-family: var(--fm); font-size: 13px; letter-spacing: .02em; }
+.attl__kind {flex: 0 0 auto; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); font-size: 9.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
 .attl__dots { flex: 0 0 auto; display: flex; align-items: center; gap: 3px; }
 .attl__dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
 .attl__dots i.on { background: var(--dot); animation: dotin .5s var(--ease) both; }
