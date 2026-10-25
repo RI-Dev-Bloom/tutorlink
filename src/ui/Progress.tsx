@@ -1,6 +1,6 @@
 /* A student's attendance per module, kept small: one line each, a dot for every session their
    tutor (or lecturer) has run this semester, filling in gold one by one for each they came to.
-   The count turns gold at 75%, and a star shows at 90%. Private to them.
+   The count takes the colour at 75% (tutorials blue, lectures gold), and a star shows at 90%. Private to them.
    Tutorials and lectures are counted apart (PROG6112 tutorials and PROG6112 lectures are two
    separate lines), so they show as two groups. Every module has a line in both from day one. */
 
@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react'
 import type { MyAttendance } from '../lib/attendance'
 import { Icon } from './icons'
 
-const MAX_DOTS = 10   // more than this, and the rest show as "+N"
+const MAX_DOTS = 14   // more than this, and the rest show as "+N"
 
 /* Counts up from 0 when it first shows. */
 function useCountUp(to: number, ms = 700) {
@@ -30,14 +30,14 @@ export function AttendanceLines({ rows }: { rows: MyAttendance[] }) {
     <>
       {tut.length ? (
         <>
-          <p className="attl__group">Tutorials</p>
-          <div className="card attl">{tut.map(r => <Line key={r.module_code + r.kind} r={r} />)}</div>
+          <p className="attl__group attl--tut">Tutorials</p>
+          <div className="card attl attl--tut">{tut.map(r => <Line key={r.module_code + r.kind} r={r} />)}</div>
         </>
       ) : null}
       {lec.length ? (
         <>
-          <p className="attl__group">Lectures</p>
-          <div className="card attl">{lec.map(r => <Line key={r.module_code + r.kind} r={r} />)}</div>
+          <p className="attl__group attl--lec">Lectures</p>
+          <div className="card attl attl--lec">{lec.map(r => <Line key={r.module_code + r.kind} r={r} />)}</div>
         </>
       ) : null}
     </>

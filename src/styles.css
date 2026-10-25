@@ -855,23 +855,27 @@ button.srow:active { background: var(--bg); }
 
 /* the student's attendance: one line per module, dots that fill in gold */
 .attl { padding: 4px 16px; }
-.attl__group { margin: 12px 2px 6px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+/* tutorials in blue, lectures in gold */
+.attl--tut { --dot: var(--msg); --dotD: var(--msg); }
+.attl--lec { --dot: var(--gold); --dotD: var(--goldD); }
+.attl__group { display: flex; align-items: center; gap: 6px; margin: 12px 2px 6px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .attl__group:first-child { margin-top: 0; }
+.attl__group::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--dot); }
 .attl__row { display: flex; align-items: center; gap: 12px; min-height: 44px; }
 .attl__row + .attl__row { border-top: 1px solid var(--lineS); }
 .attl__label { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; }
 .attl__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; font-weight: 600; }
 .attl__kind { flex: 0 0 auto; padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); font-size: 9.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.attl__dots { flex: 0 0 auto; display: flex; align-items: center; gap: 4px; }
-.attl__dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--lineS); box-shadow: inset 0 0 0 1px var(--line); }
-.attl__dots i.on { background: var(--gold); box-shadow: none; animation: dotin .5s var(--ease) both; }
+.attl__dots { flex: 0 0 auto; display: flex; align-items: center; gap: 3px; }
+.attl__dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--line); }
+.attl__dots i.on { background: var(--dot); animation: dotin .5s var(--ease) both; }
 .attl__more { margin-left: 2px; font-size: 10.5px; color: var(--muted); }
-@keyframes dotin { 0% { background: var(--lineS); transform: scale(.4); } 60% { transform: scale(1.5); } 100% { transform: scale(1); } }
+@keyframes dotin { 0% { background: var(--line); transform: scale(.4); } 60% { transform: scale(1.8); } 100% { transform: scale(1); } }
 .attl__n { flex: 0 0 auto; min-width: 42px; display: inline-flex; align-items: center; justify-content: flex-end; gap: 3px; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); }
 .attl__n b { font-weight: inherit; }
 .attl__n span { font-weight: 500; color: var(--muted); }
-.attl__row.good .attl__n { color: var(--goldD); }
-.attl__n svg { color: var(--gold); fill: currentColor; animation: dotin .6s var(--ease) .9s both; }
+.attl__row.good .attl__n { color: var(--dotD); }
+.attl__n svg { color: var(--dot); fill: currentColor; animation: dotin .6s var(--ease) .9s both; }
 @media (prefers-reduced-motion: reduce) { .attl__dots i.on, .attl__n svg { animation: none; } }
 
 /* ---------- the projector screen (?show=…) ------------------- */
