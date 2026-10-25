@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 import App from './App'
-import { captureInstallPrompt } from './lib/push'
+import { captureInstallPrompt, pushBusy } from './lib/push'
 import { rememberCheckinFromUrl } from './lib/attendance'
 import './styles.css'
 
@@ -13,7 +13,7 @@ registerSW({
   immediate: true,
   onRegisteredSW(_url, reg) {
     if (!reg) return
-    const check = () => { if (navigator.onLine) reg.update().catch(() => { /* offline or busy: try next time */ }) }
+    const check = () => { if (navigator.onLine && !pushBusy) reg.update().catch(() => { /* offline or busy: try next time */ }) }
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check() })
     setInterval(check, 60 * 60 * 1000)
   },

@@ -50,7 +50,7 @@ export function SetupCard() {
   const hide = () => { haptic(6); setHidden(true); try { localStorage.setItem(HIDE_KEY, '1') } catch { /* fine */ } }
   const turnOn = async () => {
     setBusy(true)
-    try { const s = await turnOnPush(); setPush(s); if (s === 'on') { haptic(16); toast('Notifications are on') } }
+    try { const s = await turnOnPush(); setPush(s); if (s === 'on') { haptic(16); toast('Notifications are on') } else if (s === 'blocked') { toast('Notifications are blocked. Allow them for TutorLink in your phone’s settings') } else { toast('Tap Allow when your phone asks, to get notifications') } }
     catch (e) { toast(friendlyError(e)) }
     setBusy(false)
   }
@@ -97,7 +97,7 @@ export function DeviceSettings() {
     setBusy(true)
     try {
       if (!on) { await turnOffPush(); setPush('off'); toast('Notifications are off on this device') }
-      else { const s = await turnOnPush(); setPush(s); if (s === 'on') { haptic(16); toast('Notifications are on') } }
+      else { const s = await turnOnPush(); setPush(s); if (s === 'on') { haptic(16); toast('Notifications are on') } else if (s === 'blocked') { toast('Notifications are blocked. Allow them for TutorLink in your phone’s settings') } else { toast('Tap Allow when your phone asks, to get notifications') } }
     } catch (e) { toast(friendlyError(e)) }
     setBusy(false)
   }

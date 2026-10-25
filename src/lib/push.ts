@@ -37,13 +37,25 @@ async function save(sub: PushSubscription) {
   if (error) throw error
 }
 
+/* True while someone is turning notifications on, so the app doesn't reload itself for an update mid-way. */
+export let pushBusy = false
+
 /* Must run straight from a tap: phones only show the "Allow notifications?" prompt then. */
 export async function turnOnPush(): Promise<PushState> {
+  pushBusy = true
+  try { return await subscribe() } finally { pushBusy = false }
+}
+async function subscribe(): Promise<PushState> {
   const permission = await Notification.requestPermission()
   if (permission !== 'granted') return permission === 'denied' ? 'blocked' : 'off'
   const reg = await navigator.serviceWorker.ready
-  const sub = await reg.pushManager.getSubscription()
-    ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toBytes(VAPID) })
+  // Straight after "Allow", the phone's push service often isn't ready and the first subscribe
+  // fails (seen on iPhone and some Androids), which made people tap twice. Try a few times here instead.
+  let sub = await reg.pushManager.getSubscription()
+  for (let i = 0; !sub; i++) {
+    try { sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: toBytes(VAPID) }) }
+    catch (e) { if (i >= 3) throw e; await new Promise(r => setTimeout(r, 700 * (i + 1))) }
+  }
   await save(sub)
   return 'on'
 }
