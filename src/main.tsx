@@ -6,7 +6,18 @@ import { captureInstallPrompt } from './lib/push'
 import { rememberCheckinFromUrl } from './lib/attendance'
 import './styles.css'
 
-registerSW({ immediate: true })
+// A home-screen app is usually resumed, not reloaded, so it would keep running an old version for
+// days. Look for a new one each time the app comes back to the front (and hourly while open);
+// when one is found it takes over and the page reloads itself (autoUpdate).
+registerSW({
+  immediate: true,
+  onRegisteredSW(_url, reg) {
+    if (!reg) return
+    const check = () => { if (navigator.onLine) reg.update().catch(() => { /* offline or busy: try next time */ }) }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') check() })
+    setInterval(check, 60 * 60 * 1000)
+  },
+})
 captureInstallPrompt()   // must be listening before the browser fires it
 rememberCheckinFromUrl() // a scanned check-in link survives signing in
 
