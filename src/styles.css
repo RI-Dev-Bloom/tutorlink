@@ -848,6 +848,27 @@ button.srow:active { background: var(--bg); }
 .att__track i { position: absolute; top: -3px; width: 1px; height: 12px; background: var(--muted2); }
 .att__meta { margin-top: 7px; font-size: 11.5px; color: var(--muted); }
 
+/* the student's stamp card */
+.stamps__head { display: flex; align-items: center; gap: 14px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid var(--lineS); }
+.stamps__big { font-family: var(--fh); font-size: 46px; font-weight: 700; line-height: .9; color: var(--navy); font-variant-numeric: lining-nums tabular-nums; }
+.stamps__sub { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stamps__sub b { font-size: 14px; }
+.stamps__sub span { font-size: 12px; color: var(--muted); }
+.stamp-row + .stamp-row { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--lineS); }
+.stamp-row__top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.stamp-row__stamps { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.stamp { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; border: 1.5px dashed var(--muted2); color: var(--navy); }
+.stamp--on { border: 0; background: var(--gold); animation: stampin .4s var(--ease) both; }
+.stamp--empty { opacity: .5; }
+.stamp-row__more { font-size: 12px; font-weight: 600; color: var(--muted); }
+@keyframes stampin { from { transform: scale(.4) rotate(-20deg); opacity: 0; } }
+.seal { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.seal--mid { background: var(--amberBg); color: var(--amber); }
+.seal--good { background: var(--greenBg); color: var(--green); }
+.seal--star { background: var(--navy); color: var(--gold); }
+.seal--star svg { fill: currentColor; }
+@media (prefers-reduced-motion: reduce) { .stamp--on { animation: none; } }
+
 /* ---------- the projector screen (?show=…) ------------------- */
 
 .show { position: fixed; inset: 0; z-index: 10; overflow: auto; display: flex; flex-direction: column; background: #fff; color: var(--text); font-family: var(--fb); }
