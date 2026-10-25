@@ -1,6 +1,8 @@
 /* A student's attendance per module, kept small: one line each, a dot for every session their
    tutor (or lecturer) has run this semester, filling in gold one by one for each they came to.
-   The count turns gold at 75%, and a star shows at 90%. Private to them. */
+   The count turns gold at 75%, and a star shows at 90%. Private to them.
+   Tutorials and lectures are counted apart (PROG6112 tutorials and PROG6112 lectures are two
+   separate lines), so they show as two groups. */
 
 import { useEffect, useState } from 'react'
 import type { MyAttendance } from '../lib/attendance'
@@ -22,7 +24,24 @@ function useCountUp(to: number, ms = 700) {
 }
 
 export function AttendanceLines({ rows }: { rows: MyAttendance[] }) {
-  return <div className="card attl">{rows.map(r => <Line key={r.module_code + r.kind} r={r} />)}</div>
+  const tut = rows.filter(r => r.kind !== 'lecture')
+  const lec = rows.filter(r => r.kind === 'lecture')
+  return (
+    <>
+      {tut.length ? (
+        <>
+          <p className="attl__group">Tutorials</p>
+          <div className="card attl">{tut.map(r => <Line key={r.module_code + r.kind} r={r} />)}</div>
+        </>
+      ) : null}
+      {lec.length ? (
+        <>
+          <p className="attl__group">Lectures</p>
+          <div className="card attl">{lec.map(r => <Line key={r.module_code + r.kind} r={r} />)}</div>
+        </>
+      ) : null}
+    </>
+  )
 }
 
 function Line({ r }: { r: MyAttendance }) {
@@ -34,7 +53,6 @@ function Line({ r }: { r: MyAttendance }) {
     <div className={'attl__row' + (pct >= 0.75 ? ' good' : '')}>
       <span className="attl__label">
         <span className="attl__name">{r.module_name}</span>
-        {r.kind === 'lecture' ? <span className="attl__kind">Lectures</span> : null}
       </span>
       <span className="attl__dots" role="img" aria-label={`${r.module_code}: ${r.attended} of ${r.held} sessions`}>
         {Array.from({ length: shown }, (_, i) => (
