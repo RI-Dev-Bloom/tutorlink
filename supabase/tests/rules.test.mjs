@@ -621,6 +621,11 @@ await ok("lectures don't mix with tutorial attendance", async () => {
   if (!mine.some(r => r.kind === 'lecture' && r.attended === 1)) throw new Error(JSON.stringify(mine))
   return tut
 })
+await ok('every module has a lectures line from day one, with the lectures they missed', async () => {
+  const r = (await as(S3, `select attended, held from public.my_attendance() where module_code = 'PROG1111' and kind = 'lecture'`))[0]
+  if (!r || r.attended !== 0 || r.held < 1) throw new Error(JSON.stringify(r))
+  return r
+})
 await ok('tutors title their check-ins too', async () => {
   await as(ids.lect, `select public.tutor_close_checkin($1)`, [lec])
   const open = (await as(ids.stu2, `select public.tutor_open_checkin() id`))[0].id

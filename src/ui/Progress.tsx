@@ -2,7 +2,7 @@
    tutor (or lecturer) has run this semester, filling in gold one by one for each they came to.
    The count turns gold at 75%, and a star shows at 90%. Private to them.
    Tutorials and lectures are counted apart (PROG6112 tutorials and PROG6112 lectures are two
-   separate lines), so they show as two groups. */
+   separate lines), so they show as two groups. Every module has a line in both from day one. */
 
 import { useEffect, useState } from 'react'
 import type { MyAttendance } from '../lib/attendance'
