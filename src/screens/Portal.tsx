@@ -34,6 +34,7 @@ import { loadMyTutorModules } from '../lib/student'
 import { StudentHome } from './student/Home'
 import { MyModulesTab } from './student/Modules'
 import { ChangePassword } from './ChangePassword'
+import { ITPortal } from './itadmin/ITAdmin'
 
 type View = 'student' | 'tutor' | 'lecturer' | 'admin'
 
@@ -112,6 +113,8 @@ export function Portal() {
     else if (link.tab === 'apply') push(<ApplyScreen />)
   }, [uid, isStudent, push, link.tab])
   if (!profile) return null
+  // ITAdmin has a portal of its own: the IT help desk.
+  if (profile.role === 'itadmin') return <ITPortal />
 
   const view: View = profile.role !== 'student' ? profile.role : profile.is_tutor ? tutorView : 'student'
   const { titles } = PORTALS[view]

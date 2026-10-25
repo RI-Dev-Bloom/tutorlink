@@ -7,7 +7,7 @@ import type { Session } from '@supabase/supabase-js'
 import { forgetThisDevice } from './push'
 import { supabase } from './supabase'
 
-export type Role = 'student' | 'lecturer' | 'admin'
+export type Role = 'student' | 'lecturer' | 'admin' | 'itadmin'
 
 export type Profile = {
   id: string

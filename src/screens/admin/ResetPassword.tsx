@@ -7,8 +7,8 @@ import { friendlyError } from '../../lib/supabase'
 import { Credentials } from '../../ui/Credentials'
 import { haptic } from '../../ui/haptic'
 
-type Reset = { email: string; name: string; role: 'student' | 'lecturer' | 'admin'; password: string }
-const DOOR = { student: 'Student', lecturer: 'Lecturer', admin: 'Admin' } as const
+type Reset = { email: string; name: string; role: 'student' | 'lecturer' | 'admin' | 'itadmin'; password: string }
+const DOOR = { student: 'Student', lecturer: 'Lecturer', admin: 'Admin', itadmin: 'Admin' } as const
 
 export function ResetPasswordSheet() {
   const [email, setEmail] = useState('')

@@ -1,7 +1,8 @@
 // TutorLink — admin-users
 // Lets staff in (lecturers, by their @rbi.ac.za email), gives passwords, removes logins.
 // Needs the secret key (which bypasses every database rule), so it lives here on the server, never in the app.
-// Every request is checked: the caller must be signed in and be an admin.
+// Every request is checked: the caller must be signed in and be an admin. ITAdmin (role 'itadmin')
+// may only find students, give them a new password, or fix the email they signed up with.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
@@ -51,6 +52,8 @@ function wordPassword() {
 }
 
 const STAFF = /^[^\s@]+@rbi\.ac\.za$/i
+const STUDENT = /^(st\d{8})@rcconnect\.edu\.za$/i
+const IT_ACTIONS = ['find_students', 'reset_password', 'change_email']
 
 Deno.serve(async req => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS })
@@ -67,7 +70,42 @@ Deno.serve(async req => {
   try { body = await req.json() } catch { return json({ error: 'Bad request' }, 400) }
 
   const { data: me } = await admin.from('profiles').select('role').eq('id', who.user.id).single()
-  if (me?.role !== 'admin') return json({ error: 'Admin only' }, 403)
+  const it = me?.role === 'itadmin'
+  if (me?.role !== 'admin' && !(it && IT_ACTIONS.includes(String(body.action)))) return json({ error: 'Admin only' }, 403)
+
+  // Students by name, student number or email, with when they signed up and last signed in.
+  if (body.action === 'find_students') {
+    const q = String(body.q ?? '').replace(/[%,()*]/g, ' ').trim()
+    if (q.length < 2) return json({ students: [] })
+    const { data: rows, error } = await admin.from('profiles')
+      .select('id, full_name, student_number, email, qualification_code, study_year, must_change_password, created_at')
+      .eq('role', 'student').or(`full_name.ilike.*${q}*,student_number.ilike.*${q}*,email.ilike.*${q}*`)
+      .order('full_name').limit(25)
+    if (error) return json({ error: error.message }, 400)
+    const students = await Promise.all((rows ?? []).map(async r => {
+      const { data } = await admin.auth.admin.getUserById(r.id)
+      return { ...r, last_sign_in_at: data?.user?.last_sign_in_at ?? null }
+    }))
+    return json({ students })
+  }
+
+  // Fix the email a student signed up with (e.g. a typo in their student number). Their student
+  // number follows the email; their password and everything else stay.
+  if (body.action === 'change_email') {
+    const id = String(body.user_id ?? '')
+    const email = String(body.email ?? '').trim().toLowerCase()
+    const m = STUDENT.exec(email)
+    if (!m) return json({ error: 'Use a Rosebank student email, like st12345678@rcconnect.edu.za' }, 400)
+    const { data: target } = await admin.from('profiles').select('role').eq('id', id).maybeSingle()
+    if (target?.role !== 'student') return json({ error: 'Only student accounts can be changed here' }, 400)
+    const { data: taken } = await admin.from('profiles').select('id').eq('email', email).neq('id', id).maybeSingle()
+    if (taken) return json({ error: 'Another account already uses that email' }, 400)
+    const { error } = await admin.auth.admin.updateUserById(id, { email, email_confirm: true })
+    if (error) return json({ error: error.message }, 400)
+    const { error: e2 } = await admin.from('profiles').update({ email, student_number: m[1].toUpperCase() }).eq('id', id)
+    if (e2) return json({ error: /duplicate|unique/i.test(e2.message) ? 'Another account already has that student number' : e2.message }, 400)
+    return json({ id, email })
+  }
 
   if (body.action === 'create_lecturer') {
     const title = String(body.title ?? '').trim()
@@ -112,6 +150,7 @@ Deno.serve(async req => {
     const { data: target } = byEmail ? await q.eq('email', byEmail).maybeSingle() : await q.eq('id', String(body.user_id ?? '')).maybeSingle()
     if (!target) return json({ error: 'No account uses that email' }, 404)
     if (target.id === who.user.id) return json({ error: 'Change your own password under Settings instead' }, 400)
+    if (it && target.role !== 'student') return json({ error: 'ITAdmin can only reset student passwords' }, 403)
     const password = wordPassword()
     const { error } = await admin.auth.admin.updateUserById(target.id, { password, email_confirm: true })
     if (error) return json({ error: error.message }, 400)
