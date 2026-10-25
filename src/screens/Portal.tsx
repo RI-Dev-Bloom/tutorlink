@@ -22,7 +22,7 @@ import { AttendanceIndex } from './attendance/Attendance'
 import { Group, SHead, SRow } from '../ui/Settings'
 import { resyncPush } from '../lib/push'
 import { AdminTutors } from './admin/Tutors'
-import { APP_STATUS, ApplyScreen, appKey } from './student/Apply'
+import { APP_STATUS, ApplyScreen, appKey, canTutor } from './student/Apply'
 import { loadMyApplication } from '../lib/student'
 import { LecturerHome } from './lecturer/Home'
 import { Inbox } from './messages/Inbox'
@@ -221,8 +221,9 @@ function Tutoring({ profile }: { profile: Profile }) {
   const { push } = useStack()
   const app = useQuery(appKey(profile.id), () => loadMyApplication(profile.id))
   const a = app.data
+  if (!a && !canTutor(profile)) return null
   return (
-    <Group title="Tutoring" foot={a ? undefined : 'Got a great mark in a high-risk module? Help others with it and get paid per hour.'}>
+    <Group title="Tutoring" foot={a ? undefined : 'Got a great mark in an advertised module? Help others with it and get paid per hour.'}>
       <SRow icon="clip" tone="gold" label={profile.is_tutor ? 'Apply for more modules' : 'Apply to become a tutor'}
         value={a ? <Badge tone={APP_STATUS[a.status].tone}>{APP_STATUS[a.status].label}</Badge> : undefined}
         onClick={() => push(<ApplyScreen />)} />

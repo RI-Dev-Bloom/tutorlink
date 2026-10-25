@@ -9,7 +9,7 @@ import { isOpen, loadMyApplication, loadMyModules } from '../../lib/student'
 import { Icon } from '../../ui/icons'
 import { Badge } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
-import { ApplyScreen, appKey } from './Apply'
+import { ApplyScreen, appKey, canTutor } from './Apply'
 import { SetupCard } from '../../ui/Setup'
 import { loadMyAttendance } from '../../lib/attendance'
 import { useStack } from '../../nav/Stack'
@@ -97,7 +97,7 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
         </button>
       </div>
 
-      {profile!.is_tutor || (tutorClosed && !a) ? null : (
+      {profile!.is_tutor || (tutorClosed && !a) || (!a && !canTutor(profile!)) ? null : (
         <>
           <div className="sect">Tutoring</div>
           <div style={{ position: 'relative' }}>

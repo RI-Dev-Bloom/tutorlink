@@ -10,7 +10,7 @@ import { friendlyError, supabase } from '../../lib/supabase'
 import { useStack } from '../../nav/Stack'
 import { Icon } from '../../ui/icons'
 import { useOverlay } from '../../ui/Overlay'
-import { BackButton, Badge, Loading, NavBar } from '../../ui/parts'
+import { BackButton, Badge, Empty, Loading, NavBar } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { loadModules } from '../admin/Modules'
 
@@ -37,6 +37,9 @@ export function ApplyScreen() {
 
 export const APP_STATUS = STATUS
 
+/* First years can't tutor for now: applying opens from second year (tutors already approved keep it). */
+export const canTutor = (p: { is_tutor: boolean; study_year: number | null }) => p.is_tutor || (p.study_year ?? 0) >= 2
+
 function ApplyTab() {
   const { profile } = useAuth()
   const { push } = useStack()
@@ -48,6 +51,13 @@ function ApplyTab() {
   if (app.error) return <p className="err pad">{app.error}</p>
   const a = app.data
   const start = () => { haptic(10); push(<ApplyForm />) }
+
+  if (!a && !canTutor(profile!)) return (
+    <div className="pad">
+      <Empty icon="cap" title={profile!.study_year === 1 ? 'Tutoring opens in second year' : 'Choose your year first'}
+        line={profile!.study_year === 1 ? 'First years can’t apply to tutor for now. Come back next year.' : 'Applying to tutor is open from second year. Set your qualification and year under Modules.'} />
+    </div>
+  )
 
   return (
     <div className="pad stagger">
