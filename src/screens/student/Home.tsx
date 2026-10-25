@@ -56,7 +56,6 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
     <div className="pad stagger">
       <p className="eyebrow">Rosebank International</p>
       <h2 className="display display--sm">Hi {first}</h2>
-      <p className="sub">Your tutoring programme, in one place.</p>
       {needQual ? (
         <div className="addhome">
           <button className="addhome__go" onClick={() => { haptic(8); openSheet(<QualificationSheet />) }}>
