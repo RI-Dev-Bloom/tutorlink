@@ -14,7 +14,7 @@ import { Badge } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { Group, SHead, SRow, Switch } from '../../ui/Settings'
 import { DeviceSettings } from '../../ui/Setup'
-import { HighRiskModules, Modules, loadModules } from './Modules'
+import { AdvertiseModules, Modules, loadModules } from './Modules'
 import { Lecturers } from './Lecturers'
 import { Templates } from './Templates'
 import { Qualifications } from './Qualifications'
@@ -61,8 +61,8 @@ export function AdminSettings() {
         foot={s?.auto_decline
           ? `Applications where no module reaches ${s.min_mark}% are declined automatically a day after they’re sent, with a note saying why.`
           : `Switch on to decline applications automatically when no module reaches ${s?.min_mark ?? 75}%.`}>
-        <SRow icon="alert" tone="red" label="High-risk modules" sub="The only modules students can apply to tutor"
-          value={highRisk ?? '…'} onClick={() => push(<HighRiskModules />)} />
+        <SRow icon="megaphone" tone="red" label="Advertised modules" sub="The only modules students can apply to tutor"
+          value={highRisk ?? '…'} onClick={() => push(<AdvertiseModules />)} />
         <SRow icon="doc" tone="blue" label="Response templates" onClick={() => push(<Templates />)} />
         <SRow icon="shield" tone="slate" label="Auto-decline below the minimum"
           right={<Switch on={!!s?.auto_decline} disabled={!s || saving} onChange={setAuto} label="Auto-decline below the minimum" />} />

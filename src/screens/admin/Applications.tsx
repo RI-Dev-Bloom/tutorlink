@@ -12,6 +12,7 @@ import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Empty, Loading, NavBar, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { loadTemplates } from './Templates'
+import { AdvertiseModules, loadModules } from './Modules'
 
 type AdminApp = {
   id: string
@@ -72,6 +73,8 @@ export function AdminApplications() {
   const auto = !!settings.data?.auto_decline
   const [filter, setFilter] = useState<Filter>('open')
   const [q, setQ] = useState('')
+  const modules = useQuery('modules', loadModules)
+  const advertised = (modules.data ?? []).filter(m => m.high_risk && !m.hidden)
 
   const rows = useMemo(() => {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean)
@@ -85,6 +88,14 @@ export function AdminApplications() {
 
   return (
     <div className="pad stagger">
+      <button className="row card" style={{ marginBottom: 14 }} onClick={() => { haptic(8); push(<AdvertiseModules />) }}>
+        <span className="avatar"><Icon name="megaphone" size={18} /></span>
+        <span className="rmain">
+          <span className="rname">Advertise</span>
+          <span className="rmeta">{modules.data ? (advertised.length ? `${advertised.length} module${advertised.length === 1 ? '' : 's'} open to apply: ${advertised.map(m => m.code).join(' · ')}` : 'Nothing advertised: students can’t apply yet') : ' '}</span>
+        </span>
+        <span className="rside"><Icon name="chev" size={17} stroke={2.1} /></span>
+      </button>
       <div className="field" style={{ marginTop: 0, marginBottom: 12 }}>
         <input type="search" placeholder="Search by name, student number or module" value={q} onChange={e => setQ(e.target.value)} aria-label="Search applications" />
       </div>

@@ -8,7 +8,6 @@ import type { Module } from '../../lib/types'
 import { Icon } from '../../ui/icons'
 import { useOverlay } from '../../ui/Overlay'
 import { BackButton, Badge, Empty, Loading, NavBar } from '../../ui/parts'
-import { Group, SRow, Switch } from '../../ui/Settings'
 import { haptic } from '../../ui/haptic'
 import { FacultyChips, useFacultyModules } from '../../ui/ModulePicker'
 import { loadDemand, type Demand } from '../../lib/catalogue'
@@ -53,7 +52,7 @@ export function Modules() {
                   <span className="rname" style={m.hidden ? { color: 'var(--muted)' } : undefined}>{m.name}</span>
                   <span className="rmeta mono">{m.code}</span>
                 </span>
-                <span className="rside">{m.hidden ? <Badge tone="plain">Hidden</Badge> : m.high_risk ? <Badge tone="red">High-risk</Badge> : null}<Icon name="chev" size={17} stroke={2.1} /></span>
+                <span className="rside">{m.hidden ? <Badge tone="plain">Hidden</Badge> : m.high_risk ? <Badge tone="red">Advertised</Badge> : null}<Icon name="chev" size={17} stroke={2.1} /></span>
               </button>
             ))}
           </div>
@@ -147,11 +146,11 @@ function ModuleSheet({ module: m, all }: { module: Module; all: Module[] }) {
         </p>
 
         <button className="btn btn--outline" style={{ marginTop: 9 }} disabled={busy}
-          onClick={() => run(() => supabase.from('modules').update({ high_risk: !m.high_risk }).eq('code', m.code), m.high_risk ? `${m.code} closed for tutoring` : `${m.code} is open for tutoring`)}>
-          {m.high_risk ? 'Not high-risk any more' : 'Mark as high-risk'}
+          onClick={() => run(() => supabase.from('modules').update({ high_risk: !m.high_risk }).eq('code', m.code), m.high_risk ? `${m.code} taken down` : `${m.code} advertised`)}>
+          {m.high_risk ? 'Stop advertising for tutors' : 'Advertise for tutors'}
         </button>
         <p className="small muted" style={{ marginTop: 8 }}>
-          {m.high_risk ? 'Students can apply to tutor it. Tutors already approved keep it either way.' : 'Only high-risk modules are open for students to apply to tutor.'}
+          {m.high_risk ? 'Students can apply to tutor it. Tutors already approved keep it either way.' : 'Only advertised modules are open for students to apply to tutor.'}
         </p>
 
         <div className="sect" style={{ marginTop: 22 }}>Merge a duplicate</div>
@@ -180,56 +179,82 @@ function ModuleSheet({ module: m, all }: { module: Module; all: Module[] }) {
   )
 }
 
-/* Settings → High-risk modules: the only ones students can apply to tutor. One switch each. */
-export function HighRiskModules() {
+/* Advertise: the at-risk modules students can apply to tutor (the database's "high_risk" flag).
+   What's advertised now at the top, each with Remove; search below to add another.
+   Removing one doesn't affect tutors already approved for it. */
+export function AdvertiseModules() {
   const { toast } = useOverlay()
   const modules = useQuery('modules', loadModules)
   const demand = useQuery('module-demand', loadDemand)
   const [q, setQ] = useState('')
-  const [faculty, setFaculty] = useState<string | null>(null)
-  const inFaculty = useFacultyModules(faculty)
   const [busy, setBusy] = useState<string | null>(null)
 
   const by = useMemo(() => new Map((demand.data ?? []).map(d => [d.module_code, d])), [demand.data])
   const all = useMemo(() => (modules.data ?? []).filter(m => !m.hidden), [modules.data])
-  const on = all.filter(m => m.high_risk)
-  // Switched-on first, then the most-taken. Without a search, only the top of the list shows.
-  const shown = useMemo(() => {
-    const words = q.toLowerCase().split(/\s+/).filter(Boolean)
-    const list = all.filter(m => (!inFaculty || inFaculty.has(m.code)) && words.every(w => `${m.code} ${m.name}`.toLowerCase().includes(w)))
-      .sort((a, b) => Number(b.high_risk) - Number(a.high_risk) || (by.get(b.code)?.students ?? 0) - (by.get(a.code)?.students ?? 0) || a.code.localeCompare(b.code))
-    return words.length ? list : list.slice(0, Math.max(on.length + 40, 60))
-  }, [all, q, inFaculty, by, on.length])
+  const on = useMemo(() => all.filter(m => m.high_risk).sort((x, y) => x.code.localeCompare(y.code)), [all])
+  const found = useMemo(() => {
+    const words = q.toLowerCase().split(/s+/).filter(Boolean)
+    if (!words.length) return []
+    return all.filter(m => !m.high_risk && words.every(w => `${m.code} ${m.name}`.toLowerCase().includes(w)))
+      .sort((x, y) => (by.get(y.code)?.students ?? 0) - (by.get(x.code)?.students ?? 0) || x.code.localeCompare(y.code)).slice(0, 30)
+  }, [all, q, by])
 
-  const flip = async (m: Module, v: boolean) => {
-    setBusy(m.code)
+  const set = async (m: Module, v: boolean) => {
+    haptic(8); setBusy(m.code)
     const { error } = await supabase.from('modules').update({ high_risk: v }).eq('code', m.code)
     setBusy(null)
     if (error) { haptic(24); toast(friendlyError(error)); return }
-    invalidate('modules')
+    invalidate('modules'); toast(v ? `${m.code} advertised` : `${m.code} taken down`)
+    if (v) setQ('')
   }
 
   return (
     <>
-      <NavBar title="High-risk modules" left={<BackButton />} />
+      <NavBar title="Advertise" left={<BackButton />} />
       <div className="body"><div className="pad">
-        <p className="small muted">Students can only apply to tutor the modules switched on here. Turning one off doesn't affect tutors already approved for it. Sorted by how many students take each one.</p>
-        <div className="field" style={{ marginTop: 14 }}>
-          <input type="search" placeholder="Search by code or name" value={q} onChange={e => setQ(e.target.value)} aria-label="Search modules" />
-        </div>
-        <div style={{ marginTop: 10 }}><FacultyChips value={faculty} onChange={setFaculty} /></div>
+        <p className="small muted">Students applying to tutor see only these modules, and can only apply for them.</p>
         {modules.loading ? <Loading /> : null}
         {modules.error ? <p className="err">{modules.error}</p> : null}
-        {modules.data && !shown.length ? <Empty icon="book" title="No match" line="Nothing matches that search." /> : null}
-        {shown.length ? (
-          <Group title={`${on.length} open for tutoring`}>
-            {shown.map(m => (
-              <SRow key={m.code} label={m.name} sub={<><span className="mono">{m.code}</span> <DemandLine d={by.get(m.code)} /></>}
-                right={<Switch on={m.high_risk} disabled={busy === m.code} onChange={v => flip(m, v)} label={`${m.code} high-risk`} />} />
+
+        <div className="sect">Advertised now · {on.length}</div>
+        {modules.data && !on.length ? <p className="small muted">Nothing advertised yet, so students can't apply. Search below to add a module.</p> : null}
+        {on.length ? (
+          <div className="card">
+            {on.map(m => (
+              <div className="row" key={m.code}>
+                <span className="avatar avatar--code">{m.code.slice(0, 4)}</span>
+                <span className="rmain">
+                  <span className="rname">{m.name}</span>
+                  <span className="rmeta"><span className="mono">{m.code}</span> <DemandLine d={by.get(m.code)} /></span>
+                </span>
+                <span className="rside">
+                  <button className="btn btn--sm btn--outline" disabled={busy === m.code} onClick={() => set(m, false)}>Remove</button>
+                </span>
+              </div>
             ))}
-          </Group>
+          </div>
         ) : null}
-        {!q.trim() && shown.length < all.length ? <p className="small muted" style={{ marginTop: 10 }}>Showing the most-taken. Search to find any other.</p> : null}
+
+        <div className="sect">Add a module</div>
+        <div className="field" style={{ marginTop: 0 }}>
+          <input type="search" placeholder="Search by code or name, e.g. PROG or Accounting" value={q} onChange={e => setQ(e.target.value)} aria-label="Search modules to advertise" />
+        </div>
+        {q.trim() && modules.data && !found.length ? <p className="small muted" style={{ marginTop: 10 }}>Nothing else matches “{q}”.</p> : null}
+        {found.length ? (
+          <div className="card" style={{ marginTop: 10 }}>
+            {found.map(m => (
+              <div className="row" key={m.code}>
+                <span className="rmain">
+                  <span className="rname">{m.name}</span>
+                  <span className="rmeta"><span className="mono">{m.code}</span> <DemandLine d={by.get(m.code)} /></span>
+                </span>
+                <span className="rside">
+                  <button className="btn btn--sm" disabled={busy === m.code} onClick={() => set(m, true)}>Advertise</button>
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </div></div>
     </>
   )
