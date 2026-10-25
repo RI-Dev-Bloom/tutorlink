@@ -68,6 +68,7 @@ Sign-in now matches Rosebank: everyone uses their Rosebank email and a password 
 - [x] Old test data removed; **demo data** set up for the stakeholder demo (16 Oct): see [[Demo script]]
 - [x] Demo accounts and all activity removed (25 Oct). Real students, Dr Gorrah and the main admin kept, with their modules
 - [x] Modules per semester, blurred check-in code, live counter ring, camera asked once (25 Oct)
+- [x] Sign-up now has two optional steps: qualification and year, then this semester's modules (pre-ticked). "Skip for now" goes straight in; Home then shows a blue "Choose your qualification" strip. Every extra card on the student Home has an × (25 Oct)
 - [ ] Apply the database part of modules per semester (migration 26): needs your OK for Claude to run it
 - [ ] Old files in storage from the demo (16 result uploads, 1 register): delete in Supabase → Storage if wanted
 - [ ] Handover: change the database password and the tutorlink.ri@gmail.com password
