@@ -1,8 +1,9 @@
 /* Student → Home. Your attendance per module (private to you),
-   your modules and where your application stands. */
+   your modules and where your application stands. Every card that isn't the core (attendance,
+   modules) has an × to close it for good on this device. */
 
 import { useAuth } from '../../lib/auth'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '../../lib/data'
 import { isOpen, loadMyApplication, loadMyModules } from '../../lib/student'
 import { Icon } from '../../ui/icons'
@@ -13,6 +14,19 @@ import { SetupCard } from '../../ui/Setup'
 import { loadMyAttendance } from '../../lib/attendance'
 import { useStack } from '../../nav/Stack'
 import { AttendanceLines } from '../../ui/Progress'
+import { useOverlay } from '../../ui/Overlay'
+import { QualificationSheet } from '../../ui/Qualification'
+
+/* A card closed with × stays closed on this phone. */
+function useClosed(key: string) {
+  const k = `tl.closed.${key}`
+  const [closed, setClosed] = useState(() => { try { return localStorage.getItem(k) === '1' } catch { return false } })
+  const close = () => { haptic(6); setClosed(true); try { localStorage.setItem(k, '1') } catch { /* private mode */ } }
+  return [closed, close] as const
+}
+const CloseX = ({ onClick }: { onClick: () => void }) => (
+  <button className="iconbtn setup__x" aria-label="Close" onClick={e => { e.stopPropagation(); onClick() }}><Icon name="x" size={16} /></button>
+)
 
 export function StudentHome({ go }: { go: (tab: string) => void }) {
   const { profile } = useAuth()
@@ -27,6 +41,13 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
     return () => document.removeEventListener('visibilitychange', back)
   }, [att.reload])
   const { push } = useStack()
+  const { openSheet } = useOverlay()
+  const [qualClosed, closeQual] = useClosed(`qual.${uid}`)
+  const [modsClosed, closeMods] = useClosed(`mods.${uid}`)
+  const [tutorClosed, closeTutor] = useClosed(`tutor.${uid}`)
+  const [soonClosed, closeSoon] = useClosed('soon')
+  const needQual = !profile!.qualification_code && !qualClosed
+  const needMods = !!profile!.qualification_code && mods.data !== undefined && !mods.data.length && !modsClosed
   const first = profile!.full_name.split(' ')[0] || 'there'
   const open = (tab: string) => { haptic(8); go(tab) }
   const a = app.data
@@ -36,6 +57,21 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
       <p className="eyebrow">Rosebank International</p>
       <h2 className="display display--sm">Hi {first}</h2>
       <p className="sub">Your tutoring programme, in one place.</p>
+      {needQual ? (
+        <div className="addhome">
+          <button className="addhome__go" onClick={() => { haptic(8); openSheet(<QualificationSheet />) }}>
+            <Icon name="cap" size={18} /><span>Choose your qualification</span>
+          </button>
+          <button className="addhome__x" aria-label="Close" onClick={closeQual}><Icon name="x" size={15} /></button>
+        </div>
+      ) : needMods ? (
+        <div className="addhome">
+          <button className="addhome__go" onClick={() => open('modules')}>
+            <Icon name="book" size={18} /><span>Pick this semester's modules</span>
+          </button>
+          <button className="addhome__x" aria-label="Close" onClick={closeMods}><Icon name="x" size={15} /></button>
+        </div>
+      ) : null}
       <SetupCard />
 
       {att.data?.length ? (
@@ -62,10 +98,12 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
         </button>
       </div>
 
-      {profile!.is_tutor ? null : (
+      {profile!.is_tutor || (tutorClosed && !a) ? null : (
         <>
           <div className="sect">Tutoring</div>
-          <button className="card card--pad card--gold" style={{ display: 'block', width: '100%', textAlign: 'left' }} onClick={() => { haptic(8); push(<ApplyScreen />) }}>
+          <div style={{ position: 'relative' }}>
+          {a ? null : <CloseX onClick={closeTutor} />}
+          <button className="card card--pad card--gold" style={{ display: 'block', width: '100%', textAlign: 'left', paddingRight: a ? undefined : 44 }} onClick={() => { haptic(8); push(<ApplyScreen />) }}>
             {a ? (
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span className="rmain">
@@ -86,11 +124,16 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
               </>
             )}
           </button>
+          </div>
         </>
       )}
 
-      <div className="note note--plain" style={{ marginTop: 22 }}><Icon name="clock" size={15} />
-        <span>Coming soon: announcements from your tutors.</span></div>
+      {soonClosed ? null : (
+        <div className="note note--plain" style={{ marginTop: 22, position: 'relative', paddingRight: 40 }}><Icon name="clock" size={15} />
+          <span>Coming soon: announcements from your tutors.</span>
+          <CloseX onClick={closeSoon} />
+        </div>
+      )}
     </div>
   )
 }

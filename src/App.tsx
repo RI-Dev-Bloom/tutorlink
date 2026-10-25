@@ -4,7 +4,7 @@ import { StackProvider, useStack } from './nav/Stack'
 import { OverlayProvider } from './ui/Overlay'
 import { Empty, Loading } from './ui/parts'
 import { Welcome } from './screens/Welcome'
-import { Onboarding } from './screens/Onboarding'
+import { Onboarding, setupSkipped } from './screens/Onboarding'
 import { Portal } from './screens/Portal'
 import { ChangePassword } from './screens/ChangePassword'
 import { Display } from './screens/Display'
@@ -39,7 +39,7 @@ function Router() {
     : !profile ? 'loading'
     : recovering ? 'recovery'
     : profile.must_change_password ? 'change-password'
-    : profile.role === 'student' && !profile.student_number ? 'onboarding'
+    : profile.role === 'student' && (!profile.student_number || (!profile.qualification_code && !setupSkipped(profile.id))) ? 'onboarding'
     : `portal:${profile.id}`
 
   useEffect(() => {

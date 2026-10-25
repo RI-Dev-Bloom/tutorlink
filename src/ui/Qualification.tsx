@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from 'react'
 import { useAuth } from '../lib/auth'
-import { facultiesOf, inTerm, loadQualificationModules, loadQualifications, shortQual, useTerm, yearsIn } from '../lib/catalogue'
+import { facultiesOf, inTerm, loadQualificationModules, loadQualifications, shortQual, useTerm, yearsIn, type Term } from '../lib/catalogue'
 import { invalidate, must, useQuery } from '../lib/data'
 import { friendlyError, supabase } from '../lib/supabase'
 import { Icon } from './icons'
@@ -84,15 +84,24 @@ export function StudyPicker({ value, onChange }: { value: Study; onChange: (s: S
   )
 }
 
-/* Saves through the database: sets the qualification and year, and adds that year's modules. */
-export async function saveStudy(s: Study) {
-  return (await must(supabase.rpc('set_my_study', { p_qualification: s.qualification, p_year: s.year }))) as number
+/* Saves through the database: sets the qualification and year, and adds that year's modules for
+   this semester. (Any from the other semester that came with the year are taken off again here,
+   for as long as the database still adds the whole year.) */
+export async function saveStudy(s: Study, term: Term) {
+  const added = (await must(supabase.rpc('set_my_study', { p_qualification: s.qualification, p_year: s.year }))) as number
+  const other = (await loadQualificationModules(s.qualification!))
+    .filter(m => m.year === s.year && !inTerm(m.module_code, term)).map(m => m.module_code)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!other.length || !user) return added
+  const gone = (await must(supabase.from('student_modules').delete().eq('student_id', user.id).in('module_code', other).select('module_code'))) ?? []
+  return Math.max(0, added - gone.length)
 }
 
 /* As a sheet, from Profile or a first check-in. */
 export function QualificationSheet({ onDone }: { onDone?: () => void }) {
   const { profile, reloadProfile } = useAuth()
   const { closeSheet, toast } = useOverlay()
+  const term = useTerm()
   const [study, setStudy] = useState<Study>({ qualification: profile?.qualification_code ?? null, year: profile?.study_year ?? null })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -102,7 +111,7 @@ export function QualificationSheet({ onDone }: { onDone?: () => void }) {
     if (!study.qualification || !study.year) return
     setBusy(true); setError('')
     try {
-      const added = await saveStudy(study)
+      const added = await saveStudy(study, term)
       haptic(14); await reloadProfile(); invalidate('my-modules', 'my-attendance')
       closeSheet(); toast(added ? `Saved · ${added} module${added === 1 ? '' : 's'} added` : 'Saved'); onDone?.()
     } catch (e) { haptic(24); setError(friendlyError(e)); setBusy(false) }

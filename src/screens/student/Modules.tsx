@@ -71,13 +71,15 @@ export function MyModulesTab() {
   )
 }
 
-/* Tap to add or remove; saved straight away. Their qualification's modules first, by year. */
-function PickModules() {
+/* Tap to add or remove; saved straight away. Their qualification's modules first, by year.
+   During sign-up (onDone) it shows just their year, with a Done button. */
+export function PickModules({ qualification, year, onDone }: { qualification?: string; year?: number; onDone?: () => void } = {}) {
   const { profile } = useAuth()
   const { toast } = useOverlay()
   const uid = profile!.id
   const term = useTerm()
-  const qcode = profile!.qualification_code
+  const qcode = qualification ?? profile!.qualification_code
+  const myYear = year ?? profile!.study_year
   const all = useQuery('modules', loadModules)
   const theirs = useQuery(`qual-modules:${qcode ?? ''}`, () => qcode ? loadQualificationModules(qcode) : Promise.resolve([]))
   const mine = useQuery(`my-modules:${uid}`, () => loadMyModules(uid))
@@ -87,9 +89,9 @@ function PickModules() {
   const picked = useMemo(() => new Set((mine.data ?? []).map(m => m.module_code)), [mine.data])
   const byYear = useMemo(() => {
     const years = [...new Set((theirs.data ?? []).map(m => m.year ?? 1))].sort()
-    return years.map(y => ({ year: y, items: (theirs.data ?? []).filter(m => (m.year ?? 1) === y)
+    return years.filter(y => !onDone || y === myYear).map(y => ({ year: y, items: (theirs.data ?? []).filter(m => (m.year ?? 1) === y)
       .sort((a, b) => Number(inTerm(b.module_code, term)) - Number(inTerm(a.module_code, term))) }))
-  }, [theirs.data, term])
+  }, [theirs.data, term, onDone, myYear])
   const search = useMemo(() => {
     const words = q.toLowerCase().split(/\s+/).filter(Boolean)
     if (!words.length) return []
@@ -121,8 +123,15 @@ function PickModules() {
 
   return (
     <>
-      <NavBar title="My modules" left={<BackButton />} />
+      <NavBar title={onDone ? 'Your modules' : 'My modules'} left={onDone ? undefined : <BackButton />} />
       <div className="body"><div className="pad">
+        {onDone ? (
+          <>
+            <p className="eyebrow">Step 2 of 2 · optional</p>
+            <h2 className="display display--sm">This semester's<br />modules</h2>
+            <p className="sub" style={{ marginBottom: 16 }}>We ticked the usual ones for your year. Untick any you're not taking, or add one you're repeating.</p>
+          </>
+        ) : null}
         <div className="field" style={{ marginTop: 0 }}>
           <input type="search" placeholder="Find any module by code or name" value={q} onChange={e => setQ(e.target.value)} aria-label="Search modules" />
         </div>
@@ -135,10 +144,11 @@ function PickModules() {
           ) : <Empty icon="book" title="Not on the list" line="Ask admin to add it." />
         ) : byYear.length ? byYear.map(g => (
           <div key={g.year}>
-            <div className="sect">Year {g.year}{profile!.study_year === g.year ? ' · your year' : ''}</div>
+            <div className="sect">Year {g.year}{myYear === g.year ? ' · your year' : ''}</div>
             <div className="card">{g.items.map(m => <Row key={m.module_code} code={m.module_code} name={m.modules?.name ?? m.module_code} elective={m.elective} />)}</div>
           </div>
         )) : <p className="small muted" style={{ marginTop: 12 }}>Choose your qualification first, or search above.</p>}
+        {onDone ? <button className="btn" style={{ marginTop: 20 }} onClick={() => { haptic(10); onDone() }}>Done</button> : null}
       </div></div>
     </>
   )
