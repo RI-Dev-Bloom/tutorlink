@@ -55,19 +55,24 @@ export function SetupCard() {
     setBusy(false)
   }
 
+  // Step 1 is a slim light-blue strip: tap it to install (or see how), × to hide.
+  if (needInstall) return (
+    <div className="addhome">
+      <button className="addhome__go" onClick={async () => {
+        haptic(8)
+        if (install.prompt) { if (await promptInstall()) toast('Installed') } else openSheet(<InstallGuide />)
+      }}>
+        <Icon name="info" size={18} />
+        <span>Add TutorLink to your home screen</span>
+      </button>
+      <button className="addhome__x" aria-label="Hide this" onClick={hide}><Icon name="x" size={15} /></button>
+    </div>
+  )
+
   return (
     <div className="card card--pad card--gold setup">
       <button className="iconbtn setup__x" aria-label="Hide this" onClick={hide}><Icon name="x" size={16} /></button>
-      {needInstall ? (
-        <>
-          <p className="eyebrow" style={{ marginBottom: 6 }}>Get set up · step 1 of 2</p>
-          <span className="rname">Add TutorLink to your home screen</span>
-          <p className="small muted" style={{ marginTop: 6 }}>It opens like a normal app{isIOS() ? ', and on iPhone it’s the only way to get notifications' : ''}.</p>
-          {install.prompt
-            ? <button className="btn btn--sm" style={{ marginTop: 12 }} onClick={async () => { haptic(8); if (await promptInstall()) toast('Installed') }}>Install app</button>
-            : <button className="btn btn--sm btn--outline" style={{ marginTop: 12 }} onClick={() => openSheet(<InstallGuide />)}>Show me how</button>}
-        </>
-      ) : (
+      {(
         <>
           <p className="eyebrow" style={{ marginBottom: 6 }}>{isPhone() ? 'Get set up · step 2 of 2' : 'Stay in the loop'}</p>
           <span className="rname" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Icon name="bell" size={18} /> Turn on notifications</span>

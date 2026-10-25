@@ -375,6 +375,10 @@ button.row:active { background: var(--bg); }
 /* "Get set up" card on home screens */
 .setup { position: relative; margin-top: 16px; padding-right: 40px; }
 .setup__x { position: absolute; top: 4px; right: 4px; margin: 0; width: 40px; height: 40px; color: var(--muted); }
+.addhome { display: flex; align-items: center; margin-top: 16px; border-radius: 14px; background: rgba(47, 111, 214, .09); border: 1px solid rgba(47, 111, 214, .22); color: var(--msg); }
+.addhome__go { flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 12px 4px 12px 14px; background: none; border: 0; font: inherit; font-size: 14px; font-weight: 600; color: inherit; text-align: left; cursor: pointer; }
+.addhome__go:active { opacity: .7; }
+.addhome__x { flex: 0 0 auto; display: grid; place-items: center; width: 40px; height: 40px; margin-right: 2px; background: none; border: 0; border-radius: 10px; color: inherit; opacity: .7; cursor: pointer; }
 
 /* quota usage bar */
 .quota { display: block; height: 6px; margin: 10px 0 8px; border-radius: 3px; background: var(--bg); border: 1px solid var(--line); overflow: hidden; }
