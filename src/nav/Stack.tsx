@@ -1,7 +1,8 @@
 /* The screen stack from the demo, in React.
    push: slides in from the right while the screen behind slides 24% left and dims.
    pop:  reverses it — via the back button, a swipe from the left edge, or Android's back gesture.
-   reset: replaces everything with one screen, cross-faded (used when signing in or out). */
+   reset: replaces everything with one screen, cross-faded (used when signing in or out).
+   home:  back to the first screen (the sidebar on a computer stays in view under opened screens). */
 
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type TouchEvent } from 'react'
 import { haptic } from '../ui/haptic'
@@ -13,6 +14,7 @@ type StackApi = {
   push: (node: ReactNode) => void
   back: () => void
   reset: (node: ReactNode) => void
+  home: () => void
   depth: number
 }
 
@@ -74,6 +76,11 @@ export function StackProvider({ children }: { children?: ReactNode }) {
     history.back()
   }, [])
 
+  const home = useCallback(() => {
+    const n = live().length - 1
+    if (n > 0) history.go(-n)
+  }, [])
+
   // Browser / Android back → pop to the depth that history now points at.
   useEffect(() => {
     const onPop = (e: PopStateEvent) => popTo((e.state && e.state.depth) || 0)
@@ -97,7 +104,7 @@ export function StackProvider({ children }: { children?: ReactNode }) {
 
   const depth = entries.filter(e => e.phase !== 'leaving').length - 1
   return (
-    <StackCtx.Provider value={{ push, back, reset, depth }}>
+    <StackCtx.Provider value={{ push, back, reset, home, depth }}>
       <div id="stage" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={() => { swipe.current = null }}>
         {entries.map(e => (
           <div key={e.key} className={screenClass(e)} aria-hidden={e.phase !== 'active'}>

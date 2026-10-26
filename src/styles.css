@@ -77,18 +77,7 @@ svg { display: inline-block; vertical-align: middle; flex-shrink: 0; }
   background: var(--bg);
   overflow: hidden;
 }
-@media (min-width: 780px) and (min-height: 800px) {
-  body {
-    display: flex; align-items: center; justify-content: center;
-    background: var(--navy);
-  }
-  #device {
-    width: 400px; height: 844px;
-    border-radius: 44px;
-    box-shadow: 0 0 0 10px #101d33, 0 0 0 12px #26344d, 0 40px 90px -20px rgba(0,0,0,.75);
-  }
-  :root { --sat: 16px; --sab: 18px; }
-}
+/* Tablets and computers get their own layout: see "larger screens" at the end. */
 
 /* ---------- screen stack --------------------------------- */
 
@@ -969,3 +958,107 @@ button.band__stats { width: 100%; background: none; border-left: 0; border-right
 .passin input { padding-right: 64px; }
 .passin__show { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--goldD); font-size: 12.5px; font-weight: 600; }
 .passin__show:active { background: var(--goldBg); }
+
+/* ============================================================
+   Larger screens: tablets and computers
+   The phone layout stays exactly as it is. From 700px wide the
+   content sits in a readable centred column instead of
+   stretching edge to edge, sheets open as dialogs in the middle,
+   and screens change with a short fade. From 1024px the tab bar
+   becomes a sidebar on the left, like a desktop app.
+   ============================================================ */
+
+@media (min-width: 700px) {
+  :root { --col: 720px; --railw: 0px; }
+
+  /* the readable column: every block in a scroll body, and the header lined up with it */
+  .body > * { max-width: var(--col); margin-inline: auto; }
+  .pad { padding: 30px 24px 40px; }
+  .nav, .brandbar { padding-inline: max(14px, calc((100% - var(--col)) / 2 + 24px)); }
+  .nav .slot:empty { display: none; }
+  /* signed out (welcome, sign in, first setup): a narrower column suits a short form */
+  #stage:not(:has(.tabbar)) { --col: 560px; }
+  .nav h1 { text-align: left; font-family: var(--fh); font-size: 23px; font-weight: 600; letter-spacing: 0; }
+
+  /* the tab bar keeps its items together in the middle */
+  .tabbar { justify-content: center; padding-inline: max(4px, calc((100% - 560px) / 2)); }
+
+  /* screens: a short fade and nudge instead of a full-width slide */
+  .screen.enter { transform: translate3d(28px, 0, 0); opacity: 0; }
+  .screen.behind { transform: none; filter: none; }
+  .screen.fade.enter { transform: translate3d(0, 8px, 0); }
+
+  /* floating buttons follow the column's right edge */
+  .fab, .glassmsg { right: max(16px, calc((100% - var(--railw) - var(--col)) / 2 + 16px)); }
+
+  /* sheets open as a dialog in the middle of the window */
+  #sheet {
+    inset: 0; margin: auto;
+    width: min(540px, calc(100% - 48px)); height: fit-content; max-height: min(86%, 760px);
+    border: 1px solid var(--line); border-radius: 12px;
+    padding: 26px 26px 24px;
+    transform: translate3d(0, 16px, 0) scale(.98); opacity: 0; pointer-events: none;
+    transition: transform .32s var(--ease), opacity .22s ease;
+    box-shadow: 0 30px 80px -24px rgba(10, 24, 40, .45);
+  }
+  #sheet.on { transform: none; opacity: 1; pointer-events: auto; }
+  .grabber { display: none; }
+  #toast { bottom: 28px; }
+  #sheet.on ~ #toast { top: 24px; }
+}
+
+@media (min-width: 1024px) {
+  :root { --rail: 236px; --col: 760px; }
+
+  /* a screen with tabs: sidebar on the left, header and content on the right */
+  .screen:has(> .tabbar) {
+    --railw: var(--rail);
+    display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas: "rail nav" "rail body";
+  }
+  .screen:has(> .tabbar) > .nav { grid-area: nav; }
+  .screen:has(> .tabbar) > .body { grid-area: body; }
+  .screen > .tabbar {
+    grid-area: rail;
+    flex-direction: column; justify-content: flex-start; gap: 2px;
+    padding: 22px 14px; border-top: 0; border-right: 1px solid var(--line);
+    background: var(--card); backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  .screen > .tabbar::before {
+    content: "TutorLink"; display: block; padding: 0 12px 22px;
+    font-family: var(--fh); font-size: 26px; font-weight: 600; color: var(--navy);
+  }
+  .screen > .tabbar .tab {
+    flex: 0 0 auto; flex-direction: row; justify-content: flex-start; gap: 12px;
+    padding: 10px 12px; border-radius: 8px; color: var(--muted); position: relative;
+  }
+  .screen > .tabbar .tab > span:not(.wrap) { font-size: 14px; font-weight: 500; letter-spacing: 0; }
+  .screen > .tabbar .tab:active { transform: none; }
+  .screen > .tabbar .tab.on { color: var(--navy); background: rgba(10, 35, 66, .06); }
+  .screen > .tabbar .tab.on > span:not(.wrap) { font-weight: 600; }
+  .screen > .tabbar .tab.on .wrap::after { display: none; }
+  .screen > .tabbar .tab .wrap { position: static; }
+  .screen > .tabbar .tab .count { top: 50%; right: 10px; transform: translateY(-50%); border-color: var(--card); }
+  .screen > .tabbar .tab.on::before {
+    content: ""; position: absolute; left: 0; top: 9px; bottom: 9px; width: 3px; border-radius: 2px; background: var(--gold);
+  }
+
+  /* a screen opened on top keeps the sidebar of the one underneath in view */
+  #stage:has(> .screen > .tabbar) > .screen:not(.fade):not(:has(> .tabbar)) { left: var(--rail); }
+
+  .fab { bottom: 28px; }
+  .glassmsg { top: 82px; }
+}
+
+/* mouse and trackpad: hover feedback and pointers, which phones don't need */
+@media (hover: hover) and (pointer: fine) {
+  button:not([disabled]), a[href], [role=tab], label[for] { cursor: pointer; }
+  .row, .role, .srow, .tab, .chip, .tpl, .pick { transition: background-color .15s ease, color .15s ease, border-color .15s ease; }
+  button.row:hover, .role:hover, button.srow:hover, .tpl:not(.on):hover, .pick:not(.on):hover { background-color: #F5F3EE; }
+  .tab:not(.on):hover { color: var(--navy); }
+  .screen > .tabbar .tab:not(.on):hover { background: rgba(10, 35, 66, .04); }
+  .chip:not(.on):not(.chip--static):hover { border-color: var(--muted2); }
+  .btn:not([disabled]):hover { filter: brightness(1.08); }
+  .iconbtn:hover { background: rgba(10, 35, 66, .05); }
+  .body { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+}

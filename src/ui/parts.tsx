@@ -27,12 +27,13 @@ export function BackButton() {
 export type Tab<T extends string> = { id: T; icon: IconName; label: string; count?: number }
 
 export function TabBar<T extends string>({ tabs, current, onChange }: { tabs: Tab<T>[]; current: T; onChange: (t: T) => void }) {
+  const { home } = useStack()   // on a computer the tabs are a sidebar, still clickable under an opened screen
   return (
     <div className="tabbar" role="tablist">
       {tabs.map(t => (
         <button key={t.id} role="tab" aria-selected={t.id === current}
           className={'tab' + (t.id === current ? ' on' : '')}
-          onClick={() => { haptic(6); onChange(t.id) }}>
+          onClick={() => { haptic(6); home(); onChange(t.id) }}>
           <span className="wrap">
             <Icon name={t.icon} size={21} />
             {t.count ? <span className={'count' + (t.id === 'inbox' ? ' count--msg' : '')}>{t.count}</span> : null}
