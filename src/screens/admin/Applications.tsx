@@ -1,6 +1,7 @@
 /* Admin → Applications: the queue, one application in detail, and the decision.
    Opening the results document (or marking it verified) moves an application to Under review.
-   Approving makes the student a tutor for the modules where their mark meets the minimum. */
+   Approving makes the student a tutor for the modules where their mark meets the minimum.
+   An "existing tutor" claim has no marks or results: approving adds every module they picked. */
 
 import { useMemo, useState } from 'react'
 import { invalidate, must, useQuery } from '../../lib/data'
@@ -17,16 +18,17 @@ import { AdvertiseModules, loadModules } from './Modules'
 type AdminApp = {
   id: string
   status: ApplicationStatus
-  results_path: string
+  existing: boolean
+  results_path: string | null
   background_checked: boolean
   response_message: string | null
   submitted_at: string
   processed_at: string | null
   student: { id: string; full_name: string; student_number: string | null; email: string; is_tutor: boolean } | null
-  application_marks: { module_code: string; mark: number; applying: boolean; modules: { name: string } | null }[]
+  application_marks: { module_code: string; mark: number | null; applying: boolean; modules: { name: string } | null }[]
 }
 
-const SELECT = `id, status, results_path, background_checked, response_message, submitted_at, processed_at,
+const SELECT = `id, status, existing, results_path, background_checked, response_message, submitted_at, processed_at,
   student:profiles!applications_student_id_fkey(id, full_name, student_number, email, is_tutor),
   application_marks(module_code, mark, applying, modules(name))`
 
@@ -57,8 +59,8 @@ const ago = (iso: string) => {
 }
 const fWhen = (iso: string) => new Date(iso).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric' })
 const applyingCodes = (a: AdminApp) => a.application_marks.filter(m => m.applying).map(m => m.module_code)
-const belowMin = (a: AdminApp, min: number) => a.application_marks.some(m => m.applying && m.mark < min)
-const noneMeet = (a: AdminApp, min: number) => !a.application_marks.some(m => m.applying && m.mark >= min)
+const belowMin = (a: AdminApp, min: number) => !a.existing && a.application_marks.some(m => m.applying && (m.mark ?? 0) < min)
+const noneMeet = (a: AdminApp, min: number) => !a.existing && !a.application_marks.some(m => m.applying && (m.mark ?? 0) >= min)
 /* When the auto-filter will decline it: a day after it was sent, on the next hourly run. */
 const autoDeclineAt = (a: AdminApp) => {
   const t = new Date(new Date(a.submitted_at).getTime() + 86_400_000)
@@ -126,6 +128,7 @@ export function AdminApplications() {
                 <span className="rmeta">{a.student?.student_number} · {isOpen(a.status) ? ago(a.submitted_at) : fWhen(a.processed_at ?? a.submitted_at)}</span>
               </span>
               <span className="rside">
+                {a.existing ? <Badge tone="gold">Existing tutor</Badge> : null}
                 {isOpen(a.status) && auto && noneMeet(a, min) ? <Badge tone="red">Auto-declines</Badge>
                   : isOpen(a.status) && belowMin(a, min) ? <Badge tone="red">Below {min}%</Badge> : null}
                 <Badge tone={STATUS[a.status].tone}>{STATUS[a.status].label}</Badge>
@@ -152,7 +155,7 @@ function ApplicationDetail({ id }: { id: string }) {
   const min = settings.data?.min_mark ?? 75
   const a = app.data
   const file = useQuery(`results-url:${a?.results_path ?? ''}`, async () =>
-    a ? (await must(supabase.storage.from('results').createSignedUrl(a.results_path, 3600)))?.signedUrl ?? '' : '')
+    a?.results_path ? (await must(supabase.storage.from('results').createSignedUrl(a.results_path, 3600)))?.signedUrl ?? '' : '')
   const [busy, setBusy] = useState(false)
 
   // Opening their results (or verifying them) tells the student someone is looking at it.
@@ -174,7 +177,7 @@ function ApplicationDetail({ id }: { id: string }) {
   if (!a) return (<><NavBar title="Application" left={<BackButton />} />{app.error ? <p className="err pad">{app.error}</p> : <Loading />}</>)
 
   const s = a.student
-  const marks = [...a.application_marks].sort((x, y) => Number(y.applying) - Number(x.applying) || y.mark - x.mark)
+  const marks = [...a.application_marks].sort((x, y) => Number(y.applying) - Number(x.applying) || (y.mark ?? 0) - (x.mark ?? 0))
   const applying = marks.filter(m => m.applying)
 
   return (
@@ -194,60 +197,75 @@ function ApplicationDetail({ id }: { id: string }) {
             <Badge tone={STATUS[a.status].tone}>{STATUS[a.status].label}</Badge>
             {a.background_checked ? <Badge tone="green">Checked</Badge> : <Badge tone="plain">Not checked</Badge>}
             {s?.is_tutor ? <Badge tone="gold">Already a tutor</Badge> : null}
+            {a.existing ? <Badge tone="gold">Existing tutor</Badge> : null}
           </div>
           <div style={{ marginTop: 14, borderTop: '1px solid var(--lineS)', paddingTop: 6 }}>
             <div className="payrow"><span className="muted">Submitted</span><span>{fWhen(a.submitted_at)} · {ago(a.submitted_at)}</span></div>
           </div>
         </div>
 
-        <div className="sect">Wants to tutor · {min}% needed</div>
-        <div className="chips">
-          {applying.map(m => <span key={m.module_code} className="chip chip--static"><span className="code">{m.module_code}</span>{m.modules?.name}</span>)}
-        </div>
-
-        <div className="sect">Marks they entered</div>
-        <div className="card card--pad">
-          {marks.map(m => {
-            const col = markColour(m.mark, min)
-            return (
-              <div className="mark" key={m.module_code}>
-                <span className="mark__name">
-                  <span className="mark__code" style={m.applying ? { fontWeight: 700 } : { color: 'var(--muted)' }}>{m.module_code}</span>
-                  {m.applying ? <span className="applied">APPLIED</span> : null}
-                  <span className="mark__sub">{m.modules?.name}</span>
-                </span>
-                <span className="mark__bar"><span style={{ width: `${m.mark}%`, background: col }} /></span>
-                <span className="mark__pct" style={{ color: col }}>{m.mark}%</span>
-                <span style={{ width: 16, color: col }}>{m.applying ? <Icon name={m.mark >= min ? 'check' : 'x'} size={15} stroke={2.2} /> : null}</span>
-              </div>
-            )
-          })}
-        </div>
-        {file.data ? (
-          <a className="btn btn--outline" style={{ marginTop: 12, textDecoration: 'none' }} href={file.data} target="_blank" rel="noreferrer" onClick={reviewing}>
-            <Icon name="doc" size={17} /> Open their results document
-          </a>
-        ) : null}
-        <p className="small muted" style={{ marginTop: 8 }}>Check the marks above match the document.{a.status === 'pending' ? ' Opening it moves the application to Under review.' : ''}</p>
-        {isOpen(a.status) && noneMeet(a, min) ? (
-          <div className="note note--amber" style={{ marginTop: 12 }}><Icon name="alert" size={15} />
-            <span>No module reaches {min}%.{settings.data?.auto_decline ? <> Auto-decline will decline it around <b>{autoDeclineAt(a)}</b> unless you decide first.</> : ' You can only decline this one.'}</span></div>
-        ) : null}
-
-        <div className="sect">Background check</div>
-        <div className="card">
-          <div className="row">
-            <span className="rmain">
-              <span className="rname">Results verified</span>
-              <span className="rmeta">{a.background_checked ? 'Marked as checked' : 'Needed before you can approve'}</span>
-            </span>
-            <span className="rside">
-              {a.background_checked
-                ? (isOpen(a.status) ? <button className="btn btn--outline btn--sm" disabled={busy} onClick={() => setChecked(false)}>Undo</button> : <Badge tone="green">Done</Badge>)
-                : <button className="btn btn--sm" disabled={busy || !isOpen(a.status)} onClick={() => setChecked(true)}>Mark done</button>}
-            </span>
+        {a.existing ? (
+          <>
+            <div className="sect">Says they already tutor</div>
+            <div className="chips">
+              {applying.map(m => <span key={m.module_code} className="chip chip--static"><span className="code">{m.module_code}</span>{m.modules?.name}</span>)}
+            </div>
+            <div className="note note--plain" style={{ marginTop: 12 }}><Icon name="alert" size={15} />
+              <span>No marks or results: they say they already tutor these at Rosebank. Check that’s right, then approve to add them all.</span></div>
+          </>
+        ) : (
+          <>
+          <div className="sect">Wants to tutor · {min}% needed</div>
+          <div className="chips">
+            {applying.map(m => <span key={m.module_code} className="chip chip--static"><span className="code">{m.module_code}</span>{m.modules?.name}</span>)}
           </div>
-        </div>
+
+          <div className="sect">Marks they entered</div>
+          <div className="card card--pad">
+            {marks.map(m => {
+              const mark = m.mark ?? 0
+              const col = markColour(mark, min)
+              return (
+                <div className="mark" key={m.module_code}>
+                  <span className="mark__name">
+                    <span className="mark__code" style={m.applying ? { fontWeight: 700 } : { color: 'var(--muted)' }}>{m.module_code}</span>
+                    {m.applying ? <span className="applied">APPLIED</span> : null}
+                    <span className="mark__sub">{m.modules?.name}</span>
+                  </span>
+                  <span className="mark__bar"><span style={{ width: `${mark}%`, background: col }} /></span>
+                  <span className="mark__pct" style={{ color: col }}>{mark}%</span>
+                  <span style={{ width: 16, color: col }}>{m.applying ? <Icon name={mark >= min ? 'check' : 'x'} size={15} stroke={2.2} /> : null}</span>
+                </div>
+              )
+            })}
+          </div>
+          {file.data ? (
+            <a className="btn btn--outline" style={{ marginTop: 12, textDecoration: 'none' }} href={file.data} target="_blank" rel="noreferrer" onClick={reviewing}>
+              <Icon name="doc" size={17} /> Open their results document
+            </a>
+          ) : null}
+          <p className="small muted" style={{ marginTop: 8 }}>Check the marks above match the document.{a.status === 'pending' ? ' Opening it moves the application to Under review.' : ''}</p>
+          {isOpen(a.status) && noneMeet(a, min) ? (
+            <div className="note note--amber" style={{ marginTop: 12 }}><Icon name="alert" size={15} />
+              <span>No module reaches {min}%.{settings.data?.auto_decline ? <> Auto-decline will decline it around <b>{autoDeclineAt(a)}</b> unless you decide first.</> : ' You can only decline this one.'}</span></div>
+          ) : null}
+
+          <div className="sect">Background check</div>
+          <div className="card">
+            <div className="row">
+              <span className="rmain">
+                <span className="rname">Results verified</span>
+                <span className="rmeta">{a.background_checked ? 'Marked as checked' : 'Needed before you can approve'}</span>
+              </span>
+              <span className="rside">
+                {a.background_checked
+                  ? (isOpen(a.status) ? <button className="btn btn--outline btn--sm" disabled={busy} onClick={() => setChecked(false)}>Undo</button> : <Badge tone="green">Done</Badge>)
+                  : <button className="btn btn--sm" disabled={busy || !isOpen(a.status)} onClick={() => setChecked(true)}>Mark done</button>}
+              </span>
+            </div>
+          </div>
+          </>
+        )}
 
         {isOpen(a.status) ? <Decision app={a} /> : (
           <>
@@ -279,10 +297,10 @@ function Decision({ app: a }: { app: AdminApp }) {
   const options = (templates.data ?? []).filter(t => t.kind === kind)
   const first = a.student?.full_name.split(' ')[0] ?? 'the student'
   const min = useQuery('settings', loadSettings).data?.min_mark ?? 75
-  const meets = a.application_marks.filter(m => m.applying && m.mark >= min).map(m => m.module_code)
+  const meets = a.application_marks.filter(m => m.applying && (a.existing || (m.mark ?? 0) >= min)).map(m => m.module_code)
   const left = applyingCodes(a).filter(c => !meets.includes(c))
   const codes = meets.join(', ')
-  const blocked = approve && (!a.background_checked || !meets.length)
+  const blocked = approve && (!meets.length || (!a.existing && !a.background_checked))
 
   const choose = (yes: boolean) => { haptic(6); setApprove(yes); setPicked(null); setMessage(''); setConfirm(false); setError('') }
 

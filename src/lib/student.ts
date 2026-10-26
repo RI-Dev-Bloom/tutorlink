@@ -11,11 +11,12 @@ export type ApplicationStatus = 'pending' | 'under_review' | 'approved' | 'rejec
 export type MyApplication = {
   id: string
   status: ApplicationStatus
-  results_path: string
+  existing: boolean   // "I'm already a tutor": modules only, no marks or results
+  results_path: string | null
   response_message: string | null
   submitted_at: string
   processed_at: string | null
-  application_marks: { module_code: string; mark: number; applying: boolean; modules: { name: string } | null }[]
+  application_marks: { module_code: string; mark: number | null; applying: boolean; modules: { name: string } | null }[]
 }
 
 export const loadMyModules = async (uid: string) =>
@@ -24,7 +25,7 @@ export const loadMyModules = async (uid: string) =>
 
 export const loadMyApplication = async (uid: string) => {
   const rows = await must(supabase.from('applications')
-    .select('id, status, results_path, response_message, submitted_at, processed_at, application_marks(module_code, mark, applying, modules(name))')
+    .select('id, status, existing, results_path, response_message, submitted_at, processed_at, application_marks(module_code, mark, applying, modules(name))')
     .eq('student_id', uid).order('submitted_at', { ascending: false }).limit(1).returns<MyApplication[]>())
   return rows?.[0] ?? null
 }

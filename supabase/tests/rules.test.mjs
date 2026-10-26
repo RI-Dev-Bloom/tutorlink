@@ -689,6 +689,28 @@ await ok('reach by faculty, from the qualification on each check-in', async () =
   return rows
 })
 
+console.log('\nexisting tutors')
+await denied('a claim needs modules', () => as(S6, `select public.claim_existing_tutor('{}')`), 'Choose the modules you tutor')
+let claim
+await ok('an existing tutor claims any module, no marks or results', async () => {
+  ;[{ id: claim }] = await as(S6, `select public.claim_existing_tutor(array['netw1111', 'MATH1111']) id`)
+  const a = (await db.query(`select existing, results_path, status::text from public.applications where id = $1`, [claim])).rows[0]
+  return eq(a, { existing: true, results_path: null, status: 'pending' }, 'claim')
+})
+await ok('admin hears it is an existing tutor', async () => { const p = JSON.stringify(await lastPush()); if (!p.includes('says they already tutor')) throw new Error(p) })
+await denied('a normal application still needs a results document', () => as(S6, `insert into public.applications (student_id) values ($1)`, [S6]))
+await ok('approving a claim makes them a tutor for every module picked', async () => {
+  await as(ids.admin, `select public.decide_application($1, true, 'Welcome back')`, [claim])
+  return eq((await db.query(`select module_code from public.tutor_modules where tutor_id = $1 order by 1`, [S6])).rows.map(r => r.module_code), ['MATH1111', 'NETW1111'], 'modules')
+})
+await ok('auto-decline leaves claims alone', async () => {
+  await db.query(`update public.settings set auto_decline = true`)
+  const [{ id }] = await as(S6, `select public.claim_existing_tutor(array['PROG1111']) id`)
+  await db.query(`update public.applications set submitted_at = now() - interval '2 days' where id = $1`, [id])
+  await db.query(`select public.auto_decline_applications()`)
+  return eq((await db.query(`select status::text s from public.applications where id = $1`, [id])).rows[0].s, 'pending', 'still open')
+})
+
 console.log('\nRosebank emails')
 await denied('a Gmail account cannot sign up', () => db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'someone@gmail.com')`), 'Rosebank student email')
 await denied('a staff email cannot sign itself up', () => db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'katshabalala@rbi.ac.za')`), 'Rosebank student email')

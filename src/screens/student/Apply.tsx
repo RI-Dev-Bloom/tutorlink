@@ -1,11 +1,12 @@
 /* Student → Apply to tutor. Tick the high-risk modules you'd like to tutor, type your mark
-   for each, add your statement of results, send. Then follow it here until admin decides. */
+   for each, add your statement of results, send. Then follow it here until admin decides.
+   Students who already tutor can say so instead: pick the modules, admin confirms. */
 
 import { Fragment, useRef, useState, type ChangeEvent } from 'react'
 import { useAuth } from '../../lib/auth'
 import { invalidate, must, useQuery } from '../../lib/data'
 import { ACCEPTED, fSize, fileExt, prepareUpload } from '../../lib/files'
-import { isOpen, loadMyApplication, loadMyTutorModules, loadSettings, type MyApplication } from '../../lib/student'
+import { isOpen, loadMyApplication, loadMyModules, loadMyTutorModules, loadSettings, type MyApplication } from '../../lib/student'
 import { friendlyError, supabase } from '../../lib/supabase'
 import { useStack } from '../../nav/Stack'
 import { Icon } from '../../ui/icons'
@@ -51,11 +52,17 @@ function ApplyTab() {
   if (app.error) return <p className="err pad">{app.error}</p>
   const a = app.data
   const start = () => { haptic(10); push(<ApplyForm />) }
+  const existing = (
+    <button className="btn btn--outline" style={{ marginTop: 10 }} onClick={() => { haptic(10); push(<ExistingTutorForm />) }}>
+      I’m already a tutor
+    </button>
+  )
 
   if (!a && !canTutor(profile!)) return (
     <div className="pad">
       <Empty icon="cap" title={profile!.study_year === 1 ? 'Tutoring opens in second year' : 'Choose your year first'}
         line={profile!.study_year === 1 ? 'First years can’t apply to tutor for now. Come back next year.' : 'Applying to tutor is open from second year. Set your qualification and year under Modules.'} />
+      {existing}
     </div>
   )
 
@@ -69,9 +76,12 @@ function ApplyTab() {
       {a ? <ApplicationCard app={a} /> : <Intro />}
 
       {!a || !isOpen(a.status) ? (
-        <button className="btn" style={{ marginTop: 18 }} onClick={start}>
-          {a ? 'Start a new application' : 'Start my application'}
-        </button>
+        <>
+          <button className="btn" style={{ marginTop: 18 }} onClick={start}>
+            {a ? 'Start a new application' : 'Start my application'}
+          </button>
+          {existing}
+        </>
       ) : null}
     </div>
   )
@@ -105,15 +115,15 @@ function Intro() {
 function ApplicationCard({ app: a }: { app: MyApplication }) {
   const s = STATUS[a.status]
   const step = a.status === 'pending' ? 0 : a.status === 'under_review' ? 1 : 2
-  const file = useQuery(`results-url:${a.results_path}`, async () =>
-    (await must(supabase.storage.from('results').createSignedUrl(a.results_path, 3600)))?.signedUrl ?? '')
+  const file = useQuery(`results-url:${a.results_path ?? ''}`, async () =>
+    a.results_path ? (await must(supabase.storage.from('results').createSignedUrl(a.results_path, 3600)))?.signedUrl ?? '' : '')
   const marks = [...a.application_marks].sort((x, y) => Number(y.applying) - Number(x.applying) || x.module_code.localeCompare(y.module_code))
 
   return (
     <>
       <div className="card card--pad">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-          <span className="rname" style={{ fontSize: 16 }}>Your application</span>
+          <span className="rname" style={{ fontSize: 16 }}>{a.existing ? 'Existing tutor' : 'Your application'}</span>
           <Badge tone={s.tone}>{s.label}</Badge>
         </div>
         <div className="steps" aria-label={`Step ${step + 1} of 3`}>
@@ -139,10 +149,10 @@ function ApplicationCard({ app: a }: { app: MyApplication }) {
         </>
       ) : isOpen(a.status) ? (
         <div className="note note--plain" style={{ marginTop: 14 }}><Icon name="clock" size={15} />
-          <span>Admin checks your marks against your results, then replies here.</span></div>
+          <span>{a.existing ? 'Admin confirms you tutor these modules, then replies here.' : 'Admin checks your marks against your results, then replies here.'}</span></div>
       ) : null}
 
-      <div className="sect">What you sent</div>
+      <div className="sect">{a.existing ? 'Modules you tutor' : 'What you sent'}</div>
       <div className="card card--pad">
         {marks.map(m => (
           <div className="mark" key={m.module_code}>
@@ -151,7 +161,7 @@ function ApplicationCard({ app: a }: { app: MyApplication }) {
               {m.applying ? <span className="applied">TUTOR</span> : null}
               <span className="mark__sub">{m.modules?.name}</span>
             </span>
-            <span className="mark__pct">{m.mark}%</span>
+            {m.mark !== null ? <span className="mark__pct">{m.mark}%</span> : null}
           </div>
         ))}
       </div>
@@ -307,6 +317,74 @@ function ApplyForm() {
         <button className="btn" style={{ marginTop: 16 }} disabled={!ready || !!busy} onClick={submit}>
           {busy === 'upload' ? 'Uploading document…' : busy === 'save' ? 'Sending…'
             : picked.length ? `Send application · ${picked.length} module${picked.length === 1 ? '' : 's'}` : 'Send application'}
+        </button>
+      </div></div>
+    </>
+  )
+}
+
+/* ---------- already a tutor ------------------------------- */
+
+/* For students who already tutor at Rosebank: pick the modules (any module, not only advertised
+   ones), send, and admin confirms. No marks or results needed. */
+function ExistingTutorForm() {
+  const { profile } = useAuth()
+  const { back } = useStack()
+  const { toast } = useOverlay()
+  const uid = profile!.id
+  const modules = useQuery('modules', loadModules)
+  const mineStudy = useQuery(`my-modules:${uid}`, () => loadMyModules(uid))
+  const tutoring = useQuery(`my-tutor-modules:${uid}`, () => loadMyTutorModules(uid))
+  const [picked, setPicked] = useState<string[]>([])
+  const [q, setQ] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  const tutored = new Set((tutoring.data ?? []).map(m => m.module_code))
+  const study = new Set((mineStudy.data ?? []).map(m => m.module_code))
+  const all = (modules.data ?? []).filter(m => !m.hidden && !tutored.has(m.code))
+  const words = q.toLowerCase().split(/\s+/).filter(Boolean)
+  // Before they search: what they picked plus their own modules. Searching finds any module.
+  const shown = words.length
+    ? all.filter(m => picked.includes(m.code) || words.every(w => `${m.code} ${m.name}`.toLowerCase().includes(w))).slice(0, 40)
+    : all.filter(m => picked.includes(m.code) || study.has(m.code))
+
+  const toggle = (code: string) => { haptic(6); setPicked(p => p.includes(code) ? p.filter(c => c !== code) : [...p, code]) }
+
+  const send = async () => {
+    if (!picked.length) return
+    setBusy(true); setError('')
+    try {
+      await must(supabase.rpc('claim_existing_tutor', { p_modules: picked }))
+      haptic(18); invalidate(appKey(uid)); back(); toast('Sent to admin to confirm')
+    } catch (e) { haptic(24); setError(friendlyError(e)); setBusy(false) }
+  }
+
+  return (
+    <>
+      <NavBar title="Already a tutor" left={<BackButton />} />
+      <div className="body"><div className="pad">
+        <p className="sub" style={{ marginTop: 0 }}>Already tutoring at Rosebank? Pick the modules you tutor. Admin confirms, then you can use the tutor view.</p>
+        <div className="field" style={{ marginBottom: 10 }}>
+          <input type="search" placeholder="Search any module by code or name" value={q} onChange={e => setQ(e.target.value)} aria-label="Search modules" />
+        </div>
+        {modules.loading || mineStudy.loading ? <Loading /> : (
+          <div className="card">
+            {shown.map(m => {
+              const on = picked.includes(m.code)
+              return (
+                <button key={m.code} type="button" className={'pick' + (on ? ' on' : '')} aria-pressed={on} onClick={() => toggle(m.code)}>
+                  <span className="pick__box">{on ? <Icon name="check" size={14} stroke={2.6} /> : null}</span>
+                  <span className="rmain"><span className="rname">{m.name}</span><span className="rmeta mono">{m.code}</span></span>
+                </button>
+              )
+            })}
+            {!shown.length ? <p className="small muted" style={{ padding: 14 }}>{q ? `Nothing matches “${q}”.` : 'Search for the modules you tutor.'}</p> : null}
+          </div>
+        )}
+        {error ? <p className="err">{error}</p> : null}
+        <button className="btn" style={{ marginTop: 16 }} disabled={!picked.length || busy} onClick={send}>
+          {busy ? 'Sending…' : picked.length ? `Send to admin · ${picked.length} module${picked.length === 1 ? '' : 's'}` : 'Pick your modules'}
         </button>
       </div></div>
     </>
