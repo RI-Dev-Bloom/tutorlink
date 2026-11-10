@@ -35,6 +35,7 @@ import { StudentHome } from './student/Home'
 import { MyModulesTab } from './student/Modules'
 import { ChangePassword } from './ChangePassword'
 import { ITPortal } from './itadmin/ITAdmin'
+import { AnnouncementList } from './messages/Announcements'
 
 type View = 'student' | 'tutor' | 'lecturer' | 'admin'
 
@@ -44,9 +45,10 @@ const PORTALS: Record<View, { tabs: Tab<string>[]; titles: Record<string, string
       { id: 'home', icon: 'home', label: 'Home' },
       { id: 'modules', icon: 'book', label: 'Modules' },
       { id: 'checkin', icon: 'qr', label: 'Check in' },
+      { id: 'inbox', icon: 'mail', label: 'Messages' },
       { id: 'profile', icon: 'user', label: 'Profile' },
     ],
-    titles: { home: 'TutorLink', modules: 'My modules', checkin: 'Check in', profile: 'Profile' },
+    titles: { home: 'TutorLink', modules: 'My modules', checkin: 'Check in', inbox: 'Messages', profile: 'Profile' },
   },
   tutor: {
     tabs: [
@@ -120,7 +122,7 @@ export function Portal() {
   const { titles } = PORTALS[view]
   if (!titles[tab]) setTab('home')   // a link to a tab this person doesn't have
   const unread = unreadTotal(inbox.data)
-  const tabs = PORTALS[view].tabs.map(t => t.id === 'apps' ? { ...t, count: openApps.data } : t.id === 'inbox' ? { ...t, count: unread } : t)
+  const tabs = PORTALS[view].tabs.map(t => t.id === 'apps' ? { ...t, count: openApps.data } : t.id === 'inbox' && view !== 'student' ? { ...t, count: unread } : t)
 
   const flip = () => {
     const next = tutorView === 'tutor' ? 'student' : 'tutor'
@@ -150,6 +152,7 @@ export function Portal() {
           : view === 'student' && tab === 'home' ? <StudentHome go={setTab} />
           : view === 'student' && tab === 'modules' ? <MyModulesTab />
           : view === 'student' && tab === 'checkin' ? <CheckIn inTab />
+          : view === 'student' && tab === 'inbox' ? <AnnouncementList />
           : tab === 'inbox' ? <Inbox />
           : view === 'lecturer' && tab === 'home' ? <LecturerHome />
           : view === 'lecturer' && tab === 'attendance' ? <AttendanceIndex />

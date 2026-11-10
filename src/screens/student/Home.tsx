@@ -1,4 +1,4 @@
-/* Student → Home. Your attendance per module (private to you),
+/* Student → Home. Announcements from the programme office, your attendance per module (private to you),
    your modules and where your application stands. Every card that isn't the core (attendance,
    modules) has an × to close it for good on this device. */
 
@@ -16,6 +16,7 @@ import { useStack } from '../../nav/Stack'
 import { AttendanceLines } from '../../ui/Progress'
 import { useOverlay } from '../../ui/Overlay'
 import { QualificationSheet } from '../../ui/Qualification'
+import { AnnouncementFeed } from '../messages/Announcements'
 
 /* A card closed with × stays closed on this phone. */
 function useClosed(key: string) {
@@ -45,7 +46,6 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
   const [qualClosed, closeQual] = useClosed(`qual.${uid}`)
   const [modsClosed, closeMods] = useClosed(`mods.${uid}`)
   const [tutorClosed, closeTutor] = useClosed(`tutor.${uid}`)
-  const [soonClosed, closeSoon] = useClosed('soon')
   const needQual = !profile!.qualification_code && !qualClosed
   const needMods = !!profile!.qualification_code && mods.data !== undefined && !mods.data.length && !modsClosed
   const first = profile!.full_name.split(' ')[0] || 'there'
@@ -72,6 +72,7 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
         </div>
       ) : null}
       <SetupCard />
+      <AnnouncementFeed go={go} />
 
       {att.data?.length ? (
         <>
@@ -127,12 +128,6 @@ export function StudentHome({ go }: { go: (tab: string) => void }) {
         </>
       )}
 
-      {soonClosed ? null : (
-        <div className="note note--plain" style={{ marginTop: 22, position: 'relative', paddingRight: 40 }}><Icon name="clock" size={15} />
-          <span>Coming soon: announcements from your tutors.</span>
-          <CloseX onClick={closeSoon} />
-        </div>
-      )}
     </div>
   )
 }

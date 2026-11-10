@@ -711,6 +711,39 @@ await ok('auto-decline leaves claims alone', async () => {
   return eq((await db.query(`select status::text s from public.applications where id = $1`, [id])).rows[0].s, 'pending', 'still open')
 })
 
+console.log('\nannouncements')
+await denied('a student cannot post one', () => as(ids.stu2, `select public.post_announcement('Hi', null, null)`), 'Admin only')
+await denied('a student cannot write the table directly', () => as(ids.stu2, `insert into public.announcements (title, ends_at) values ('Hi', now() + interval '1 day')`))
+await denied('it needs an image, a title or text', () => as(ids.admin, `select public.post_announcement('  ', '', null)`), 'Add an image, a title or some text')
+await denied('only the set lengths', () => as(ids.admin, `select public.post_announcement('Hi', null, null, 5)`), 'Choose how long it shows')
+await denied('a student cannot upload an image', () => as(ids.stu2, `insert into storage.objects (bucket_id, name) values ('announcements', $1)`, [ids.stu2 + '/a.jpg']))
+await denied('the image must really be uploaded', () => as(ids.admin, `select public.post_announcement(null, null, $1)`, [ids.admin + '/missing.jpg']), 'Add the image again')
+let ann
+await ok('admin posts a title only; it shows for a week and every student is told', async () => {
+  ;[{ id: ann }] = await as(ids.admin, `select public.post_announcement('New timetable is out', null, null) id`)
+  const a = (await db.query(`select round(extract(epoch from ends_at - created_at) / 86400) d from public.announcements where id = $1`, [ann])).rows[0]
+  eq(Number(a.d), 7, 'days')
+  const p = await lastPush()
+  eq(p.title, 'New timetable is out', 'push title')
+  return eq(p.user_ids.length, (await db.query(`select count(*)::int n from public.profiles where role = 'student'`)).rows[0].n, 'every student')
+})
+await ok('an image on its own is fine', async () => {
+  const f = ids.admin + '/poster.jpg'
+  await as(ids.admin, `insert into storage.objects (bucket_id, name) values ('announcements', $1)`, [f])
+  const [{ id }] = await as(ids.admin, `select public.post_announcement(null, null, $1, 3) id`, [f])
+  return eq((await as(ids.stu2, `select name from storage.objects where bucket_id = 'announcements'`)).length, 1, 'students can open the image') && id
+})
+await ok('an event date that comes sooner ends it at the end of that day', async () => {
+  const [{ id }] = await as(ids.admin, `select public.post_announcement('Exam prep', 'Bring past papers', null, 14, (now() at time zone 'Africa/Johannesburg')::date + 2) id`)
+  const r = (await db.query(`select to_char(ends_at at time zone 'Africa/Johannesburg', 'HH24:MI') t,
+    (ends_at at time zone 'Africa/Johannesburg')::date - (now() at time zone 'Africa/Johannesburg')::date d from public.announcements where id = $1`, [id])).rows[0]
+  return eq(r, { t: '00:00', d: 3 }, 'midnight after the event')
+})
+await denied('an event date in the past is refused', () => as(ids.admin, `select public.post_announcement('Old', null, null, 7, '2020-01-01')`), 'already passed')
+await ok('students read them', async () => eq((await as(ids.stu2, `select id from public.announcements`)).length, 3, 'visible'))
+await denied('a student cannot end one', async () => { const r = await as(ids.stu2, `update public.announcements set ends_at = now() where id = $1 returning id`, [ann]); if (!r.length) throw new Error('0 rows (RLS)') })
+await ok('admin ends one early', () => as(ids.admin, `update public.announcements set ends_at = now() where id = $1 returning id`, [ann]))
+
 console.log('\nRosebank emails')
 await denied('a Gmail account cannot sign up', () => db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'someone@gmail.com')`), 'Rosebank student email')
 await denied('a staff email cannot sign itself up', () => db.query(`insert into auth.users (id, email) values (gen_random_uuid(), 'katshabalala@rbi.ac.za')`), 'Rosebank student email')

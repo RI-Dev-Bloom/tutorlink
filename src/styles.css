@@ -681,6 +681,24 @@ button.srow:active { background: var(--bg); }
 .file--gone .file__ico { background: var(--line); color: var(--muted); }
 .tl-clip { display: inline-flex; color: var(--muted2); margin-left: 4px; vertical-align: -2px; }
 
+/* ---------- announcements ---------------------------------- */
+
+.ann-list { display: grid; gap: 12px; }
+.ann { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: var(--rl); overflow: hidden; }
+.ann--ended { background: var(--bg); }
+.ann__imglink { display: block; }
+.ann__img { display: block; width: 100%; max-height: 440px; object-fit: cover; background: var(--lineS); }
+.ann__img--wait { aspect-ratio: 16 / 9; }
+.ann__text { padding: 14px 16px; }
+.ann__title { margin: 0; font-family: var(--fh); font-size: 22px; font-weight: 600; line-height: 1.15; letter-spacing: -.01em; }
+.ann__body { margin: 6px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.ann__gone { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; font-size: 12px; color: var(--muted); }
+.ann__meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.ann .ann__x { z-index: 1; top: 8px; right: 8px; width: 34px; height: 34px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; }
+.ann-pick { position: relative; margin-top: 6px; border: 1px solid var(--line); border-radius: var(--rl); overflow: hidden; }
+.ann-pick img { display: block; width: 100%; max-height: 220px; object-fit: cover; }
+.ann-pick__x { position: absolute; top: 6px; right: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; }
+
 /* ---------- picking modules to tutor ----------------------- */
 
 .pick { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 15px; background: transparent; border: 0; text-align: left; }

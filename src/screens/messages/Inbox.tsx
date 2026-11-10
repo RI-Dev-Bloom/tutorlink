@@ -1,5 +1,6 @@
 /* Messages tab (tutors, lecturers, admin): one row per person, newest first,
-   with a blue count for unread. "New message" picks from the people you're allowed to reach. */
+   with a blue count for unread. "New message" picks from the people you're allowed to reach.
+   Tutors and admin also get Announcements at the top (lecturers don't: they go to students). */
 
 import { useMemo, useState } from 'react'
 import { useAuth } from '../../lib/auth'
@@ -12,8 +13,10 @@ import { useOverlay } from '../../ui/Overlay'
 import { Empty, Loading, initials } from '../../ui/parts'
 import { haptic } from '../../ui/haptic'
 import { Thread } from './Thread'
+import { AnnouncementsRow } from './Announcements'
 
 export function Inbox() {
+  const { profile } = useAuth()
   const { push } = useStack()
   const { openSheet } = useOverlay()
   const inbox = useQuery('inbox', loadInbox)
@@ -22,6 +25,7 @@ export function Inbox() {
   return (
     <>
       <div className="pad pad--fab stagger">
+        {profile?.role !== 'lecturer' ? <AnnouncementsRow /> : null}
         {inbox.loading ? <Loading /> : null}
         {inbox.error ? <p className="err">{inbox.error}</p> : null}
         {inbox.data && !rows.length ? (

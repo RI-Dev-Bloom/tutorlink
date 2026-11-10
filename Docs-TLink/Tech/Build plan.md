@@ -38,7 +38,7 @@ Built in slices, each one tested on a phone before the next.
 - Test on a real iPhone and a real Android phone.
 
 ## Phase 2: Student side
-[[Student module dashboard]], [[Announcements]]
+[[Student module dashboard]] ([[Announcements]] from admin are done)
 
 ## Phase 3: [[Quizzes]]
 

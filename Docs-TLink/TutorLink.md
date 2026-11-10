@@ -124,6 +124,10 @@ It's a web app you install on your phone (a PWA). It runs on free services only:
 **What —** Your phone buzzes for new messages, application decisions and confirmed sessions.
 **Why —** This is the whole reason to be an app rather than a website. → [[Push notifications]]
 
+### Announcements
+**What —** Admin posts an image, title and text to every student. It shows on their Home feed for up to two weeks (or until the event date), then stays in their Messages tab; the image is removed.
+**Why —** "New timetable is out" reaches every student at once, with a notification. → [[Announcements]]
+
 ---
 
 ## Feels like an app
@@ -150,10 +154,6 @@ It's a web app you install on your phone (a PWA). It runs on free services only:
 ### Student module dashboard
 **What —** For each module: the tutor, the next session, resources and activities.
 **Why —** It gives students a reason to open the app every week, not just once. → [[Student module dashboard]]
-
-### Tutor announcements
-**What —** Tutors post announcements that their module's students see on the dashboard and get notified about.
-**Why —** "Session moved to Lab 4" reaches everyone at once. → [[Announcements]]
 
 ### Quizzes
 **What —** Tutors write quizzes. Students play them live and timed in a session, or in their own time.

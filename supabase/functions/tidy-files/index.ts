@@ -1,7 +1,8 @@
 // TutorLink — tidy-files
 // Called every hour by the database (public.tidy_message_files). Removes files sent in
 // messages once they're older than admin's setting (3–5 days), plus files that were
-// uploaded but never sent. Files can only be removed through the Storage API, hence this.
+// uploaded but never sent, and announcement images once the announcement has ended.
+// Files can only be removed through the Storage API, hence this.
 // Same shared secret as send-push, so only the database can call it.
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
@@ -37,5 +38,23 @@ Deno.serve(async req => {
       .in('id', due.map(d => d.id))
     if (error) return json({ error: error.message }, 500)
   }
-  return json({ removed: paths.length, expired: due?.length ?? 0 })
+
+  // Announcement images go when the announcement ends; the text stays in Messages.
+  const now = new Date().toISOString()
+  const { data: ended, error: e4 } = await admin.from('announcements').select('id, image_path')
+    .not('image_path', 'is', null).lt('ends_at', now).limit(500)
+  if (e4) return json({ error: e4.message }, 500)
+  const { data: loose, error: e5 } = await admin.rpc('orphan_announcement_images', { p_before: new Date(Date.now() - 86_400_000).toISOString() })
+  if (e5) return json({ error: e5.message }, 500)
+  const images = [...(ended ?? []).map(a => a.image_path as string), ...((loose ?? []) as string[])]
+  if (images.length) {
+    const { error } = await admin.storage.from('announcements').remove(images)
+    if (error) return json({ error: error.message }, 500)
+  }
+  if (ended?.length) {
+    const { error } = await admin.from('announcements').update({ image_path: null, image_removed_at: now })
+      .in('id', ended.map(a => a.id))
+    if (error) return json({ error: error.message }, 500)
+  }
+  return json({ removed: paths.length, expired: due?.length ?? 0, images: images.length })
 })

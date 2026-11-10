@@ -13,7 +13,7 @@ status: v1
 | **Lecturer** | Only if they share a module | No | Yes |
 | **Admin** | Yes | Yes | Yes |
 
-Students don't use messaging.
+Students don't use messaging. Their Messages tab holds [[Announcements]] only.
 
 ## What it does
 - The **Messages** tab lists one row per person, newest first: their name, a role tag, the latest topic and a blue count of unread messages.
